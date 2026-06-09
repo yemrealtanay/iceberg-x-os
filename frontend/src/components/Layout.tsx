@@ -52,10 +52,10 @@ export const Layout: React.FC = () => {
       {/* Navigation Header */}
       <nav className="sticky top-0 z-50 bg-white/86 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 min-h-16">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 min-h-20">
             <div className="flex items-center min-w-0">
               <Link to="/" className="flex items-center hover:opacity-90 transition-opacity" title="Iceberg X OS">
-                <img src="/images/xicon.jpg" alt="Iceberg X" className="w-9 h-9 rounded-xl object-cover shadow-md border border-gray-100 shrink-0" />
+                <img src="/images/xicon.jpg" alt="Iceberg X" className="w-16 h-16 rounded-[1.35rem] object-cover shadow-xl shadow-black/10 border border-gray-100 shrink-0" />
               </Link>
             </div>
 

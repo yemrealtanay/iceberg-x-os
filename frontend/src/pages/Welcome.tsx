@@ -239,7 +239,7 @@ export const Welcome: React.FC = () => {
       <nav id="nav" className={`fixed top-0 left-0 right-0 z-[100] py-4 transition-all duration-500 ${scrolled ? 'bg-[#f6f6f8]/85 backdrop-blur-md border-b border-black/5 shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-[1200px] mx-auto px-7 flex items-center justify-between gap-8">
           <a href="#top" className="flex items-center hover:opacity-90 transition-opacity">
-            <img src="/images/xicon.jpg" alt="Iceberg X" className="w-9 h-9 rounded-xl object-cover shadow-md border border-gray-100 shrink-0" />
+            <img src="/images/xicon.jpg" alt="Iceberg X" className="w-16 h-16 rounded-[1.35rem] object-cover shadow-xl shadow-black/10 border border-gray-100 shrink-0" />
           </a>
           <div className="hidden md:flex gap-6 lg:gap-8 items-center text-[0.82rem] lg:text-[0.88rem] font-bold text-slate-800 whitespace-nowrap">
             <a href="#what" className="hover:text-[#e6007e] transition-colors leading-none">The Programme</a>
