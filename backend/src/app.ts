@@ -25,10 +25,16 @@ app.use(cors({
     // Normalize origin by removing trailing slash if present
     const normalizedOrigin = origin.replace(/\/$/, '');
     
-    if (allowedOrigins.includes(normalizedOrigin) || !isProd) {
+    if (
+      allowedOrigins.includes(normalizedOrigin) || 
+      !isProd ||
+      normalizedOrigin.startsWith('http://localhost:') ||
+      normalizedOrigin.endsWith('.railway.app')
+    ) {
       return callback(null, true);
     } else {
-      return callback(new Error('Not allowed by CORS'));
+      // Return false instead of throwing an Error to prevent Express 500 Internal Server Error
+      return callback(null, false);
     }
   },
   credentials: true
