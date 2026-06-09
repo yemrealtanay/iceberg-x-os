@@ -152,6 +152,20 @@ export const Welcome: React.FC = () => {
     .form-success-icon {
       background: linear-gradient(120deg, #e6007e 0%, #ff4da6 50%, #ff99cc 100%);
     }
+    .brand-logo-crop {
+      width: min(480px, 100%);
+      height: clamp(130px, 14vw, 180px);
+      overflow: hidden;
+      border-radius: 22px;
+      background: #171719;
+    }
+    .brand-logo-crop img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
   `;
 
   // Static items for grid builds
@@ -215,28 +229,30 @@ export const Welcome: React.FC = () => {
       {/* LOADER */}
       {loading && (
         <div id="loader" className="fixed inset-0 z-[999] bg-[#111111] grid place-items-center transition-all duration-700">
-          <div className="w-[60px] height-[60px] h-[60px] rounded-[16px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] animate-pulse shadow-[0_0_50px_rgba(230,0,126,0.6)]"></div>
+          <div className="w-[60px] h-[60px] rounded-[16px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] animate-pulse shadow-[0_0_50px_rgba(230,0,126,0.6)] flex items-center justify-center p-0.5 overflow-hidden">
+            <img src="/images/xicon.jpg" alt="Icon" className="w-full h-full object-cover rounded-[14px]" />
+          </div>
         </div>
       )}
 
       {/* NAV */}
-      <nav id="nav" className={`fixed top-0 left-0 right-0 z-[100] padding py-4 transition-all duration-500 ${scrolled ? 'bg-[#f6f6f8]/78 backdrop-blur-md border-b border-black/5 shadow-sm' : 'bg-transparent'}`}>
-        <div className="max-w-[1200px] mx-auto px-7 flex items-center justify-between">
-          <a href="#top" className="flex items-center gap-2 tracking-tight hover:opacity-90 transition-opacity">
-            <img src="/images/iceberg-x-logo-transparent.png" alt="Iceberg X Logo" className="h-8 object-contain" />
+      <nav id="nav" className={`fixed top-0 left-0 right-0 z-[100] py-4 transition-all duration-500 ${scrolled ? 'bg-[#f6f6f8]/85 backdrop-blur-md border-b border-black/5 shadow-sm' : 'bg-transparent'}`}>
+        <div className="max-w-[1200px] mx-auto px-7 flex items-center justify-between gap-8">
+          <a href="#top" className="flex items-center hover:opacity-90 transition-opacity">
+            <img src="/images/xicon.jpg" alt="Iceberg X" className="w-9 h-9 rounded-xl object-cover shadow-md border border-gray-100 shrink-0" />
           </a>
-          <div className="hidden md:flex gap-8 items-center text-[0.9rem] font-medium text-slate-800">
-            <a href="#what" className="hover:text-[#e6007e] transition-colors">The Programme</a>
-            <a href="#cube" className="hover:text-[#e6007e] transition-colors">The Cube</a>
-            <a href="#journey" className="hover:text-[#e6007e] transition-colors">Journey</a>
-            <a href="#fellowship" className="hover:text-[#e6007e] transition-colors">Fellowship</a>
+          <div className="hidden md:flex gap-6 lg:gap-8 items-center text-[0.82rem] lg:text-[0.88rem] font-bold text-slate-800 whitespace-nowrap">
+            <a href="#what" className="hover:text-[#e6007e] transition-colors leading-none">The Programme</a>
+            <a href="#cube" className="hover:text-[#e6007e] transition-colors leading-none">The Cube</a>
+            <a href="#journey" className="hover:text-[#e6007e] transition-colors leading-none">Journey</a>
+            <a href="#fellowship" className="hover:text-[#e6007e] transition-colors leading-none">Fellowship</a>
             
             {user ? (
-              <Link to="/dashboard" className="px-5 py-2.5 rounded-full bg-[#e6007e] text-white font-semibold text-[0.88rem] shadow-[0_12px_30px_-8px_rgba(230,0,126,0.5)] hover:translate-y-[-3px] hover:shadow-[0_20px_44px_-10px_rgba(230,0,126,0.65)] transition-all">
+              <Link to="/dashboard" className="px-5 py-2.5 rounded-full bg-[#e6007e] text-white font-bold text-[0.84rem] shadow-[0_12px_30px_-8px_rgba(230,0,126,0.5)] hover:translate-y-[-3px] hover:shadow-[0_20px_44px_-10px_rgba(230,0,126,0.65)] transition-all leading-none">
                 Enter Platform
               </Link>
             ) : (
-              <Link to="/login" className="px-5 py-2.5 rounded-full bg-white text-slate-900 border border-black/5 font-semibold text-[0.88rem] shadow-sm hover:translate-y-[-3px] hover:shadow-lg transition-all">
+              <Link to="/login" className="px-5 py-2.5 rounded-full bg-white text-slate-900 border border-black/5 font-bold text-[0.84rem] shadow-sm hover:translate-y-[-3px] hover:shadow-lg transition-all leading-none">
                 Login
               </Link>
             )}
@@ -248,13 +264,12 @@ export const Welcome: React.FC = () => {
       <section className="hero-bg min-h-screen flex items-center pt-[140px] pb-[80px] overflow-hidden" id="top">
         <div className="max-w-[1200px] mx-auto px-7 grid grid-cols-1 lg:grid-cols-2 gap-[60px] items-center w-full">
           <div className="flex flex-col gap-6">
-            <span className="text-[#e6007e] text-[0.72rem] font-bold uppercase tracking-[0.18em]">Iceberg X — An Elite Technology Fellowship</span>
-            <div className="py-2">
-              <img src="/images/iceberg-x-logo-transparent.png" alt="Iceberg X Logo" className="h-14 sm:h-20 object-contain" />
-            </div>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-600 leading-tight">Building the Next Generation of Innovators</h2>
+            <span className="text-[#e6007e] text-[0.72rem] font-bold uppercase tracking-[0.18em]">An Elite Technology Fellowship</span>
+            <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-tight">
+              Building the Next Generation of <span className="welcome-grad-text">Innovators</span>
+            </h1>
             <p className="text-lg text-slate-600 leading-relaxed max-w-[520px]">
-              Most internships teach you how a company works. <strong className="font-semibold text-slate-900">Iceberg X gives you the opportunity to prove what you're capable of building.</strong>
+              Most internships teach you how a company works. <strong className="font-semibold text-slate-900">Our platform gives you the opportunity to prove what you're capable of building.</strong>
             </p>
             <div className="flex gap-4 mt-2">
               <a href="#apply" className="px-7 py-3.5 rounded-full bg-[#e6007e] text-white font-semibold shadow-md shadow-magenta/30 hover:translate-y-[-3px] hover:shadow-lg transition-all">
@@ -315,13 +330,13 @@ export const Welcome: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. WHAT IS ICEBERG X */}
+      {/* 2. PHILOSOPHY */}
       <section className="py-24 bg-white border-t border-black/5" id="what">
         <div className="max-w-[1200px] mx-auto px-7">
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">What Is Iceberg X?</span>
+            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">The Philosophy</span>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">This is not a traditional internship.</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Real research and development projects. Real commercial challenges. Real mentors. Real outcomes. At Iceberg X, participants are builders — not observers.</p>
+            <p className="text-slate-500 font-medium leading-relaxed">Real research and development projects. Real commercial challenges. Real mentors. Real outcomes. Here, participants are builders — not observers.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
@@ -342,11 +357,11 @@ export const Welcome: React.FC = () => {
               <span className="w-[54px] h-[54px] rounded-full bg-white border border-black/5 flex items-center justify-center shadow-sm">vs</span>
             </div>
 
-            {/* Iceberg X */}
+            {/* The Program */}
             <div className="scarcity-box rounded-[2rem] p-8 sm:p-10 flex flex-col gap-6 text-white shadow-2xl shadow-magenta/20 relative overflow-hidden">
               <div className="absolute top-[-40%] right-[-20%] w-[60%] h-[120%] bg-radial-gradient from-magenta/35 to-transparent blur-xl"></div>
-              <span className="text-xs uppercase tracking-wider font-extrabold text-magenta-3 relative z-10">The Iceberg X Way</span>
-              <h3 className="text-xl font-extrabold relative z-10">Iceberg X</h3>
+              <span className="text-xs uppercase tracking-wider font-extrabold text-magenta-3 relative z-10">Our Approach</span>
+              <h3 className="text-xl font-extrabold relative z-10">The Fellowship</h3>
               <ul className="flex flex-col gap-4 text-white/90 font-semibold mt-2 relative z-10">
                 <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-[#e6007e] flex items-center justify-center text-[10px] text-white">→</span> Build</li>
                 <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-[#e6007e] flex items-center justify-center text-[10px] text-white">→</span> Experiment</li>
@@ -364,7 +379,7 @@ export const Welcome: React.FC = () => {
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
             <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">The Identity</span>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">Every participant becomes an Ice Cube.</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Cube numbers are permanent. They are never reused. Every Cube becomes part of the history of Iceberg X. <strong className="font-semibold text-slate-900">Once a Cube, always a Cube.</strong></p>
+            <p className="text-slate-500 font-medium leading-relaxed">Cube numbers are permanent. They are never reused. Every Cube becomes part of our history. <strong className="font-semibold text-slate-900">Once a Cube, always a Cube.</strong></p>
           </div>
 
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3">
@@ -392,7 +407,7 @@ export const Welcome: React.FC = () => {
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
             <span className="text-[#f3d27a] text-xs uppercase font-extrabold tracking-wider">The First Cohort</span>
             <h2 className="text-3xl sm:text-5xl font-black leading-none">The Founding Cubes</h2>
-            <p className="text-white/60 font-medium leading-relaxed">The first cohort will become the Founding Cubes. Their numbers will forever represent the beginning of Iceberg X. This status can never be earned again.</p>
+            <p className="text-white/60 font-medium leading-relaxed">The first cohort will become the Founding Cubes. Their numbers will forever represent the beginning of this portal. This status can never be earned again.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -401,7 +416,7 @@ export const Welcome: React.FC = () => {
                 <div className="text-[0.7rem] text-[#f3d27a] font-bold uppercase tracking-widest flex items-center gap-2">◆ Founding Cube</div>
                 <div className="text-4xl font-extrabold gold-text">#00{num}</div>
                 <div className="text-sm text-white/55 font-medium">
-                  {num === 1 ? 'The very first. Where it all begins.' : num === 2 ? 'A permanent place in the history of Iceberg X.' : 'A status that can never be earned again.'}
+                  {num === 1 ? 'The very first. Where it all begins.' : num === 2 ? 'A permanent place in our history.' : 'A status that can never be earned again.'}
                 </div>
               </div>
             ))}
@@ -438,7 +453,7 @@ export const Welcome: React.FC = () => {
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
             <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Growth & Leadership</span>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Cube Journey</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Iceberg X is built to create growth and leadership opportunities — not a fixed-term placement.</p>
+            <p className="text-slate-500 font-medium leading-relaxed">This program is built to create growth and leadership opportunities — not a fixed-term placement.</p>
           </div>
 
           <div className="max-w-[560px] mx-auto flex flex-col gap-4">
@@ -512,7 +527,7 @@ export const Welcome: React.FC = () => {
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
             <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Hall of Fame</span>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Cube Wall</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Every Cube receives a permanent place on the Cube Wall. A living record of the people who built Iceberg X.</p>
+            <p className="text-slate-500 font-medium leading-relaxed">Every Cube receives a permanent place on the Cube Wall. A living record of the people who built this platform.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -539,7 +554,7 @@ export const Welcome: React.FC = () => {
           <span className="text-[#ff99cc] text-xs uppercase font-extrabold tracking-widest mt-4">The Highest Recognition</span>
           <h2 className="text-3xl sm:text-6xl font-black max-w-[760px] mx-auto">The Iceberg Fellowship</h2>
           <p className="text-white/60 font-semibold text-lg max-w-[540px] mx-auto">Reserved for exceptional contributors. Few people achieve it.</p>
-          <p className="text-white/60 font-semibold text-lg max-w-[540px] mx-auto -mt-3">Those who do become lifelong members of the Iceberg X community.</p>
+          <p className="text-white/60 font-semibold text-lg max-w-[540px] mx-auto -mt-3">Those who do become lifelong members of our community.</p>
           
           <div className="flex gap-3 justify-center mt-6 flex-wrap">
             <span className="text-xs px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white/90">Lifelong membership</span>
@@ -799,13 +814,16 @@ export const Welcome: React.FC = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#111111] text-white/60 py-16 border-t border-white/5">
+      <footer className="bg-[#111111] text-white/60 py-16 sm:py-20 border-t border-white/5 overflow-hidden">
         <div className="max-w-[1200px] mx-auto px-7">
-          <div className="flex flex-wrap justify-between items-center gap-6 pb-8 border-b border-white/10">
-            <a href="#top" className="flex items-center gap-2 tracking-tight hover:opacity-90 transition-opacity">
-              <img src="/images/iceberg-x-logo-transparent.png" alt="Iceberg X Logo" className="h-8 object-contain brightness-0 invert" />
-            </a>
-            <div className="flex flex-wrap gap-7 text-sm font-medium">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,520px)_minmax(260px,1fr)] items-center gap-8 lg:gap-12 pb-10 border-b border-white/10">
+            <div className="flex flex-col gap-4">
+              <a href="#top" className="brand-logo-crop hover:opacity-95 transition-opacity" aria-label="Iceberg X home">
+                <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg X Logo" />
+              </a>
+              <p className="text-[11px] text-white/45 font-semibold">© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
+            </div>
+            <div className="flex flex-wrap lg:flex-col gap-4 lg:gap-5 text-sm font-bold text-white/60 lg:justify-self-end lg:text-right">
               <a href="#what" className="hover:text-white transition-colors">The Programme</a>
               <a href="#cube" className="hover:text-white transition-colors">The Cube</a>
               <a href="#journey" className="hover:text-white transition-colors">Journey</a>
@@ -813,9 +831,11 @@ export const Welcome: React.FC = () => {
               <a href="#apply" className="hover:text-white transition-colors">Apply</a>
             </div>
           </div>
-          <div className="flex flex-wrap justify-between items-center text-xs mt-6 gap-3">
-            <span>© {new Date().getFullYear()} Iceberg Digital. Iceberg X is a programme of Iceberg Digital.</span>
-            <span className="text-[#ff99cc] font-bold tracking-widest uppercase">Once a Cube, always a Cube.</span>
+          <div className="flex flex-wrap justify-end items-center text-xs mt-8 gap-4 text-white/50">
+            <div className="flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-white/70">
+              <span className="text-[#e6007e]">▶</span>
+              <span>Building the Next Generation of Innovators</span>
+            </div>
           </div>
         </div>
       </footer>

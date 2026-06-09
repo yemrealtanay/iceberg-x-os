@@ -50,18 +50,17 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-dark flex flex-col font-sans">
       {/* Navigation Header */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center gap-2 font-bold text-base tracking-tight hover:opacity-90 transition-opacity">
-                <img src="/images/xicon.jpg" alt="Icon" className="w-8 h-8 rounded-lg object-cover shadow-sm border border-gray-100" />
-                <span>Iceberg<span className="text-magenta font-extrabold">X</span> OS</span>
+      <nav className="sticky top-0 z-50 bg-white/86 backdrop-blur-md border-b border-gray-100 shadow-sm">
+        <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 min-h-16">
+            <div className="flex items-center min-w-0">
+              <Link to="/" className="flex items-center hover:opacity-90 transition-opacity" title="Iceberg X OS">
+                <img src="/images/xicon.jpg" alt="Iceberg X" className="w-9 h-9 rounded-xl object-cover shadow-md border border-gray-100 shrink-0" />
               </Link>
             </div>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center justify-center gap-1 min-w-0">
               {links.map((link) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -69,7 +68,7 @@ export const Layout: React.FC = () => {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-full text-[11px] xl:text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-magenta text-white shadow-md shadow-magenta/20'
                         : 'text-gray-600 hover:text-magenta hover:bg-gray-50'
@@ -83,10 +82,10 @@ export const Layout: React.FC = () => {
             </div>
 
             {/* Right-side User Actions */}
-            <div className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <p className="text-xs font-bold leading-tight text-gray-900">{user.name}</p>
+            <div className="hidden lg:flex items-center justify-end gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="text-right min-w-0 max-w-[160px]">
+                  <p className="text-xs font-bold leading-tight text-gray-900 truncate">{user.name}</p>
                   <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
                 </div>
                 {user.cubeNumber && (
@@ -112,7 +111,7 @@ export const Layout: React.FC = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex items-center md:hidden">
+            <div className="flex items-center justify-end lg:hidden">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-gray-500 hover:text-magenta hover:bg-gray-50 rounded-lg"
@@ -185,10 +184,25 @@ export const Layout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-6 text-center text-xs text-gray-400">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <p>© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
-          <p className="text-magenta font-bold tracking-wider">ONCE A CUBE, ALWAYS A CUBE.</p>
+      <footer className="bg-[#111111] text-white/60 border-t border-white/5 py-12 sm:py-16">
+        <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_1fr] gap-8 lg:gap-12 items-center">
+            <div className="flex flex-col gap-4">
+              <div className="w-full max-w-[420px] h-[125px] sm:h-[155px] overflow-hidden rounded-2xl bg-[#171719]">
+                <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg X Logo" className="w-full h-full object-cover object-center block" />
+              </div>
+              <p className="text-[11px] text-white/45 font-semibold">© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
+            </div>
+            <div className="flex flex-col gap-4 lg:items-end lg:text-right">
+              <p className="text-sm sm:text-base text-white/70 font-semibold max-w-[460px] leading-relaxed">
+                Iceberg X OS connects Cubes, mentors, missions, badges and demo history across the whole programme.
+              </p>
+              <div className="flex items-center gap-3 text-[11px] font-bold tracking-widest uppercase text-white/75">
+                <span className="text-magenta">▶</span>
+                <span>ONCE A CUBE, ALWAYS A CUBE.</span>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
