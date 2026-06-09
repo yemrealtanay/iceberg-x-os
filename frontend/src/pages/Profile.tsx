@@ -25,6 +25,7 @@ export const Profile: React.FC = () => {
   const [editInterests, setEditInterests] = useState('');
   const [editInternshipStatus, setEditInternshipStatus] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [parsedAiSummary, setParsedAiSummary] = useState<any>(null);
 
   // Admin progression states
   const [adminLevel, setAdminLevel] = useState('');
@@ -150,9 +151,21 @@ export const Profile: React.FC = () => {
   const handleFetchAISummary = async () => {
     setAiLoading(true);
     setAiSummary(null);
+    setParsedAiSummary(null);
     try {
       const res = await api.get(`/ai/cube-summary/${id}`);
       setAiSummary(res.summary);
+      try {
+        const parsed = JSON.parse(res.summary);
+        setParsedAiSummary(parsed);
+      } catch (e) {
+        setParsedAiSummary({
+          overview: res.summary,
+          strengths: [],
+          improvements: [],
+          nextSteps: ""
+        });
+      }
     } catch (err: any) {
       alert(err.message || 'Failed to generate AI summary');
     } finally {
@@ -387,16 +400,79 @@ export const Profile: React.FC = () => {
             
             <p className="text-xs text-gray-400">Generate a professional progress summary for this Cube based on their profile, scores, and updates history.</p>
 
-            {aiSummary ? (
-              <div className="flex flex-col gap-3">
-                <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium prose prose-sm">
-                  {aiSummary.split('\n').map((para, i) => <p key={i} className="mb-2 last:mb-0">{para}</p>)}
-                </div>
+            {parsedAiSummary ? (
+              <div className="flex flex-col gap-4 animate-fadeIn">
+                {parsedAiSummary.noData ? (
+                  <div className="bg-slate-50 border border-dashed border-gray-200 p-4 rounded-xl text-xs text-gray-500 font-medium flex flex-col gap-1.5 leading-relaxed">
+                    <p className="font-bold text-gray-700 flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                      <span>Insufficient Activity</span>
+                    </p>
+                    <p className="text-[11px] text-gray-400 font-semibold">{parsedAiSummary.message}</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {/* Overview Paragraph */}
+                    <div className="bg-slate-50/50 border border-gray-100 p-3.5 rounded-xl text-xs text-gray-600 font-semibold leading-relaxed italic">
+                      "{parsedAiSummary.overview}"
+                    </div>
+
+                    {/* Strengths & Improvements Lists */}
+                    <div className="flex flex-col gap-3.5">
+                      {parsedAiSummary.strengths && parsedAiSummary.strengths.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-green-600 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                            <span>Core Strengths</span>
+                          </h4>
+                          <ul className="flex flex-col gap-1 text-[11px] text-gray-600 font-semibold pl-1">
+                            {parsedAiSummary.strengths.map((s: string, idx: number) => (
+                              <li key={idx} className="flex items-start gap-1.5 leading-tight">
+                                <span className="text-green-500">✓</span>
+                                <span>{s}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {parsedAiSummary.improvements && parsedAiSummary.improvements.length > 0 && (
+                        <div className="flex flex-col gap-1.5 border-t border-gray-50 pt-3">
+                          <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Development Areas</span>
+                          </h4>
+                          <ul className="flex flex-col gap-1 text-[11px] text-gray-600 font-semibold pl-1">
+                            {parsedAiSummary.improvements.map((imp: string, idx: number) => (
+                              <li key={idx} className="flex items-start gap-1.5 leading-tight">
+                                <span className="text-amber-500">•</span>
+                                <span>{imp}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Next Steps Progression Target */}
+                    {parsedAiSummary.nextSteps && (
+                      <div className="border-t border-gray-50 pt-3">
+                        <div className="bg-magenta/5 border border-magenta/10 p-3 rounded-xl flex flex-col gap-1">
+                          <p className="text-[9px] font-extrabold uppercase tracking-wider text-magenta">Suggested Progression Path</p>
+                          <p className="text-xs font-bold text-slate-800 leading-tight">{parsedAiSummary.nextSteps}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <button
                   onClick={handleFetchAISummary}
-                  className="py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-600 rounded-lg text-xs font-bold transition-all"
+                  disabled={aiLoading}
+                  className="w-full mt-1 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-100 text-gray-500 hover:text-magenta rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                 >
-                  Regenerate Draft
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{aiLoading ? 'Regenerating...' : 'Regenerate Summary'}</span>
                 </button>
               </div>
             ) : (

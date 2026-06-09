@@ -109,34 +109,34 @@ export async function generateCubeProgressSummary(
     Mentor Comments:
     ${feedback.map(f => `- ${f}`).join('\n')}
     
-    Please output a Markdown response with the following sections:
-    ### AI Draft: Progress Summary for ${cubeName} (#${cubeNumber})
-    Brief 2-3 sentence overview of their engagement, growth, and overall performance.
-    
-    ### Core Strengths
-    List 2 key strengths based on the scores and feedback.
-    
-    ### Development Areas
-    List 1-2 technical or soft skill areas where the Cube can improve.
-    
-    ### Possible Next Step / Progression Level
-    Suggest if they are ready for progression (e.g. Senior Cube, Lead Cube) or if they need support.
+    Please output your response as a valid JSON object matching the following structure. Do not output any markdown formatting or backticks, just the raw JSON object:
+    {
+      "overview": "Brief 2-3 sentence overview of their engagement, growth, and overall performance.",
+      "strengths": [
+        "Core strength 1 description",
+        "Core strength 2 description"
+      ],
+      "improvements": [
+        "Development area 1 description",
+        "Development area 2 description"
+      ],
+      "nextSteps": "Suggested next step / progression level and brief justification."
+    }
   `;
 
   if (isMockMode || !openai) {
-    return `### AI Draft: Progress Summary for ${cubeName} (#${cubeNumber}) [Mock Mode]
-Cube #${cubeNumber} has shown strong performance and high motivation in active R&D missions. They have completed initial prototypes and successfully earned their first badges, proving themselves to be an asset to their mission teams.
-
-### Core Strengths
-- **Technical Ownership**: High execution speeds and a strong grasp of backend API design.
-- **Problem Solving**: Proactive debugging of memory constraints and latency bottlenecks.
-
-### Development Areas
-- **Database Architecture**: Needs to focus on performance optimization and query profiling under load.
-- **Documentation**: Provide more comprehensive comments in README files for team handovers.
-
-### Possible Next Step / Progression Level
-Recommended progression: **Consider for Senior Cube**. They are operating beyond the basic expectations of a standard Cube.`;
+    return JSON.stringify({
+      overview: `Cube #${cubeNumber} ${cubeName} has shown strong performance and high motivation in active R&D missions. They have completed initial prototypes and successfully earned their first badges, proving themselves to be an asset to their mission teams.`,
+      strengths: [
+        "Technical Ownership: High execution speeds and a strong grasp of backend API design.",
+        "Problem Solving: Proactive debugging of memory constraints and latency bottlenecks."
+      ],
+      improvements: [
+        "Database Architecture: Needs to focus on performance optimization and query profiling under load.",
+        "Documentation: Provide more comprehensive comments in README files for team handovers."
+      ],
+      nextSteps: "Recommended progression: Consider for Senior Cube. They are operating beyond the basic expectations of a standard Cube."
+    });
   }
 
   try {
@@ -144,6 +144,7 @@ Recommended progression: **Consider for Senior Cube**. They are operating beyond
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
+      response_format: { type: 'json_object' }
     });
     return response.choices[0]?.message?.content || 'Error generating AI summary.';
   } catch (error: any) {

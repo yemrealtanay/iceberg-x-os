@@ -1137,6 +1137,16 @@ router.get('/ai/cube-summary/:cubeId', requireAuth, isMentorOrAdmin, async (req,
     const demos = await prisma.demoSubmission.findMany({ where: { submitted_by_id: profile.user_id } });
     const feedback = await prisma.mentorFeedback.findMany({ where: { cube_id: profile.user_id } });
 
+    // Check if user has no activity data at all
+    if (updates.length === 0 && demos.length === 0 && feedback.length === 0 && profile.cube_badges.length === 0) {
+      return res.json({
+        summary: JSON.stringify({
+          noData: true,
+          message: "No activity data recorded yet. Please submit updates, demo day projects, or receive evaluations before an AI progress summary can be generated."
+        })
+      });
+    }
+
     const updatesText = updates.map(u => u.content);
     const demosText = demos.map(d => d.summary);
     const badgeNames = profile.cube_badges.map(b => b.badge.name);
