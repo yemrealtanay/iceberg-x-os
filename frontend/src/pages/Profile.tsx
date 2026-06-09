@@ -23,6 +23,7 @@ export const Profile: React.FC = () => {
   const [editSlack, setEditSlack] = useState('');
   const [editSkills, setEditSkills] = useState('');
   const [editInterests, setEditInterests] = useState('');
+  const [editInternshipStatus, setEditInternshipStatus] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Admin progression states
@@ -52,6 +53,7 @@ export const Profile: React.FC = () => {
       setEditSlack(res.profile.slack_handle || '');
       setEditSkills(res.profile.skills?.join(', ') || '');
       setEditInterests(res.profile.interests?.join(', ') || '');
+      setEditInternshipStatus(res.profile.internship_status || '');
 
       // Seed admin fields
       setAdminLevel(res.profile.current_level);
@@ -99,7 +101,8 @@ export const Profile: React.FC = () => {
         linkedin_url: editLinkedin,
         slack_handle: editSlack,
         skills: editSkills.split(',').map(s => s.trim()).filter(Boolean),
-        interests: editInterests.split(',').map(s => s.trim()).filter(Boolean)
+        interests: editInterests.split(',').map(s => s.trim()).filter(Boolean),
+        internship_status: editInternshipStatus
       });
       setData((prev: any) => ({
         ...prev,
@@ -231,6 +234,9 @@ export const Profile: React.FC = () => {
             <p><span className="font-bold text-gray-700">University:</span> {profile.university}</p>
             <p><span className="font-bold text-gray-700">Department:</span> {profile.department}</p>
             <p><span className="font-bold text-gray-700">Slack:</span> {profile.slack_handle || 'N/A'}</p>
+            {profile.internship_status && (
+              <p><span className="font-bold text-gray-700">Staj Durumu:</span> <span className="text-magenta font-semibold">{profile.internship_status}</span></p>
+            )}
             <p><span className="font-bold text-gray-700">Status:</span> <span className="uppercase text-[10px] font-extrabold bg-gray-100 border border-gray-200/50 px-2 py-0.5 rounded-full text-gray-500">{profile.status.replace(/_/g, ' ')}</span></p>
             {profile.assigned_mentor && (
               <p><span className="font-bold text-gray-700">Mentor:</span> {profile.assigned_mentor.name}</p>
@@ -290,6 +296,11 @@ export const Profile: React.FC = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-500 uppercase">Slack Handle</label>
               <input type="text" value={editSlack} onChange={e => setEditSlack(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Staj Durumu (Zorunlu staj durumu vb.)</label>
+              <input type="text" value={editInternshipStatus} onChange={e => setEditInternshipStatus(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
             </div>
 
             <div className="flex flex-col gap-1">

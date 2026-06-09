@@ -138,7 +138,8 @@ router.post('/cubes/create', requireAuth, isAdmin, async (req, res) => {
       slack_handle,
       skills,
       interests,
-      assigned_mentor_id
+      assigned_mentor_id,
+      internship_status
     } = req.body;
 
     if (!name || !email || !password || !cube_number || !cohort) {
@@ -184,6 +185,7 @@ router.post('/cubes/create', requireAuth, isAdmin, async (req, res) => {
           current_level: CubeLevel.Cube,
           status: CubeStatus.active,
           assigned_mentor_id: assigned_mentor_id || null,
+          internship_status: internship_status || null,
         }
       });
 
@@ -232,7 +234,8 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
       slack_handle,
       skills,
       interests,
-      name // Allow changing name on User table
+      name, // Allow changing name on User table
+      internship_status
     } = req.body;
 
     const profile = await prisma.cubeProfile.findUnique({
@@ -259,7 +262,8 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
           linkedin_url,
           slack_handle,
           skills: skills ? skills : undefined,
-          interests: interests ? interests : undefined
+          interests: interests ? interests : undefined,
+          internship_status: internship_status !== undefined ? internship_status : undefined
         }
       });
 

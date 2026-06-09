@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, CubeLevel, CubeStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -65,6 +65,84 @@ async function main() {
           password_hash: passwordHash,
           role: Role.ADMIN,
         },
+      });
+    }
+  }
+
+  // 3. Seed Cubes (Students)
+  const cubeStudents = [
+    { name: 'Mesut Umur Tokyürek', email: 'umrtkyrk@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Barış Tepe', email: 'baristepe04@gmail.com', internship_status: 'Zorunlu Staj Belgesi Gönderecek' },
+    { name: 'Süleyman Emre Parlak', email: 'emre-parlak2002@hotmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Ozan Uslan', email: 'uslanozan@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Gözde Kaçar', email: 'kcr.gozde@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Ayşenur Demezoğlu', email: 'aysenurdemezoglu@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Zelal Erpay', email: 'zelalerpay06@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Tarık Deniz', email: 'tarikdeniz2002@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Emir Bakkal', email: 'ebakkal2@gmail.com', internship_status: 'Zorunlu Stajı yok' },
+    { name: 'Henife Yaylı', email: 'henifeyayli@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
+    { name: 'Medine Kaynak', email: 'medinekaynak2906@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
+    { name: 'Ali Çağlar Koçer', email: 'alicaglarkocer@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
+    { name: 'Doğukan Taha Tıraş', email: 'dogukantt27@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
+    { name: 'Enes Yusuf Gökçe', email: 'eyusufgokce@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
+    { name: 'Seyfullah Korkmaz', email: 'seyfullahkorkmaz115@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' }
+  ];
+
+  for (const student of cubeStudents) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: student.email }
+    });
+
+    if (!existingUser) {
+      console.log(`Creating Cube User: ${student.name} (${student.email})...`);
+      
+      // Determine the next cube number dynamically
+      const lastProfile = await prisma.cubeProfile.findFirst({
+        orderBy: { cube_number: 'desc' }
+      });
+      let nextNum = 1;
+      if (lastProfile) {
+        const parsed = parseInt(lastProfile.cube_number, 10);
+        if (!isNaN(parsed)) {
+          nextNum = parsed + 1;
+        }
+      }
+      const nextCubeNumber = String(nextNum).padStart(3, '0');
+      const passwordHash = await bcrypt.hash('passwd123456', 10);
+
+      await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            name: student.name,
+            email: student.email,
+            password_hash: passwordHash,
+            role: Role.CUBE
+          }
+        });
+
+        await tx.cubeProfile.create({
+          data: {
+            user_id: user.id,
+            cube_number: nextCubeNumber,
+            cohort: 'Summer 2026',
+            university: 'Muğla Sıtkı Koçman Üniversitesi',
+            department: '',
+            skills: [],
+            interests: [],
+            current_level: CubeLevel.Cube,
+            status: CubeStatus.active,
+            internship_status: student.internship_status
+          }
+        });
+      });
+    } else {
+      console.log(`Cube user already exists: ${student.email}. Updating details if needed.`);
+      await prisma.cubeProfile.updateMany({
+        where: { user_id: existingUser.id },
+        data: {
+          internship_status: student.internship_status,
+          university: 'Muğla Sıtkı Koçman Üniversitesi'
+        }
       });
     }
   }

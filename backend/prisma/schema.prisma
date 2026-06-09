@@ -126,6 +126,7 @@ model CubeProfile {
   interests          String[]
   current_level      CubeLevel   @default(Cube)
   status             CubeStatus  @default(active)
+  internship_status  String?
   assigned_mentor_id String?
   assigned_mentor    User?       @relation("MentorToCube", fields: [assigned_mentor_id], references: [id], onDelete: SetNull)
   created_at         DateTime    @default(now())
