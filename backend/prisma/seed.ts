@@ -11,6 +11,24 @@ function requireSeedPassword(envName: string) {
   return value;
 }
 
+function cubeNumber(num: number) {
+  return String(num).padStart(3, '0');
+}
+
+async function getNextCubeNumber(tx: PrismaClient | Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) {
+  const lastProfile = await tx.cubeProfile.findFirst({
+    orderBy: { cube_number: 'desc' }
+  });
+  let nextNum = 1;
+  if (lastProfile) {
+    const parsed = parseInt(lastProfile.cube_number, 10);
+    if (!isNaN(parsed)) {
+      nextNum = parsed + 1;
+    }
+  }
+  return cubeNumber(nextNum);
+}
+
 async function main() {
   console.log('Starting seed...');
 
@@ -54,12 +72,12 @@ async function main() {
   ];
 
   const icebergFellows = [
-    { name: 'Elif Yıldız', email: 'elif.yildiz@iceberg-digital.co.uk' },
-    { name: 'İlayda Günay', email: 'ilayda.gunay@iceberg-digital.co.uk' },
-    { name: 'Özcan Yıldızhan', email: 'ozcan.yildizhan@iceberg-digital.co.uk' },
-    { name: 'Cenk Yalçın', email: 'cenk.yalcin@iceberg-digital.co.uk' },
-    { name: 'Batuhan Koç', email: 'batuhan.koc@iceberg-digital.co.uk' },
-    { name: 'Doğancan Acar', email: 'dogancan.acar@iceberg-digital.co.uk' },
+    { name: 'Elif Yıldız', email: 'elif.yildiz@iceberg-digital.co.uk', cube_number: '001' },
+    { name: 'İlayda Günay', email: 'ilayda.gunay@iceberg-digital.co.uk', cube_number: '002' },
+    { name: 'Özcan Yıldızhan', email: 'ozcan.yildizhan@iceberg-digital.co.uk', cube_number: '003' },
+    { name: 'Cenk Yalçın', email: 'cenk.yalcin@iceberg-digital.co.uk', cube_number: '004' },
+    { name: 'Batuhan Koç', email: 'batuhan.koc@iceberg-digital.co.uk', cube_number: '005' },
+    { name: 'Doğancan Acar', email: 'dogancan.acar@iceberg-digital.co.uk', cube_number: '006' },
   ];
 
   const badgeDefinitions = [
@@ -182,7 +200,130 @@ async function main() {
     }
   }
 
-  // 4. Seed Cubes (Students)
+  // 4. Seed experienced Cubes first. They are the original Cubes and keep #001-#006.
+  const fellowEmails = icebergFellows.map(fellow => fellow.email);
+  await prisma.$transaction(async (tx) => {
+    const reservedNumbers = icebergFellows.map(fellow => fellow.cube_number);
+    const displacedProfiles = await tx.cubeProfile.findMany({
+      where: {
+        cube_number: { in: reservedNumbers },
+        user: { email: { notIn: fellowEmails } }
+      },
+      include: { user: true },
+      orderBy: { cube_number: 'asc' }
+    });
+
+    for (const profile of displacedProfiles) {
+      await tx.cubeProfile.update({
+        where: { id: profile.id },
+        data: { cube_number: `TEMP-${profile.id}` }
+      });
+    }
+
+    for (const fellow of icebergFellows) {
+      const passwordHash = await bcrypt.hash(cubePassword, 10);
+      const existingUser = await tx.user.findUnique({
+        where: { email: fellow.email }
+      });
+
+      if (!existingUser) {
+        console.log(`Creating Iceberg Fellow: ${fellow.name} (${fellow.email}) as Cube #${fellow.cube_number}...`);
+        const user = await tx.user.create({
+          data: {
+            name: fellow.name,
+            email: fellow.email,
+            password_hash: passwordHash,
+            role: Role.CUBE
+          }
+        });
+
+        await tx.cubeProfile.create({
+          data: {
+            user_id: user.id,
+            cube_number: fellow.cube_number,
+            cohort: 'Iceberg Fellows',
+            university: '',
+            department: '',
+            skills: [],
+            interests: [],
+            current_level: CubeLevel.Iceberg_Fellow,
+            status: CubeStatus.alumni,
+            internship_status: 'Alumni'
+          }
+        });
+      } else {
+        console.log(`Updating Iceberg Fellow: ${fellow.email} as Cube #${fellow.cube_number}.`);
+        await tx.user.update({
+          where: { email: fellow.email },
+          data: {
+            name: fellow.name,
+            password_hash: passwordHash,
+            role: Role.CUBE,
+          }
+        });
+
+        const existingProfile = await tx.cubeProfile.findUnique({
+          where: { user_id: existingUser.id }
+        });
+
+        if (existingProfile) {
+          await tx.cubeProfile.update({
+            where: { user_id: existingUser.id },
+            data: {
+              cube_number: fellow.cube_number,
+              cohort: existingProfile.cohort || 'Iceberg Fellows',
+              current_level: CubeLevel.Iceberg_Fellow,
+              status: CubeStatus.alumni,
+              internship_status: 'Alumni'
+            }
+          });
+        } else {
+          await tx.cubeProfile.create({
+            data: {
+              user_id: existingUser.id,
+              cube_number: fellow.cube_number,
+              cohort: 'Iceberg Fellows',
+              university: '',
+              department: '',
+              skills: [],
+              interests: [],
+              current_level: CubeLevel.Iceberg_Fellow,
+              status: CubeStatus.alumni,
+              internship_status: 'Alumni'
+            }
+          });
+        }
+      }
+    }
+
+    const usedProfiles = await tx.cubeProfile.findMany({
+      select: { cube_number: true }
+    });
+    const usedNumbers = new Set(
+      usedProfiles
+        .map(profile => profile.cube_number)
+        .filter(number => !number.startsWith('TEMP-'))
+    );
+    let nextNum = 1;
+
+    for (const profile of displacedProfiles) {
+      let nextCubeNumber = cubeNumber(nextNum);
+      while (usedNumbers.has(nextCubeNumber)) {
+        nextNum += 1;
+        nextCubeNumber = cubeNumber(nextNum);
+      }
+
+      console.log(`Reassigning existing Cube ${profile.user.email} to Cube #${nextCubeNumber}.`);
+      await tx.cubeProfile.update({
+        where: { id: profile.id },
+        data: { cube_number: nextCubeNumber }
+      });
+      usedNumbers.add(nextCubeNumber);
+      nextNum += 1;
+    }
+  });
+
+  // 5. Seed Cubes (Students)
   const cubeStudents = [
     { name: 'Mesut Umur Tokyürek', email: 'umrtkyrk@gmail.com', internship_status: 'No mandatory internship' },
     { name: 'Barış Tepe', email: 'baristepe04@gmail.com', internship_status: 'Will submit mandatory internship document' },
@@ -208,19 +349,7 @@ async function main() {
 
     if (!existingUser) {
       console.log(`Creating Cube User: ${student.name} (${student.email})...`);
-      
-      // Determine the next cube number dynamically
-      const lastProfile = await prisma.cubeProfile.findFirst({
-        orderBy: { cube_number: 'desc' }
-      });
-      let nextNum = 1;
-      if (lastProfile) {
-        const parsed = parseInt(lastProfile.cube_number, 10);
-        if (!isNaN(parsed)) {
-          nextNum = parsed + 1;
-        }
-      }
-      const nextCubeNumber = String(nextNum).padStart(3, '0');
+      const nextCubeNumber = await getNextCubeNumber(prisma);
       const passwordHash = await bcrypt.hash(cubePassword, 10);
 
       await prisma.$transaction(async (tx) => {
@@ -257,109 +386,6 @@ async function main() {
           university: 'Muğla Sıtkı Koçman Üniversitesi'
         }
       });
-    }
-  }
-
-  // 5. Seed experienced Cubes as Iceberg Fellows / Alumni until a dedicated middle layer exists.
-  for (const fellow of icebergFellows) {
-    const passwordHash = await bcrypt.hash(cubePassword, 10);
-    const existingUser = await prisma.user.findUnique({
-      where: { email: fellow.email }
-    });
-
-    if (!existingUser) {
-      console.log(`Creating Iceberg Fellow: ${fellow.name} (${fellow.email})...`);
-
-      const lastProfile = await prisma.cubeProfile.findFirst({
-        orderBy: { cube_number: 'desc' }
-      });
-      let nextNum = 1;
-      if (lastProfile) {
-        const parsed = parseInt(lastProfile.cube_number, 10);
-        if (!isNaN(parsed)) {
-          nextNum = parsed + 1;
-        }
-      }
-      const nextCubeNumber = String(nextNum).padStart(3, '0');
-
-      await prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({
-          data: {
-            name: fellow.name,
-            email: fellow.email,
-            password_hash: passwordHash,
-            role: Role.CUBE
-          }
-        });
-
-        await tx.cubeProfile.create({
-          data: {
-            user_id: user.id,
-            cube_number: nextCubeNumber,
-            cohort: 'Iceberg Fellows',
-            university: '',
-            department: '',
-            skills: [],
-            interests: [],
-            current_level: CubeLevel.Iceberg_Fellow,
-            status: CubeStatus.alumni,
-            internship_status: 'Alumni'
-          }
-        });
-      });
-    } else {
-      console.log(`Iceberg Fellow already exists: ${fellow.email}. Updating level/status.`);
-      await prisma.user.update({
-        where: { email: fellow.email },
-        data: {
-          name: fellow.name,
-          password_hash: passwordHash,
-          role: Role.CUBE,
-        }
-      });
-
-      const existingProfile = await prisma.cubeProfile.findUnique({
-        where: { user_id: existingUser.id }
-      });
-
-      if (existingProfile) {
-        await prisma.cubeProfile.update({
-          where: { user_id: existingUser.id },
-          data: {
-            cohort: existingProfile.cohort || 'Iceberg Fellows',
-            current_level: CubeLevel.Iceberg_Fellow,
-            status: CubeStatus.alumni,
-            internship_status: 'Alumni'
-          }
-        });
-      } else {
-        const lastProfile = await prisma.cubeProfile.findFirst({
-          orderBy: { cube_number: 'desc' }
-        });
-        let nextNum = 1;
-        if (lastProfile) {
-          const parsed = parseInt(lastProfile.cube_number, 10);
-          if (!isNaN(parsed)) {
-            nextNum = parsed + 1;
-          }
-        }
-        const nextCubeNumber = String(nextNum).padStart(3, '0');
-
-        await prisma.cubeProfile.create({
-          data: {
-            user_id: existingUser.id,
-            cube_number: nextCubeNumber,
-            cohort: 'Iceberg Fellows',
-            university: '',
-            department: '',
-            skills: [],
-            interests: [],
-            current_level: CubeLevel.Iceberg_Fellow,
-            status: CubeStatus.alumni,
-            internship_status: 'Alumni'
-          }
-        });
-      }
     }
   }
 
