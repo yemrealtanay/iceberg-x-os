@@ -32,6 +32,7 @@ export const Profile: React.FC = () => {
   const [adminStatus, setAdminStatus] = useState('');
   const [adminMentorId, setAdminMentorId] = useState('');
   const [mentorsList, setMentorsList] = useState<any[]>([]);
+  const [mentorSearch, setMentorSearch] = useState('');
   const [adminSubmitting, setAdminSubmitting] = useState(false);
   const [adminSuccess, setAdminSuccess] = useState(false);
 
@@ -68,23 +69,18 @@ export const Profile: React.FC = () => {
   };
 
   const fetchMentors = async () => {
-    if (user?.role === 'ADMIN') {
-      try {
-        const cubesRes = await api.get('/cubes'); // simple fetch users
-        // Since we don't have a distinct mentors endpoint, we can find mentors by fetching directory of cubes or just mapping.
-        // Actually, we can get list of mentors from our seed data or profile details.
-        // For simplicity we will fetch and filter users or just support manual input, but let's query all users and check who is a MENTOR.
-        // For MVP, we can fetch all users if endpoint exists. Let's make a request to /cubes.
-        // Wait, since we know user profiles assigned_mentor maps to user, let's keep it simple.
-      } catch (e) {}
+    try {
+      const res = await api.get('/mentors');
+      setMentorsList(res);
+    } catch (e) {
+      console.error('Failed to fetch mentors', e);
     }
   };
 
   useEffect(() => {
     fetchProfileData();
-    // Load mentors list if Admin
     if (user?.role === 'ADMIN') {
-      // In a real app we'd load mentors. For this MVP, we will render a text field or standard options.
+      fetchMentors();
     }
   }, [id, user]);
 
@@ -374,14 +370,29 @@ export const Profile: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Assigned Mentor ID</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Assigned Mentor</label>
               <input
                 type="text"
-                placeholder="UUID of User Mentor"
+                placeholder="Filter mentors by name..."
+                value={mentorSearch}
+                onChange={e => setMentorSearch(e.target.value)}
+                className="p-1.5 px-2 bg-gray-50 border border-gray-100 rounded-lg text-[10px] outline-none placeholder:text-gray-400 font-semibold"
+              />
+              <select
                 value={adminMentorId}
                 onChange={e => setAdminMentorId(e.target.value)}
-                className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none"
-              />
+                className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none"
+              >
+                <option value="">No Mentor Assigned</option>
+                {mentorsList
+                  .filter(m => m.name.toLowerCase().includes(mentorSearch.toLowerCase()))
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.role === 'ADMIN' ? 'Admin' : 'Mentor'})
+                    </option>
+                  ))
+                }
+              </select>
             </div>
 
             <button type="submit" disabled={adminSubmitting} className="w-full mt-2 py-2 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors disabled:opacity-70">

@@ -129,6 +129,31 @@ router.post('/auth/change-password', requireAuth, async (req: AuthenticatedReque
   }
 });
 
+// Get list of all Admins and Mentors
+router.get('/mentors', requireAuth, async (req, res) => {
+  try {
+    const mentors = await prisma.user.findMany({
+      where: {
+        role: {
+          in: [Role.ADMIN, Role.MENTOR]
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+    return res.json(mentors);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // CUBES ROUTES
 // ==========================================

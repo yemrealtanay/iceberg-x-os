@@ -53,8 +53,8 @@ export const AdminUsers: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // Filter list of mentors for the assign mentor dropdown
-  const mentors = users.filter((u) => u.role === 'MENTOR');
+  // Filter list of mentors for the assign mentor dropdown (includes both mentors and admins)
+  const mentors = users.filter((u) => u.role === 'MENTOR' || u.role === 'ADMIN');
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,7 +325,9 @@ export const AdminUsers: React.FC = () => {
                     >
                       <option value="">Unassigned</option>
                       {mentors.map((m) => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.role === 'ADMIN' ? 'Admin' : 'Mentor'})
+                        </option>
                       ))}
                     </select>
                   </div>

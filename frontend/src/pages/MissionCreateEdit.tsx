@@ -22,6 +22,8 @@ export const MissionCreateEdit: React.FC = () => {
   const [difficultyLevel, setDifficultyLevel] = useState('Level_3_Working_POC');
   const [status, setStatus] = useState('idea_pool');
   const [mentorId, setMentorId] = useState('');
+  const [mentorsList, setMentorsList] = useState<any[]>([]);
+  const [mentorSearch, setMentorSearch] = useState('');
   const [slackChannelUrl, setSlackChannelUrl] = useState('');
   const [repositoryUrl, setRepositoryUrl] = useState('');
   const [demoUrl, setDemoUrl] = useState('');
@@ -55,6 +57,18 @@ export const MissionCreateEdit: React.FC = () => {
       fetchMission();
     }
   }, [id, isEditMode]);
+
+  useEffect(() => {
+    const fetchMentors = async () => {
+      try {
+        const res = await api.get('/mentors');
+        setMentorsList(res);
+      } catch (e) {
+        console.error('Failed to fetch mentors', e);
+      }
+    };
+    fetchMentors();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,16 +279,32 @@ export const MissionCreateEdit: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Assigned Mentor ID</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Assigned Mentor</label>
           <input
             type="text"
-            placeholder="UUID of mentor user"
+            placeholder="Filter mentors by name..."
+            value={mentorSearch}
+            onChange={(e) => setMentorSearch(e.target.value)}
+            disabled={submitting}
+            className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-magenta focus:bg-white text-xs font-semibold"
+          />
+          <select
             value={mentorId}
             onChange={(e) => setMentorId(e.target.value)}
             disabled={submitting}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-magenta focus:bg-white text-xs font-semibold"
-          />
+            className="w-full p-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none text-xs font-bold"
+          >
+            <option value="">No Mentor Assigned</option>
+            {mentorsList
+              .filter(m => m.name.toLowerCase().includes(mentorSearch.toLowerCase()))
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.role === 'ADMIN' ? 'Admin' : 'Mentor'})
+                </option>
+              ))
+            }
+          </select>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

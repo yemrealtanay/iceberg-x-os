@@ -37,5 +37,5 @@ WORKDIR /app/backend
 
 EXPOSE 5001
 
-# Run wait-db, migrations, database seed, and start server
-CMD ["sh", "-c", "node dist/wait-db.js && npx prisma migrate deploy && npx prisma db seed && npm start"]
+# Run wait-db, migrations, and start server
+CMD ["sh", "-c", "node dist/wait-db.js && npx prisma migrate deploy && npm start"]
