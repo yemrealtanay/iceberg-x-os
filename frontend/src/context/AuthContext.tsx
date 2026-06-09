@@ -8,6 +8,7 @@ interface User {
   role: 'ADMIN' | 'MENTOR' | 'CUBE';
   cubeProfileId?: string;
   cubeNumber?: string;
+  isFoundingCube?: boolean;
 }
 
 interface AuthContextType {

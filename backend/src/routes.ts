@@ -53,7 +53,8 @@ router.post('/auth/login', async (req, res) => {
         email: user.email,
         role: user.role,
         cubeProfileId: user.cube_profile?.id,
-        cubeNumber: user.cube_profile?.cube_number
+        cubeNumber: user.cube_profile?.cube_number,
+        isFoundingCube: user.cube_profile?.is_founding_cube
       }
     });
   } catch (error: any) {
@@ -80,7 +81,8 @@ router.get('/auth/me', requireAuth, async (req: AuthenticatedRequest, res) => {
       email: user.email,
       role: user.role,
       cubeProfileId: user.cube_profile?.id,
-      cubeNumber: user.cube_profile?.cube_number
+      cubeNumber: user.cube_profile?.cube_number,
+      isFoundingCube: user.cube_profile?.is_founding_cube
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });

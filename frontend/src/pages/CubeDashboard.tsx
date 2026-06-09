@@ -85,25 +85,55 @@ export const CubeDashboard: React.FC = () => {
   return (
     <div className="flex flex-col gap-8">
       {/* Cube Banner */}
-      <div className="bg-gradient-to-br from-[#120009] to-[#0a0006] text-white p-8 rounded-[2rem] shadow-premium flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 relative overflow-hidden">
+      <div className={`p-8 rounded-[2rem] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 relative overflow-hidden transition-all ${
+        profile.is_founding_cube
+          ? 'bg-gradient-to-br from-[#1a1103] to-[#0a0701] text-white border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.15)]'
+          : 'bg-gradient-to-br from-[#120009] to-[#0a0006] text-white shadow-premium'
+      }`}>
         {/* Glow */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-magenta/20 rounded-full filter blur-[80px] pointer-events-none"></div>
+        {profile.is_founding_cube ? (
+          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/15 rounded-full filter blur-[80px] pointer-events-none"></div>
+        ) : (
+          <div className="absolute top-0 right-0 w-80 h-80 bg-magenta/20 rounded-full filter blur-[80px] pointer-events-none"></div>
+        )}
 
         <div className="flex flex-col gap-1.5 relative z-10">
           <div className="flex items-center gap-3">
-            <span className="bg-magenta text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider">
+            <span className={`text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider ${
+              profile.is_founding_cube 
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-600 shadow-sm shadow-amber-500/20' 
+                : 'bg-magenta'
+            }`}>
               {profile.current_level.replace('_', ' ')}
             </span>
+            {profile.is_founding_cube && (
+              <span className="bg-amber-400/10 border border-amber-400/30 text-amber-300 font-extrabold text-[10px] px-3 py-1 rounded-full flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                Founding Cube
+              </span>
+            )}
             <span className="text-gray-400 font-bold text-sm">Cube #{profile.cube_number}</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight mt-1">{user?.name}</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight mt-1 flex items-center gap-2">
+            <span>{user?.name}</span>
+            {profile.is_founding_cube && <Sparkles className="w-6 h-6 text-amber-400 animate-pulse" />}
+          </h1>
           <p className="text-gray-400 text-sm font-medium">{profile.cohort} · {profile.university}</p>
+          
+          {profile.is_founding_cube && (
+            <div className="bg-amber-400/10 border border-amber-400/20 text-amber-200 text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 mt-2 max-w-lg">
+              <Sparkles className="w-4 h-4 text-amber-400 animate-bounce flex-shrink-0" />
+              <span>You are recognized as one of the elite <strong>Founding Cubes</strong> of the Iceberg X Portal.</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-8 relative z-10">
           <div className="text-center">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Badges Earned</p>
-            <h2 className="text-4xl font-extrabold text-magenta mt-1">{profile.cube_badges?.length || 0}</h2>
+            <h2 className={`text-4xl font-extrabold mt-1 ${
+              profile.is_founding_cube ? 'text-amber-400' : 'text-magenta'
+            }`}>{profile.cube_badges?.length || 0}</h2>
           </div>
           <div className="text-center border-l border-white/10 pl-8">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Status</p>

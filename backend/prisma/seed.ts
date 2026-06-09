@@ -69,6 +69,12 @@ async function main() {
     { name: 'Altuğ Ege Sarı', email: 'altug.ege@iceberg-digital.co.uk', password: staffPassword },
     { name: 'Bora Küçükkara', email: 'bora.kucukkara@iceberg-digital.co.uk', password: staffPassword },
     { name: 'Furkan Meraloğlu', email: 'furkan.meraloglu@iceberg-digital.co.uk', password: staffPassword },
+    { name: 'Ali Cebeci', email: 'ali.cebeci@iceberg-digital.co.uk', password: staffPassword },
+    { name: 'Seyfullah Bozkurt', email: 'seyfullah.bozkurt@iceberg-digital.co.uk', password: staffPassword },
+    { name: 'Damla Akkuş', email: 'damla.akkus@iceberg-digital.co.uk', password: staffPassword },
+    { name: 'Eren Aygün', email: 'eren.aygun@iceberg-digital.co.uk', password: staffPassword },
+    { name: 'Oğuzhan Esin', email: 'oguzhan.esin@iceberg-digital.co.uk', password: staffPassword },
+    { name: 'Gülcan Aydoğan', email: 'gulcan.aydogan@iceberg-digital.co.uk', password: staffPassword },
   ];
 
   const icebergFellows = [
@@ -146,12 +152,11 @@ async function main() {
         },
       });
     } else {
-      console.log(`Updating existing Admin credentials: ${adminData.email}...`);
+      console.log(`Updating existing Admin data: ${adminData.email}...`);
       await prisma.user.update({
         where: { email: adminData.email },
         data: {
           name: adminData.name,
-          password_hash: passwordHash,
           role: Role.ADMIN,
         },
       });
@@ -188,12 +193,11 @@ async function main() {
         },
       });
     } else {
-      console.log(`Updating existing Mentor credentials: ${mentorData.email}...`);
+      console.log(`Updating existing Mentor data: ${mentorData.email}...`);
       await prisma.user.update({
         where: { email: mentorData.email },
         data: {
           name: mentorData.name,
-          password_hash: passwordHash,
           role: Role.MENTOR,
         },
       });
@@ -248,7 +252,8 @@ async function main() {
             interests: [],
             current_level: CubeLevel.Iceberg_Fellow,
             status: CubeStatus.alumni,
-            internship_status: 'Alumni'
+            internship_status: 'Alumni',
+            is_founding_cube: true
           }
         });
       } else {
@@ -257,7 +262,6 @@ async function main() {
           where: { email: fellow.email },
           data: {
             name: fellow.name,
-            password_hash: passwordHash,
             role: Role.CUBE,
           }
         });
@@ -274,7 +278,8 @@ async function main() {
               cohort: existingProfile.cohort || 'Iceberg Fellows',
               current_level: CubeLevel.Iceberg_Fellow,
               status: CubeStatus.alumni,
-              internship_status: 'Alumni'
+              internship_status: 'Alumni',
+              is_founding_cube: true
             }
           });
         } else {
@@ -289,7 +294,8 @@ async function main() {
               interests: [],
               current_level: CubeLevel.Iceberg_Fellow,
               status: CubeStatus.alumni,
-              internship_status: 'Alumni'
+              internship_status: 'Alumni',
+              is_founding_cube: true
             }
           });
         }
@@ -373,7 +379,8 @@ async function main() {
             interests: [],
             current_level: CubeLevel.Cube,
             status: CubeStatus.active,
-            internship_status: student.internship_status
+            internship_status: student.internship_status,
+            is_founding_cube: true
           }
         });
       });
@@ -383,7 +390,8 @@ async function main() {
         where: { user_id: existingUser.id },
         data: {
           internship_status: student.internship_status,
-          university: 'Muğla Sıtkı Koçman Üniversitesi'
+          university: 'Muğla Sıtkı Koçman Üniversitesi',
+          is_founding_cube: true
         }
       });
     }

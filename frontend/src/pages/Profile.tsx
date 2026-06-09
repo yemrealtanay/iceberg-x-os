@@ -215,11 +215,27 @@ export const Profile: React.FC = () => {
       <div className="flex flex-col gap-6">
         
         {/* Core Info Card */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-5 relative overflow-hidden">
+        <div className={`rounded-2xl p-6 flex flex-col gap-5 relative overflow-hidden ${
+          profile.is_founding_cube
+            ? 'bg-gradient-to-br from-amber-50/20 via-white to-white border-2 border-amber-400/80 shadow-[0_0_15px_rgba(245,158,11,0.08)]'
+            : 'bg-white border border-gray-100 shadow-subtle'
+        }`}>
           <div className="flex justify-between items-start">
-            <span className="bg-magenta/5 border border-magenta/10 text-magenta font-extrabold text-xs px-2.5 py-1 rounded">
-              Cube #{profile.cube_number}
-            </span>
+            <div className="flex items-center gap-2">
+              {profile.is_founding_cube && (
+                <span className="bg-amber-400/10 border border-amber-400/30 text-amber-700 font-extrabold text-xs px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
+                  Founding Cube
+                </span>
+              )}
+              <span className={`font-extrabold text-xs px-2.5 py-1 rounded ${
+                profile.is_founding_cube
+                  ? 'bg-amber-400/10 border border-amber-400/20 text-amber-700'
+                  : 'bg-magenta/5 border border-magenta/10 text-magenta'
+              }`}>
+                Cube #{profile.cube_number}
+              </span>
+            </div>
             {isOwner && (
               <button
                 onClick={() => setIsEditing(!isEditing)}
@@ -232,7 +248,10 @@ export const Profile: React.FC = () => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-extrabold text-gray-900 leading-snug">{profile.user.name}</h2>
+            <h2 className="text-2xl font-extrabold text-gray-900 leading-snug flex items-center gap-2">
+              <span>{profile.user.name}</span>
+              {profile.is_founding_cube && <Sparkles className="w-5 h-5 text-amber-500 animate-pulse flex-shrink-0" />}
+            </h2>
             <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mt-1">
               {profile.current_level.replace('_', ' ')}
             </p>
