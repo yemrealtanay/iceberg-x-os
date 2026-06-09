@@ -18,7 +18,7 @@ export const Layout: React.FC = () => {
 
   const getLinks = () => {
     const common = [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/directory', label: 'Cube Directory', icon: Users },
       { path: '/missions', label: 'Missions', icon: Rocket },
       { path: '/vault', label: 'Cube Vault', icon: FolderOpen },
@@ -54,7 +54,7 @@ export const Layout: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/dashboard" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+              <Link to="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
                 <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-magenta to-magenta-hover text-white flex items-center justify-center font-extrabold text-sm shadow-md">
                   X
                 </span>
