@@ -25,7 +25,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children, allowedRoles }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect to home dashboard if unauthorized
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

@@ -17,7 +17,7 @@ export const Login: React.FC = () => {
   // If already logged in, redirect to home
   React.useEffect(() => {
     if (user) {
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
 
@@ -35,7 +35,7 @@ export const Login: React.FC = () => {
       const data = await api.post('/auth/login', { email, password });
       login(data.token, data.user);
       
-      const origin = (location.state as any)?.from?.pathname || '/';
+      const origin = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(origin, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');

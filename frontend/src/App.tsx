@@ -5,6 +5,7 @@ import { RouteGuard } from './components/RouteGuard';
 import { Layout } from './components/Layout';
 
 // Import Pages
+import { Welcome } from './pages/Welcome';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Directory } from './pages/Directory';
@@ -19,18 +20,21 @@ import { Badges } from './pages/Badges';
 import { CubeVault } from './pages/CubeVault';
 import { DemoDays } from './pages/DemoDays';
 import { AdminUsers } from './pages/AdminUsers';
+import { AdminApplications } from './pages/AdminApplications';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public Welcome Landing Route */}
+          <Route path="/" element={<Welcome />} />
+
           {/* Public Login Route */}
           <Route path="/login" element={<Login />} />
 
           {/* Secure App Routes */}
           <Route
-            path="/"
             element={
               <RouteGuard>
                 <Layout />
@@ -38,7 +42,7 @@ function App() {
             }
           >
             {/* Dashboard Router */}
-            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
 
             {/* Cube Directory & Profile */}
             <Route path="directory" element={<Directory />} />
@@ -119,10 +123,20 @@ function App() {
                 </RouteGuard>
               }
             />
+
+            {/* Admin-only Recruitment Applications */}
+            <Route
+              path="admin/applications"
+              element={
+                <RouteGuard allowedRoles={['ADMIN']}>
+                  <AdminApplications />
+                </RouteGuard>
+              }
+            />
           </Route>
 
           {/* Fallback Catch-all redirecting to Dashboard */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -322,3 +322,18 @@ model DemoDayPresentation {
   created_at         DateTime        @default(now())
   updated_at         DateTime        @updatedAt
 }
+
+model CubeApplication {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  university    String
+  degree        String
+  year_of_study String
+  why_join      String   @db.Text
+  linkedin_url  String?
+  github_url    String?
+  status        String   @default("pending") // pending, approved, rejected
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}

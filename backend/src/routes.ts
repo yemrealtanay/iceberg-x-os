@@ -1219,6 +1219,7 @@ router.post('/ai/feedback-draft', requireAuth, isMentorOrAdmin, async (req, res)
 router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
   try {
     const totalCubes = await prisma.cubeProfile.count();
+    const pendingApplicationsCount = await prisma.cubeApplication.count({ where: { status: 'pending' } });
     const activeCubes = await prisma.cubeProfile.count({ where: { status: 'active' } });
     const activeMissions = await prisma.mission.count({
       where: {
@@ -1307,7 +1308,8 @@ router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
       recentDemos,
       recentBadges,
       progressionCubes,
-      inactiveRiskCubes
+      inactiveRiskCubes,
+      pendingApplicationsCount
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -1817,6 +1819,173 @@ router.post('/missions/:missionId/approve', requireAuth, isMentorOrAdmin, async 
       success: true,
       mission: updatedMission
     });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// CUBE APPLICATIONS & RECRUITMENT ROUTES
+// ==========================================
+
+// Public Route: Submit an application
+router.post('/applications', async (req, res) => {
+  try {
+    const { name, email, university, degree, year_of_study, why_join, linkedin_url, github_url } = req.body;
+
+    if (!name || !email || !university || !degree || !year_of_study || !why_join) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'A user with this email address already exists.' });
+    }
+
+    const existingApp = await prisma.cubeApplication.findFirst({
+      where: { email, status: 'pending' }
+    });
+    if (existingApp) {
+      return res.status(400).json({ error: 'A pending application with this email address already exists.' });
+    }
+
+    const application = await prisma.cubeApplication.create({
+      data: {
+        name,
+        email,
+        university,
+        degree,
+        year_of_study,
+        why_join,
+        linkedin_url,
+        github_url
+      }
+    });
+
+    return res.status(201).json({ success: true, application });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin Route: List all applications
+router.get('/admin/applications', requireAuth, isAdmin, async (req, res) => {
+  try {
+    const applications = await prisma.cubeApplication.findMany({
+      orderBy: { created_at: 'desc' }
+    });
+    return res.json(applications);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin Route: Approve/Reject an application
+router.patch('/admin/applications/:id', requireAuth, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, cohort } = req.body;
+
+    if (!status || !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const application = await prisma.cubeApplication.findUnique({
+      where: { id }
+    });
+
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    if (application.status !== 'pending') {
+      return res.status(400).json({ error: 'Application has already been processed' });
+    }
+
+    if (status === 'rejected') {
+      const updated = await prisma.cubeApplication.update({
+        where: { id },
+        data: { status: 'rejected' }
+      });
+      return res.json({ success: true, application: updated });
+    }
+
+    if (!cohort) {
+      return res.status(400).json({ error: 'Cohort is required for approval' });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email: application.email } });
+    if (existingUser) {
+      const updated = await prisma.cubeApplication.update({
+        where: { id },
+        data: { status: 'approved' }
+      });
+      return res.json({ success: true, application: updated, message: 'User already exists, application marked as approved' });
+    }
+
+    // Determine the next cube number
+    const lastProfile = await prisma.cubeProfile.findFirst({
+      orderBy: { cube_number: 'desc' }
+    });
+    let nextNum = 1;
+    if (lastProfile) {
+      const parsed = parseInt(lastProfile.cube_number, 10);
+      if (!isNaN(parsed)) {
+        nextNum = parsed + 1;
+      }
+    }
+    const nextCubeNumber = String(nextNum).padStart(3, '0');
+
+    const result = await prisma.$transaction(async (tx) => {
+      const passwordHash = await bcrypt.hash('password123', 10);
+
+      const user = await tx.user.create({
+        data: {
+          name: application.name,
+          email: application.email,
+          password_hash: passwordHash,
+          role: Role.CUBE
+        }
+      });
+
+      const profile = await tx.cubeProfile.create({
+        data: {
+          user_id: user.id,
+          cube_number: nextCubeNumber,
+          cohort,
+          university: application.university,
+          department: application.degree,
+          github_url: application.github_url || null,
+          linkedin_url: application.linkedin_url || null,
+          skills: [],
+          interests: [],
+          current_level: CubeLevel.Cube,
+          status: CubeStatus.active
+        }
+      });
+
+      const updated = await tx.cubeApplication.update({
+        where: { id },
+        data: { status: 'approved' }
+      });
+
+      return { user, profile, application: updated };
+    });
+
+    return res.json({ success: true, ...result });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin Route: Delete application
+router.delete('/admin/applications/:id', requireAuth, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cubeApplication.delete({
+      where: { id }
+    });
+    return res.json({ success: true, message: 'Application deleted successfully' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

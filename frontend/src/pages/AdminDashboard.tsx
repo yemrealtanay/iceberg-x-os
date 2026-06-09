@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
-import { Users, Rocket, Calendar, Award, AlertCircle, ArrowUpRight, TrendingUp } from 'lucide-react';
+import { Users, Rocket, Calendar, Award, AlertCircle, ArrowUpRight, TrendingUp, FileText } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -43,18 +43,32 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="flex flex-col gap-8">
       {/* Welcome Heading */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Admin Operations</h1>
           <p className="text-gray-500 mt-1">Real-time status of the Iceberg X fellowship programme.</p>
         </div>
-        <Link
-          to="/admin/users"
-          className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 font-bold text-xs rounded-xl hover:bg-black transition-colors shadow-sm"
-        >
-          <Users className="w-4 h-4" />
-          <span>Manage Users</span>
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            to="/admin/applications"
+            className="flex items-center gap-2 bg-white text-magenta border border-magenta/20 px-4 py-2.5 font-bold text-xs rounded-xl hover:bg-magenta/5 transition-colors shadow-sm"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Review Applications</span>
+            {data.pendingApplicationsCount > 0 && (
+              <span className="ml-1 bg-magenta text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                {data.pendingApplicationsCount}
+              </span>
+            )}
+          </Link>
+          <Link
+            to="/admin/users"
+            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 font-bold text-xs rounded-xl hover:bg-black transition-colors shadow-sm"
+          >
+            <Users className="w-4 h-4" />
+            <span>Manage Users</span>
+          </Link>
+        </div>
       </div>
 
       {/* Metrics Row */}
