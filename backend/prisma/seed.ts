@@ -62,6 +62,44 @@ async function main() {
     { name: 'Doğancan Acar', email: 'dogancan.acar@iceberg-digital.co.uk' },
   ];
 
+  const badgeDefinitions = [
+    { name: 'Builder', description: 'Awarded for consistently turning ideas into working outputs.', icon: 'Builder' },
+    { name: 'Innovator', description: 'Awarded for original thinking and novel solution ideas.', icon: 'Innovator' },
+    { name: 'Collaborator', description: 'Awarded for strong teamwork and constructive contribution.', icon: 'Collaborator' },
+    { name: 'Pathfinder', description: 'Awarded for finding a practical route through ambiguity.', icon: 'Pathfinder' },
+    { name: 'Pioneer', description: 'Awarded for work that opens a new direction for the programme.', icon: 'Pioneer' },
+
+    { name: 'Researcher', description: 'Awarded for strong research discipline and useful findings.', icon: 'Researcher' },
+    { name: 'Deep Diver', description: 'Awarded for going beyond surface-level investigation.', icon: 'DeepDiver' },
+    { name: 'Tech Scout', description: 'Awarded for identifying promising technologies, tools, or patterns.', icon: 'TechScout' },
+    { name: 'Clarity Maker', description: 'Awarded for making complex findings easy to understand.', icon: 'ClarityMaker' },
+    { name: 'Risk Spotter', description: 'Awarded for identifying risks early and clearly.', icon: 'RiskSpotter' },
+
+    { name: 'Demo Maker', description: 'Awarded for creating a clear and usable demo experience.', icon: 'DemoMaker' },
+    { name: 'POC Finisher', description: 'Awarded for bringing a proof of concept to completion.', icon: 'POCFinisher' },
+    { name: 'Show, Don’t Tell', description: 'Awarded for demonstrating progress through working evidence.', icon: 'ShowDontTell' },
+    { name: 'Prototype Polisher', description: 'Awarded for improving prototype quality and presentation.', icon: 'PrototypePolisher' },
+    { name: 'From Idea to Screen', description: 'Awarded for translating an idea into a visible product experience.', icon: 'FromIdeaToScreen' },
+
+    { name: 'Clear Communicator', description: 'Awarded for clear written and verbal communication.', icon: 'ClearCommunicator' },
+    { name: 'Daily Signal', description: 'Awarded for consistent and useful daily progress updates.', icon: 'DailySignal' },
+    { name: 'No Ghosting', description: 'Awarded for staying responsive and visible during a mission.', icon: 'NoGhosting' },
+    { name: 'Early Warner', description: 'Awarded for raising blockers and risks early.', icon: 'EarlyWarner' },
+    { name: 'Feedback Receiver', description: 'Awarded for receiving feedback well and acting on it.', icon: 'FeedbackReceiver' },
+
+    { name: 'Self-Aware Cube', description: 'Awarded for honest reflection and self-awareness.', icon: 'SelfAwareCube' },
+    { name: 'No Excuses', description: 'Awarded for taking responsibility without deflection.', icon: 'NoExcuses' },
+    { name: 'Better Next Time', description: 'Awarded for turning lessons into concrete improvements.', icon: 'BetterNextTime' },
+    { name: 'Growth Mindset', description: 'Awarded for visible learning, adaptation, and resilience.', icon: 'GrowthMindset' },
+    { name: 'Own Your Work', description: 'Awarded for taking ownership of outputs and outcomes.', icon: 'OwnYourWork' },
+
+    { name: 'Mission Lead', description: 'Awarded for leading a mission with accountability.', icon: 'MissionLead' },
+    { name: 'Team Organizer', description: 'Awarded for coordinating people, tasks, and rhythm.', icon: 'TeamOrganizer' },
+    { name: 'Initiative Taker', description: 'Awarded for proactively moving work forward.', icon: 'InitiativeTaker' },
+    { name: 'Mentor Mindset', description: 'Awarded for helping others learn and progress.', icon: 'MentorMindset' },
+    { name: 'Future Lead', description: 'Awarded for showing leadership potential.', icon: 'FutureLead' },
+  ];
+
   // 1. Clean up the old default seed admin if it exists
   const oldAdmin = await prisma.user.findUnique({
     where: { email: 'admin@iceberg.com' },
@@ -323,6 +361,19 @@ async function main() {
         });
       }
     }
+  }
+
+  // 6. Seed badge definitions only. Awards are intentionally not created here.
+  for (const badge of badgeDefinitions) {
+    console.log(`Upserting Badge: ${badge.name}...`);
+    await prisma.badge.upsert({
+      where: { name: badge.name },
+      update: {
+        description: badge.description,
+        icon: badge.icon,
+      },
+      create: badge,
+    });
   }
 
   console.log('Seed completed successfully!');
