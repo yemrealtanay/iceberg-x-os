@@ -222,9 +222,8 @@ export const Welcome: React.FC = () => {
       {/* NAV */}
       <nav id="nav" className={`fixed top-0 left-0 right-0 z-[100] padding py-4 transition-all duration-500 ${scrolled ? 'bg-[#f6f6f8]/78 backdrop-blur-md border-b border-black/5 shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-[1200px] mx-auto px-7 flex items-center justify-between">
-          <a href="#top" className="flex items-center gap-2 font-bold text-[1.12rem] tracking-tight">
-            <span className="w-[30px] h-[30px] rounded-lg bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] grid place-items-center text-white text-[0.85rem] font-extrabold shadow-[0_6px_16px_-4px_rgba(230,0,126,0.5)]">X</span>
-            <span>Iceberg<span className="text-[#e6007e]">X</span></span>
+          <a href="#top" className="flex items-center gap-2 tracking-tight hover:opacity-90 transition-opacity">
+            <img src="/images/iceberg-x-logo-transparent.png" alt="Iceberg X Logo" className="h-8 object-contain" />
           </a>
           <div className="hidden md:flex gap-8 items-center text-[0.9rem] font-medium text-slate-800">
             <a href="#what" className="hover:text-[#e6007e] transition-colors">The Programme</a>
@@ -250,9 +249,9 @@ export const Welcome: React.FC = () => {
         <div className="max-w-[1200px] mx-auto px-7 grid grid-cols-1 lg:grid-cols-2 gap-[60px] items-center w-full">
           <div className="flex flex-col gap-6">
             <span className="text-[#e6007e] text-[0.72rem] font-bold uppercase tracking-[0.18em]">Iceberg X — An Elite Technology Fellowship</span>
-            <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-none">
-              Iceberg <span className="welcome-grad-text">X</span>
-            </h1>
+            <div className="py-2">
+              <img src="/images/iceberg-x-logo-transparent.png" alt="Iceberg X Logo" className="h-14 sm:h-20 object-contain" />
+            </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-600 leading-tight">Building the Next Generation of Innovators</h2>
             <p className="text-lg text-slate-600 leading-relaxed max-w-[520px]">
               Most internships teach you how a company works. <strong className="font-semibold text-slate-900">Iceberg X gives you the opportunity to prove what you're capable of building.</strong>
@@ -803,9 +802,8 @@ export const Welcome: React.FC = () => {
       <footer className="bg-[#111111] text-white/60 py-16 border-t border-white/5">
         <div className="max-w-[1200px] mx-auto px-7">
           <div className="flex flex-wrap justify-between items-center gap-6 pb-8 border-b border-white/10">
-            <a href="#top" className="flex items-center gap-2 font-bold text-white text-[1.12rem] tracking-tight">
-              <span className="w-[30px] h-[30px] rounded-lg bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] grid place-items-center text-white text-[0.85rem] font-extrabold">X</span>
-              <span>Iceberg<span className="text-[#ff99cc]">X</span></span>
+            <a href="#top" className="flex items-center gap-2 tracking-tight hover:opacity-90 transition-opacity">
+              <img src="/images/iceberg-x-logo-transparent.png" alt="Iceberg X Logo" className="h-8 object-contain brightness-0 invert" />
             </a>
             <div className="flex flex-wrap gap-7 text-sm font-medium">
               <a href="#what" className="hover:text-white transition-colors">The Programme</a>

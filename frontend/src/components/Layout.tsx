@@ -54,10 +54,8 @@ export const Layout: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
-                <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-magenta to-magenta-hover text-white flex items-center justify-center font-extrabold text-sm shadow-md">
-                  X
-                </span>
+              <Link to="/" className="flex items-center gap-2 font-bold text-base tracking-tight hover:opacity-90 transition-opacity">
+                <img src="/images/xicon.jpg" alt="Icon" className="w-8 h-8 rounded-lg object-cover shadow-sm border border-gray-100" />
                 <span>Iceberg<span className="text-magenta font-extrabold">X</span> OS</span>
               </Link>
             </div>
@@ -71,13 +69,13 @@ export const Layout: React.FC = () => {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
                       isActive
                         ? 'bg-magenta text-white shadow-md shadow-magenta/20'
                         : 'text-gray-600 hover:text-magenta hover:bg-gray-50'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                     <span>{link.label}</span>
                   </Link>
                 );
@@ -85,31 +83,31 @@ export const Layout: React.FC = () => {
             </div>
 
             {/* Right-side User Actions */}
-            <div className="hidden md:flex items-center gap-4">
-              <div className="flex items-center gap-2.5">
+            <div className="hidden md:flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div className="text-right">
-                  <p className="text-sm font-bold leading-tight">{user.name}</p>
-                  <p className="text-xs text-magenta font-semibold tracking-wider uppercase">{user.role}</p>
+                  <p className="text-xs font-bold leading-tight text-gray-900">{user.name}</p>
+                  <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
                 </div>
                 {user.cubeNumber && (
-                  <div className="bg-magenta/10 text-magenta font-bold px-2 py-0.5 rounded text-xs">
+                  <div className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-[10px]">
                     #{user.cubeNumber}
                   </div>
                 )}
               </div>
               <Link
                 to="/change-password"
-                className="p-2 text-gray-400 hover:text-magenta hover:bg-gray-50 rounded-full transition-colors duration-200"
+                className="p-1.5 text-gray-400 hover:text-magenta hover:bg-gray-50 rounded-full transition-colors duration-200"
                 title="Change password"
               >
-                <KeyRound className="w-5 h-5" />
+                <KeyRound className="w-4 h-4" />
               </Link>
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-magenta hover:bg-gray-50 rounded-full transition-colors duration-200"
+                className="p-1.5 text-gray-400 hover:text-magenta hover:bg-gray-50 rounded-full transition-colors duration-200"
                 title="Logout"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
 

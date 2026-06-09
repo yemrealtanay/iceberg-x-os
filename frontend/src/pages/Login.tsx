@@ -50,9 +50,7 @@ export const Login: React.FC = () => {
         
         {/* Header */}
         <div className="text-center flex flex-col gap-2">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-br from-magenta to-magenta-hover text-white flex items-center justify-center font-black text-xl shadow-lg shadow-magenta/30 animate-pulse">
-            X
-          </div>
+          <img src="/images/xicon.jpg" alt="Icon" className="mx-auto w-14 h-14 rounded-2xl object-cover shadow-lg border border-gray-100 animate-pulse" />
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-4">Iceberg X OS</h1>
           <p className="text-gray-400 text-sm font-semibold tracking-wide uppercase mt-1">Programme operating layer</p>
         </div>
