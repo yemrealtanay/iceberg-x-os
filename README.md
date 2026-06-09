@@ -89,24 +89,70 @@ All seeded users use the password: `password123`
 
 ---
 
-## Explanation of User Roles & Permissions
+## What Each User Type Can Do
 
-1. **Admin**:
-   - Complete program overview.
-   - User creation and Cube Profile generation.
-   - Allocating assigned mentors.
-   - Managing badges definitions and awarding badges.
-   - Setting final mission decisions (Promote to backlog, archive, keep as internal tool).
-2. **Mentor**:
-   - Manage assigned Cubes and review their daily/weekly updates.
-   - Set R&D mission status and add team assignments.
-   - Score Demo presentations (1 to 5 stars on 9 metrics).
-   - Write strengths, weaknesses, private notes, and trigger AI drafts.
-3. **Cube**:
-   - Submit daily/weekly updates.
-   - Register Demo submissions (with the mandatory **"What could we have done better?"** self-reflection).
-   - View assigned mission team members, roles, earned badges, and public mentor feedback.
-   - *Security: Cubes cannot access private mentor notes or edit scorecard details.*
+Iceberg X OS is built around three main user types: **Admin**, **Mentor**, and **Cube**. After login, all roles can access the shared workspace areas such as Dashboard, Cube Directory, Missions, Cube Vault, and Badges. Create, edit, review, and administration permissions vary by role.
+
+### Admin
+
+Admin users own the operational layer of the programme. They manage people, missions, programme quality, and final administrative decisions.
+
+Admins can:
+- Monitor programme health from the Admin Dashboard: total Cubes, active Cubes, active missions, upcoming Demo Days, recent demo submissions, recent badges, progression recommendations, and inactive-risk signals.
+- Create Admin, Mentor, or Cube users. When creating a Cube, they can define the Cube number, cohort, university, department, social links, skills/interests, and assigned mentor.
+- Review Cube applications, approve or reject applicants, and delete applications. Approved applications can automatically create Cube user/profile records.
+- Update Cube progression fields such as current level, fellowship status, and assigned mentor.
+- Create and edit R&D missions, update mission status, and set final mission decisions.
+- Create mission teams and assign Cubes to teams with team roles.
+- Schedule Demo Days, add presentations, and approve mission completion.
+- Create badge definitions, award badges, delete badge definitions, or revoke awarded badges.
+- Delete operational records such as mentor feedback, updates, demo submissions, and missions.
+- Use AI helpers to generate mission summaries, Cube progress summaries, and mentor feedback drafts.
+
+Typical Admin flow: review applications, prepare Cube/Mentor accounts, set up missions and teams, track Demo Day/review activity, and update progression decisions.
+
+### Mentor
+
+Mentor users guide assigned Cubes and missions. Their focus is delivery quality, feedback, blockers, demo review, and progression recommendations.
+
+Mentors can:
+- Use the Mentor Dashboard to see assigned missions, assigned Cubes, pending demo reviews, recent update activity, and Cubes waiting for feedback.
+- Create or edit R&D missions, including mission status, mentor assignment, repository/demo/slack links, and other mission details.
+- Create teams and manage mission team member assignments.
+- Read Cube daily, weekly, and mission progress updates, including blockers.
+- Review demo submissions and submit scorecards.
+- Evaluate Cubes across 9 scorecard metrics: technical ability, research ability, demo output, ownership, communication, leadership, product thinking, reliability, and self reflection.
+- Enter strengths, areas to improve, private notes, and recommended next steps.
+- Choose whether feedback is visible to the Cube or kept private for Admin/Mentor review only.
+- Award badges and associate them with a mission or general fellowship achievement.
+- Help schedule Demo Days and add presentations.
+- Use AI helpers to generate mission summaries and feedback drafts.
+
+Typical Mentor flow: check assigned missions, read Cube updates, identify blockers, review demo submissions, submit scorecards, separate public feedback from private notes, and add progression recommendations where needed.
+
+### Cube
+
+Cube users are programme participants and builders. Their workspace is centered on assigned missions, progress reporting, demo submissions, reflection, and feedback visibility.
+
+Cubes can:
+- Use the Cube Dashboard to see their Cube number, current level, status, earned badges, assigned mentor, active mission, active team, and upcoming Demo Day.
+- Open assigned mission details such as description, context, problem statement, expected deliverables, Slack channel, repository link, and demo link.
+- Submit daily, weekly, or mission progress updates, including optional blockers.
+- Submit Demo Day material with summary, what was built, what was learned, what worked well, and the mandatory **"What could we have done better?"** reflection.
+- Attach repository, pull request, live demo, document, and video links to demo submissions.
+- Use the AI Reflection Helper to improve reflection drafts.
+- Edit their own public profile: name, university, department, GitHub/GitLab/LinkedIn, Slack handle, internship status, skills, and interests.
+- Browse Cube Directory, Missions, Cube Vault, and Badges.
+- View earned badges and mentor feedback that has been explicitly made visible to them.
+- Submit individual mission reflections. When all team reflections are submitted, the mission can move into pending approval.
+
+Cube security boundaries:
+- Cubes cannot edit another Cube profile.
+- Cubes cannot view private mentor notes.
+- Cubes cannot create or edit scorecards or mentor feedback records.
+- Cubes cannot manage users, badge definitions, mission deletion, or programme progression.
+
+Typical Cube flow: follow the active mission, submit updates, report blockers, submit demo material and reflection, then track public feedback and badges.
 
 ---
 
