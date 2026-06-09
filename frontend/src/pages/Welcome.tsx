@@ -183,10 +183,7 @@ export const Welcome: React.FC = () => {
 
   const journeySteps = [
     { title: 'Cube', desc: 'Where every journey begins.' },
-    { title: 'Senior Cube', desc: 'Trusted with bigger problems.' },
-    { title: 'Lead Cube', desc: 'Leads projects and other Cubes.' },
-    { title: 'Cube Mentor', desc: 'Guides the next generation.' },
-    { title: 'Iceberg Fellow', desc: 'The highest recognition there is.', peak: true },
+    { title: 'Senior Cube', desc: 'Trusted with bigger problems and deeper ownership.', peak: true },
   ];
 
   const badges = [
@@ -208,8 +205,7 @@ export const Welcome: React.FC = () => {
   const hofCategories = [
     { icon: 'f', title: 'Founding Cubes', desc: 'The first cohort — forever first.' },
     { icon: 'p', title: 'Pioneer Award Winners', desc: 'Cubes whose work shaped real products.' },
-    { icon: 'm', title: 'Cube Mentors', desc: 'Those who guide the next generation.' },
-    { icon: 'fel', title: 'Iceberg Fellows', desc: 'The highest honour on the Wall.' },
+    { icon: 'm', title: 'Senior Cubes', desc: 'Experienced Cubes trusted with deeper ownership.' },
   ];
 
   // Dynamic network SVG render coordinate calculations
@@ -559,6 +555,23 @@ export const Welcome: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-[#111113] border border-white/10 rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.16)] hover:translate-y-[-8px] transition-all flex flex-col gap-5 relative overflow-hidden min-h-[228px]">
+              <div className="absolute -right-10 -top-10 w-36 h-36 rounded-full border border-white/10 opacity-70"></div>
+              <div className="absolute right-4 bottom-2 text-[6.5rem] font-black leading-none text-white/[0.035] select-none">X</div>
+              <div className="relative z-10 flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[10px] text-[#ff99cc] font-extrabold tracking-[0.22em] uppercase">Active</div>
+                  <h4 className="mt-3 text-3xl font-black text-white tracking-tight">#000</h4>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white/60">
+                  Classified
+                </span>
+              </div>
+              <div className="relative z-10 mt-auto">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">The Original Cube</p>
+                <p className="mt-2 text-xs font-semibold leading-relaxed text-white/50">No further information available.</p>
+              </div>
+            </div>
             {hofCategories.map((item, idx) => (
               <div key={idx} className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm hover:translate-y-[-8px] hover:shadow-lg transition-all flex flex-col gap-4">
                 <div className="w-[44px] h-[44px] rounded-xl bg-slate-100 flex items-center justify-center text-[#e6007e]">

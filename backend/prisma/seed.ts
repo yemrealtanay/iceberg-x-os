@@ -77,7 +77,13 @@ async function main() {
     { name: 'Gülcan Aydoğan', email: 'gulcan.aydogan@iceberg-digital.co.uk', password: staffPassword },
   ];
 
-  const icebergFellows = [
+  const originalCube = {
+    name: 'Cube #000',
+    email: 'original.cube@iceberg-digital.co.uk',
+    cube_number: '000',
+  };
+
+  const seniorCubes = [
     { name: 'Elif Yıldız', email: 'elif.yildiz@iceberg-digital.co.uk', cube_number: '001' },
     { name: 'İlayda Günay', email: 'ilayda.gunay@iceberg-digital.co.uk', cube_number: '002' },
     { name: 'Özcan Yıldızhan', email: 'ozcan.yildizhan@iceberg-digital.co.uk', cube_number: '003' },
@@ -204,14 +210,14 @@ async function main() {
     }
   }
 
-  // 4. Seed experienced Cubes first. They are the original Cubes and keep #001-#006.
-  const fellowEmails = icebergFellows.map(fellow => fellow.email);
+  // 4. Seed the original Cube and experienced Cubes first. They keep #000-#006.
+  const reservedCubeEmails = [originalCube.email, ...seniorCubes.map(cube => cube.email)];
   await prisma.$transaction(async (tx) => {
-    const reservedNumbers = icebergFellows.map(fellow => fellow.cube_number);
+    const reservedNumbers = [originalCube.cube_number, ...seniorCubes.map(cube => cube.cube_number)];
     const displacedProfiles = await tx.cubeProfile.findMany({
       where: {
         cube_number: { in: reservedNumbers },
-        user: { email: { notIn: fellowEmails } }
+        user: { email: { notIn: reservedCubeEmails } }
       },
       include: { user: true },
       orderBy: { cube_number: 'asc' }
@@ -224,14 +230,90 @@ async function main() {
       });
     }
 
-    for (const fellow of icebergFellows) {
+    const originalCubePasswordHash = await bcrypt.hash(cubePassword, 10);
+    const existingOriginalUser = await tx.user.findUnique({
+      where: { email: originalCube.email }
+    });
+
+    if (!existingOriginalUser) {
+      console.log(`Creating Original Cube: ${originalCube.name} (${originalCube.email}) as Cube #${originalCube.cube_number}...`);
+      const user = await tx.user.create({
+        data: {
+          name: originalCube.name,
+          email: originalCube.email,
+          password_hash: originalCubePasswordHash,
+          role: Role.CUBE
+        }
+      });
+
+      await tx.cubeProfile.create({
+        data: {
+          user_id: user.id,
+          cube_number: originalCube.cube_number,
+          cohort: 'Unknown',
+          university: '',
+          department: '',
+          skills: [],
+          interests: [],
+          current_level: CubeLevel.Cube,
+          status: CubeStatus.active,
+          internship_status: 'No further information available.',
+          is_founding_cube: false
+        }
+      });
+    } else {
+      console.log(`Updating Original Cube: ${originalCube.email} as Cube #${originalCube.cube_number}.`);
+      await tx.user.update({
+        where: { email: originalCube.email },
+        data: {
+          name: originalCube.name,
+          role: Role.CUBE,
+        }
+      });
+
+      const existingOriginalProfile = await tx.cubeProfile.findUnique({
+        where: { user_id: existingOriginalUser.id }
+      });
+
+      if (existingOriginalProfile) {
+        await tx.cubeProfile.update({
+          where: { user_id: existingOriginalUser.id },
+          data: {
+            cube_number: originalCube.cube_number,
+            cohort: 'Unknown',
+            current_level: CubeLevel.Cube,
+            status: CubeStatus.active,
+            internship_status: 'No further information available.',
+            is_founding_cube: false
+          }
+        });
+      } else {
+        await tx.cubeProfile.create({
+          data: {
+            user_id: existingOriginalUser.id,
+            cube_number: originalCube.cube_number,
+            cohort: 'Unknown',
+            university: '',
+            department: '',
+            skills: [],
+            interests: [],
+            current_level: CubeLevel.Cube,
+            status: CubeStatus.active,
+            internship_status: 'No further information available.',
+            is_founding_cube: false
+          }
+        });
+      }
+    }
+
+    for (const fellow of seniorCubes) {
       const passwordHash = await bcrypt.hash(cubePassword, 10);
       const existingUser = await tx.user.findUnique({
         where: { email: fellow.email }
       });
 
       if (!existingUser) {
-        console.log(`Creating Iceberg Fellow: ${fellow.name} (${fellow.email}) as Cube #${fellow.cube_number}...`);
+        console.log(`Creating Senior Cube: ${fellow.name} (${fellow.email}) as Cube #${fellow.cube_number}...`);
         const user = await tx.user.create({
           data: {
             name: fellow.name,
@@ -250,14 +332,14 @@ async function main() {
             department: '',
             skills: [],
             interests: [],
-            current_level: CubeLevel.Iceberg_Fellow,
+            current_level: CubeLevel.Senior_Cube,
             status: CubeStatus.alumni,
             internship_status: 'Alumni',
             is_founding_cube: true
           }
         });
       } else {
-        console.log(`Updating Iceberg Fellow: ${fellow.email} as Cube #${fellow.cube_number}.`);
+        console.log(`Updating Senior Cube: ${fellow.email} as Cube #${fellow.cube_number}.`);
         await tx.user.update({
           where: { email: fellow.email },
           data: {
@@ -276,7 +358,7 @@ async function main() {
             data: {
               cube_number: fellow.cube_number,
               cohort: existingProfile.cohort || 'Iceberg Fellows',
-              current_level: CubeLevel.Iceberg_Fellow,
+              current_level: CubeLevel.Senior_Cube,
               status: CubeStatus.alumni,
               internship_status: 'Alumni',
               is_founding_cube: true
@@ -292,7 +374,7 @@ async function main() {
               department: '',
               skills: [],
               interests: [],
-              current_level: CubeLevel.Iceberg_Fellow,
+              current_level: CubeLevel.Senior_Cube,
               status: CubeStatus.alumni,
               internship_status: 'Alumni',
               is_founding_cube: true

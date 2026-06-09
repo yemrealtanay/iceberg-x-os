@@ -49,10 +49,14 @@ export const Directory: React.FC = () => {
 
   // Filter cubes
   const filteredCubes = cubes.filter((cube) => {
+    const isOriginalCube = cube.cube_number === '000';
+    const normalizedSearch = searchQuery.toLowerCase();
     const matchesSearch =
-      cube.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cube.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cube.skills.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      cube.user.name.toLowerCase().includes(normalizedSearch) ||
+      cube.cube_number.toLowerCase().includes(normalizedSearch) ||
+      (isOriginalCube && 'the original cube no further information available classified'.includes(normalizedSearch)) ||
+      (cube.university || '').toLowerCase().includes(normalizedSearch) ||
+      (cube.skills || []).some((s: string) => s.toLowerCase().includes(normalizedSearch));
 
     const matchesStatus = statusFilter ? cube.status === statusFilter : true;
     const matchesLevel = levelFilter ? cube.current_level === levelFilter : true;
@@ -111,9 +115,6 @@ export const Directory: React.FC = () => {
               <option value="">All Levels</option>
               <option value="Cube">Cube</option>
               <option value="Senior_Cube">Senior Cube</option>
-              <option value="Lead_Cube">Lead Cube</option>
-              <option value="Cube_Mentor">Cube Mentor</option>
-              <option value="Iceberg_Fellow">Iceberg Fellow</option>
             </select>
           </div>
         </div>
@@ -122,7 +123,40 @@ export const Directory: React.FC = () => {
       {filteredCubes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCubes.map((cube) => {
+            const isOriginalCube = cube.cube_number === '000';
             const isFounding = cube.is_founding_cube;
+
+            if (isOriginalCube) {
+              return (
+                <div
+                  key={cube.id}
+                  className="p-6 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden bg-[#111113] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.18)]"
+                >
+                  <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full border border-white/10 opacity-60"></div>
+                  <div className="absolute right-6 bottom-6 text-[8rem] font-black leading-none text-white/[0.03] select-none">X</div>
+                  <div className="relative z-10 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-magenta">Classified Record</p>
+                      <h3 className="mt-3 text-2xl font-black tracking-tight text-white">Cube #000</h3>
+                    </div>
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-200">
+                      Active
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 space-y-3 text-sm">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Classification</p>
+                      <p className="mt-1 font-extrabold text-white">The Original Cube</p>
+                    </div>
+                    <p className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-white/55">
+                      No further information available.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={cube.id}

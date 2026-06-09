@@ -274,7 +274,13 @@ router.post('/cubes/:id/progression', requireAuth, isAdmin, async (req, res) => 
     const { id } = req.params; // CubeProfile ID
 
     const updateData: any = {};
-    if (current_level) updateData.current_level = current_level as CubeLevel;
+    if (current_level) {
+      const allowedLevels: CubeLevel[] = [CubeLevel.Cube, CubeLevel.Senior_Cube];
+      if (!allowedLevels.includes(current_level as CubeLevel)) {
+        return res.status(400).json({ error: 'Progression level must be Cube or Senior Cube.' });
+      }
+      updateData.current_level = current_level as CubeLevel;
+    }
     if (status) updateData.status = status as CubeStatus;
     if (assigned_mentor_id !== undefined) updateData.assigned_mentor_id = assigned_mentor_id || null;
 
@@ -1345,7 +1351,7 @@ router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
     const recommendedFeedback = await prisma.mentorFeedback.findMany({
       where: {
         recommended_next_step: {
-          in: ['Consider_for_Senior_Cube', 'Consider_for_Lead_Cube', 'Consider_as_Observer', 'Consider_as_Project_Contributor', 'Consider_as_Part_Time_Candidate']
+          in: ['Consider_for_Senior_Cube', 'Consider_as_Observer', 'Consider_as_Project_Contributor', 'Consider_as_Part_Time_Candidate']
         }
       },
       include: {

@@ -316,7 +316,6 @@ export const Review: React.FC = () => {
               >
                 <option value="Continue_as_Cube">Continue as Cube</option>
                 <option value="Consider_for_Senior_Cube">Consider for Senior Cube</option>
-                <option value="Consider_for_Lead_Cube">Consider for Lead Cube</option>
                 <option value="Consider_as_Observer">Consider as Observer</option>
                 <option value="Consider_as_Project_Contributor">Consider as Project Contributor</option>
                 <option value="Consider_as_Part_Time_Candidate">Consider as Part-Time Candidate</option>

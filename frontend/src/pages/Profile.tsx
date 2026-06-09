@@ -368,9 +368,6 @@ export const Profile: React.FC = () => {
               <select value={adminLevel} onChange={e => setAdminLevel(e.target.value)} className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none">
                 <option value="Cube">Cube</option>
                 <option value="Senior_Cube">Senior Cube</option>
-                <option value="Lead_Cube">Lead Cube</option>
-                <option value="Cube_Mentor">Cube Mentor</option>
-                <option value="Iceberg_Fellow">Iceberg Fellow</option>
               </select>
             </div>
 
