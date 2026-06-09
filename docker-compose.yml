@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: iceberg-x-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: iceberg
+      POSTGRES_PASSWORD: iceberg_password
+      POSTGRES_DB: iceberg_x_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iceberg-x-app
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: postgresql://iceberg:iceberg_password@postgres:5432/iceberg_x_db?schema=public
+      JWT_SECRET: super_secret_jwt_key_iceberg_x
+      OPENAI_API_KEY: your_openai_api_key_here
+      APP_URL: http://localhost:5001
+      NODE_ENV: production
+      PORT: 5001
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:

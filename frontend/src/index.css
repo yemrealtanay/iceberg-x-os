@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #e6007e;
+  --primary-hover: #ff4da6;
+  --bg-light: #f6f6f8;
+  --text-dark: #111111;
+  --border-light: rgba(17, 17, 17, 0.06);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f6f6f8;
+  color: #111111;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom premium transitions */
+.transition-premium {
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Custom styling for status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}

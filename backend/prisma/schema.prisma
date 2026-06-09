@@ -1,0 +1,324 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MENTOR
+  CUBE
+}
+
+enum CubeStatus {
+  active
+  inactive
+  observer
+  project_contributor
+  part_time_candidate
+  part_time
+  full_time_candidate
+  alumni
+}
+
+enum CubeLevel {
+  Cube
+  Senior_Cube
+  Lead_Cube
+  Cube_Mentor
+  Iceberg_Fellow
+}
+
+enum MissionStatus {
+  idea_pool
+  selected
+  researching
+  building_demo
+  preparing_handover
+  demo_ready
+  pending_approval
+  completed
+  reviewed
+  promoted_to_product_backlog
+  archived
+}
+
+enum DifficultyLevel {
+  Level_1_Research_Only
+  Level_2_Research_Mock
+  Level_3_Working_POC
+  Level_4_Integration_Candidate
+  Level_5_Main_Team_Assist
+}
+
+enum MissionDecision {
+  Promote_to_Product_Backlog
+  Needs_More_Research
+  Keep_as_Internal_Tool
+  Archive
+  Moved_to_Product
+}
+
+enum TeamMemberRole {
+  Mission_Lead
+  Technical_Explorer
+  Demo_Builder
+  Documenter
+  Presenter
+  Contributor
+}
+
+enum UpdateType {
+  daily
+  weekly
+  mission_progress
+}
+
+enum RecommendedNextStep {
+  Continue_as_Cube
+  Consider_for_Senior_Cube
+  Consider_for_Lead_Cube
+  Consider_as_Observer
+  Consider_as_Project_Contributor
+  Consider_as_Part_Time_Candidate
+  Needs_Support
+  Inactive_Risk
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          Role     @default(CUBE)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  cube_profile         CubeProfile?          @relation("UserToCubeProfile")
+  assigned_cubes       CubeProfile[]         @relation("MentorToCube")
+  created_missions     Mission[]             @relation("MissionCreator")
+  assigned_missions    Mission[]             @relation("MissionMentor")
+  updates              Update[]
+  demo_submissions     DemoSubmission[]
+  mentor_feedback      MentorFeedback[]      @relation("FeedbackMentor")
+  cube_feedback        MentorFeedback[]      @relation("FeedbackCube")
+  awarded_badges       CubeBadge[]           @relation("BadgeAwarder")
+  presentations        DemoDayPresentation[]
+}
+
+model CubeProfile {
+  id                 String      @id @default(uuid())
+  user_id            String      @unique
+  user               User        @relation("UserToCubeProfile", fields: [user_id], references: [id], onDelete: Cascade)
+  cube_number        String      @unique // e.g. "001", "002"
+  cohort             String
+  university         String
+  department         String
+  github_url         String?
+  gitlab_url         String?
+  linkedin_url       String?
+  slack_handle       String?
+  skills             String[]
+  interests          String[]
+  current_level      CubeLevel   @default(Cube)
+  status             CubeStatus  @default(active)
+  assigned_mentor_id String?
+  assigned_mentor    User?       @relation("MentorToCube", fields: [assigned_mentor_id], references: [id], onDelete: SetNull)
+  created_at         DateTime    @default(now())
+  updated_at         DateTime    @updatedAt
+
+  // Relations
+  team_memberships   MissionTeamMember[]
+  cube_badges        CubeBadge[]
+}
+
+model Mission {
+  id                 String                @id @default(uuid())
+  title              String
+  description        String
+  context            String
+  problem_statement  String
+  expected_output    String
+  difficulty_level   DifficultyLevel
+  status             MissionStatus         @default(idea_pool)
+  category           String                @default("General")
+  created_by_id      String
+  created_by         User                  @relation("MissionCreator", fields: [created_by_id], references: [id])
+  mentor_id          String?
+  mentor             User?                 @relation("MissionMentor", fields: [mentor_id], references: [id])
+  slack_channel_url  String?
+  repository_url     String?
+  demo_url           String?
+  decision           MissionDecision?
+  created_at         DateTime              @default(now())
+  updated_at         DateTime              @updatedAt
+
+  // Relations
+  teams              MissionTeam[]
+  updates            Update[]
+  demo_submissions   DemoSubmission[]
+  mentor_feedbacks   MentorFeedback[]
+  cube_badges        CubeBadge[]
+  presentations      DemoDayPresentation[]
+}
+
+model MissionTeam {
+  id         String      @id @default(uuid())
+  mission_id String
+  mission    Mission     @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  name       String
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  // Relations
+  members            MissionTeamMember[]
+  demo_submissions   DemoSubmission[]
+  presentations      DemoDayPresentation[]
+}
+
+model MissionTeamMember {
+  id                   String         @id @default(uuid())
+  team_id              String
+  team                 MissionTeam    @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  cube_id              String
+  cube                 CubeProfile    @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  role                 TeamMemberRole @default(Contributor)
+  what_gained          String?        // Ne aldığını
+  what_learned         String?        // Ne öğrendiğini
+  what_could_be_better String?        // Neyi daha iyi yapabileceğini
+  is_submitted         Boolean        @default(false)
+  submitted_at         DateTime?
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+
+  @@unique([team_id, cube_id])
+}
+
+model Update {
+  id         String     @id @default(uuid())
+  cube_id    String
+  cube       User       @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  mission_id String
+  mission    Mission    @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  type       UpdateType
+  content    String
+  blockers   String?
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+}
+
+model DemoSubmission {
+  id                            String                @id @default(uuid())
+  mission_id                    String
+  mission                       Mission               @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  team_id                       String?
+  team                          MissionTeam?          @relation(fields: [team_id], references: [id], onDelete: SetNull)
+  submitted_by_id               String
+  submitted_by                  User                  @relation(fields: [submitted_by_id], references: [id])
+  title                         String
+  summary                       String
+  what_we_built                 String
+  what_we_learned               String
+  what_worked_well              String
+  what_could_we_have_done_better String
+  recommendation                String?
+  repository_url                String?
+  pull_request_url              String?
+  demo_url                      String?
+  document_url                  String?
+  video_url                     String?
+  submitted_at                  DateTime              @default(now())
+  created_at                    DateTime              @default(now())
+  updated_at                    DateTime              @updatedAt
+
+  // Relations
+  presentations                 DemoDayPresentation[]
+}
+
+model MentorFeedback {
+  id                       String              @id @default(uuid())
+  cube_id                  String
+  cube                     User                @relation("FeedbackCube", fields: [cube_id], references: [id], onDelete: Cascade)
+  mission_id               String
+  mission                  Mission             @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  mentor_id                String
+  mentor                   User                @relation("FeedbackMentor", fields: [mentor_id], references: [id], onDelete: Cascade)
+  technical_ability_score  Int
+  research_ability_score   Int
+  demo_output_score        Int
+  ownership_score          Int
+  communication_score      Int
+  leadership_score         Int
+  product_thinking_score   Int
+  reliability_score        Int
+  self_reflection_score    Int
+  strengths                String
+  areas_to_improve         String
+  private_notes            String?
+  visible_to_cube          Boolean             @default(false)
+  recommended_next_step    RecommendedNextStep
+  created_at               DateTime            @default(now())
+  updated_at               DateTime            @updatedAt
+
+  @@unique([cube_id, mission_id, mentor_id])
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String
+  icon        String      // String representation of icon
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  // Relations
+  cube_badges CubeBadge[]
+}
+
+model CubeBadge {
+  id            String      @id @default(uuid())
+  cube_id       String
+  cube          CubeProfile @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  badge_id      String
+  badge         Badge       @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+  mission_id    String?
+  mission       Mission?    @relation(fields: [mission_id], references: [id], onDelete: SetNull)
+  awarded_by_id String
+  awarded_by    User        @relation("BadgeAwarder", fields: [awarded_by_id], references: [id])
+  reason        String
+  awarded_at    DateTime    @default(now())
+}
+
+model DemoDay {
+  id          String                @id @default(uuid())
+  title       String
+  date        DateTime
+  description String?
+  created_at  DateTime              @default(now())
+  updated_at  DateTime              @updatedAt
+
+  // Relations
+  presentations DemoDayPresentation[]
+}
+
+model DemoDayPresentation {
+  id                 String          @id @default(uuid())
+  demo_day_id        String
+  demo_day           DemoDay         @relation(fields: [demo_day_id], references: [id], onDelete: Cascade)
+  mission_id         String
+  mission            Mission         @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  team_id            String?
+  team               MissionTeam?    @relation(fields: [team_id], references: [id], onDelete: SetNull)
+  presenter_id       String
+  presenter          User            @relation(fields: [presenter_id], references: [id])
+  demo_submission_id String?
+  demo_submission    DemoSubmission? @relation(fields: [demo_submission_id], references: [id], onDelete: SetNull)
+  decision           String?
+  mentor_summary     String?
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+}

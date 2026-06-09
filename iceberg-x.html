@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iceberg X — Building the Next Generation of Innovators</title>
+<meta name="description" content="Iceberg X is an elite technology fellowship. Most internships teach you how a company works. Iceberg X gives you the opportunity to prove what you can build.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --magenta:#e6007e;
+  --magenta-2:#ff4da6;
+  --magenta-3:#ff99cc;
+  --black:#111111;
+  --grey-d:#232323;
+  --grey-m:#6b7280;
+  --grey-bg:#f6f6f8;
+  --white:#ffffff;
+  --blue:#e0f2fe;
+  --gold:#c9a227;
+  --gold-2:#f3d27a;
+  --hero-grad:linear-gradient(120deg,#e6007e 0%,#ff4da6 50%,#ff99cc 100%);
+  --shadow-lg:0 24px 60px -20px rgba(17,17,17,.18);
+  --shadow-sm:0 8px 24px -10px rgba(17,17,17,.12);
+  --border:1px solid rgba(17,17,17,.06);
+  --r-2xl:1.5rem;
+  --r-3xl:2rem;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--grey-bg);
+  color:var(--black);
+  line-height:1.7;
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{font-weight:700;letter-spacing:-0.02em;line-height:1.08}
+p{color:var(--grey-m);font-weight:400}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 28px}
+section{position:relative}
+
+/* ---------- LABELS ---------- */
+.label{
+  display:inline-block;
+  font-size:.72rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.18em;color:var(--magenta);
+  margin-bottom:18px;
+}
+.label.muted{color:var(--grey-m)}
+.label.gold{color:var(--gold)}
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:15px 30px;border-radius:999px;
+  font-weight:600;font-size:.95rem;cursor:pointer;border:none;
+  transition:transform .4s var(--ease),box-shadow .4s var(--ease),background .3s;
+}
+.btn-primary{
+  background:var(--magenta);color:#fff;
+  box-shadow:0 12px 30px -8px rgba(230,0,126,.5);
+}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 20px 44px -10px rgba(230,0,126,.65)}
+.btn-ghost{background:#fff;color:var(--black);border:var(--border);box-shadow:var(--shadow-sm)}
+.btn-ghost:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.btn-light{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px)}
+.btn-light:hover{background:rgba(255,255,255,.18);transform:translateY(-3px)}
+
+/* ---------- NAV ---------- */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:16px 0;transition:.4s var(--ease);
+}
+nav.scrolled{
+  background:rgba(246,246,248,.78);
+  backdrop-filter:blur(18px) saturate(160%);
+  border-bottom:var(--border);
+}
+.nav-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:11px;font-weight:700;font-size:1.12rem;letter-spacing:-.02em}
+.logo .mark{
+  width:30px;height:30px;border-radius:9px;background:var(--hero-grad);
+  display:grid;place-items:center;color:#fff;font-size:.85rem;font-weight:800;
+  box-shadow:0 6px 16px -4px rgba(230,0,126,.5);
+}
+.nav-links{display:flex;gap:34px;align-items:center}
+.nav-links a{font-size:.9rem;font-weight:500;color:var(--grey-d);transition:.25s}
+.nav-links a:hover{color:var(--magenta)}
+.nav-cta{padding:11px 22px;font-size:.88rem}
+@media(max-width:860px){.nav-links a:not(.nav-cta){display:none}}
+
+/* ---------- LOADER ---------- */
+#loader{
+  position:fixed;inset:0;z-index:999;background:var(--black);
+  display:grid;place-items:center;transition:opacity .7s var(--ease),visibility .7s;
+}
+#loader.done{opacity:0;visibility:hidden}
+.loader-cube{
+  width:60px;height:60px;border-radius:16px;background:var(--hero-grad);
+  animation:loadspin 1.4s var(--ease) infinite;
+  box-shadow:0 0 50px rgba(230,0,126,.6);
+}
+@keyframes loadspin{
+  0%{transform:rotate(0) scale(1);border-radius:16px}
+  50%{transform:rotate(180deg) scale(.7);border-radius:50%}
+  100%{transform:rotate(360deg) scale(1);border-radius:16px}
+}
+
+/* ---------- HERO ---------- */
+.hero{
+  min-height:100vh;display:flex;align-items:center;
+  padding:140px 0 80px;overflow:hidden;
+  background:
+    radial-gradient(1100px 600px at 78% 8%,rgba(255,77,166,.13),transparent 60%),
+    radial-gradient(900px 500px at 8% 90%,rgba(224,242,254,.7),transparent 55%),
+    var(--grey-bg);
+}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center;width:100%}
+.hero h1{font-size:clamp(2.8rem,6vw,5rem);font-weight:800;margin-bottom:8px}
+.hero .gradient-text{
+  background:var(--hero-grad);-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.hero .sub{font-size:clamp(1.05rem,1.6vw,1.32rem);max-width:520px;margin:26px 0 38px;color:var(--grey-d);font-weight:400}
+.hero .sub strong{color:var(--black);font-weight:600}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.hero-meta{margin-top:42px;display:flex;gap:34px;flex-wrap:wrap}
+.hero-meta .m-num{font-size:1.7rem;font-weight:800;letter-spacing:-.03em;color:var(--black)}
+.hero-meta .m-lab{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--grey-m);font-weight:600}
+
+/* floating cube cards */
+.cube-stage{position:relative;height:460px}
+.float-cube{
+  position:absolute;background:#fff;border-radius:var(--r-2xl);
+  border:var(--border);box-shadow:var(--shadow-lg);
+  padding:24px;width:210px;
+}
+.float-cube .fc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.float-cube .dot{width:11px;height:11px;border-radius:50%;background:var(--hero-grad);box-shadow:0 0 12px rgba(230,0,126,.5)}
+.float-cube .fc-tag{font-size:.68rem;text-transform:uppercase;letter-spacing:.14em;color:var(--grey-m);font-weight:600}
+.float-cube .fc-num{font-size:2.1rem;font-weight:800;letter-spacing:-.03em}
+.float-cube .fc-num span{color:var(--magenta)}
+.float-cube .fc-status{font-size:.82rem;color:var(--grey-m);margin-top:4px}
+.fc-1{top:6%;left:4%;animation:floaty 7s var(--ease) infinite}
+.fc-2{top:34%;right:0;animation:floaty 8.5s var(--ease) infinite .6s;z-index:3}
+.fc-3{bottom:2%;left:16%;animation:floaty 7.8s var(--ease) infinite 1.2s}
+.fc-2{transform:scale(1.08)}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
+.fc-2{animation-name:floaty2}
+@keyframes floaty2{0%,100%{transform:translateY(0) scale(1.08)}50%{transform:translateY(-26px) scale(1.08)}}
+.cube-glow{position:absolute;inset:0;background:radial-gradient(circle at 60% 50%,rgba(230,0,126,.16),transparent 62%);filter:blur(20px);z-index:-1}
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:30px}
+  .cube-stage{height:380px;max-width:440px}
+}
+
+/* ---------- SECTION SHELL ---------- */
+.sec{padding:120px 0}
+.sec-head{max-width:680px;margin-bottom:64px}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec h2{font-size:clamp(2rem,3.6vw,3.1rem);margin-bottom:18px}
+.sec-head p{font-size:1.1rem;color:var(--grey-m)}
+.bg-white{background:#fff}
+.bg-grey{background:var(--grey-bg)}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal[data-d="1"]{transition-delay:.08s}
+.reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s}
+.reveal[data-d="4"]{transition-delay:.32s}
+
+/* ---------- COMPARISON ---------- */
+.compare{display:grid;grid-template-columns:1fr auto 1fr;gap:30px;align-items:stretch}
+.cmp-card{background:#fff;border-radius:var(--r-3xl);padding:40px;border:var(--border);box-shadow:var(--shadow-sm)}
+.cmp-card.x{
+  background:linear-gradient(165deg,#1a0010,#111);color:#fff;
+  box-shadow:0 30px 70px -22px rgba(230,0,126,.45);position:relative;overflow:hidden;
+}
+.cmp-card.x::before{content:"";position:absolute;top:-40%;right:-20%;width:60%;height:120%;background:radial-gradient(circle,rgba(230,0,126,.35),transparent 65%);filter:blur(10px)}
+.cmp-card h3{font-size:1.5rem;margin-bottom:6px}
+.cmp-card .tag{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;font-weight:600;margin-bottom:26px;display:block}
+.cmp-card.trad .tag{color:var(--grey-m)}
+.cmp-card.x .tag{color:var(--magenta-3)}
+.cmp-list{list-style:none;position:relative;z-index:2}
+.cmp-list li{display:flex;align-items:center;gap:14px;padding:13px 0;font-size:1.08rem;font-weight:500;border-bottom:1px solid rgba(17,17,17,.05)}
+.cmp-card.x .cmp-list li{border-bottom:1px solid rgba(255,255,255,.08);color:#fff}
+.cmp-list li:last-child{border-bottom:none}
+.tick{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.cmp-card.trad .tick{background:var(--grey-bg);color:var(--grey-m)}
+.cmp-card.x .tick{background:var(--hero-grad);color:#fff}
+.vs{display:grid;place-items:center;font-weight:800;font-size:1.1rem;color:var(--magenta);align-self:center}
+.vs span{width:54px;height:54px;border-radius:50%;background:#fff;border:var(--border);display:grid;place-items:center;box-shadow:var(--shadow-sm)}
+@media(max-width:820px){.compare{grid-template-columns:1fr}.vs{transform:rotate(90deg);margin:6px 0}}
+
+/* ---------- CUBE WALL (interactive) ---------- */
+.cube-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.cw-cell{
+  aspect-ratio:1;border-radius:14px;background:#fff;border:var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:transform .35s var(--ease),box-shadow .35s var(--ease),background .35s;
+  position:relative;overflow:hidden;
+}
+.cw-cell .cw-hash{font-size:.62rem;color:var(--grey-m);font-weight:600}
+.cw-cell .cw-n{font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+.cw-cell:hover{transform:translateY(-6px) scale(1.04);box-shadow:0 18px 36px -14px rgba(230,0,126,.5);background:var(--hero-grad);color:#fff}
+.cw-cell:hover .cw-hash{color:rgba(255,255,255,.85)}
+.cw-cell.founding{border:1.5px solid var(--gold-2);background:linear-gradient(160deg,#fffdf5,#fff7e3)}
+.cw-cell.founding .cw-n{color:var(--gold)}
+.cw-cell.founding:hover{background:linear-gradient(160deg,#c9a227,#f3d27a);color:#fff}
+.cw-cell.founding:hover .cw-n{color:#fff}
+
+/* ---------- FOUNDING CUBES ---------- */
+.founding-sec{background:linear-gradient(180deg,#0f0c05,#1a1305);color:#fff;overflow:hidden}
+.founding-sec h2{color:#fff}
+.founding-sec .sec-head p{color:rgba(255,255,255,.6)}
+.founding-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.gold-card{
+  position:relative;border-radius:var(--r-3xl);padding:34px;
+  background:linear-gradient(165deg,rgba(255,255,255,.05),rgba(255,255,255,.01));
+  border:1px solid rgba(201,162,39,.4);overflow:hidden;
+  transition:transform .5s var(--ease),box-shadow .5s var(--ease);
+}
+.gold-card::before{content:"";position:absolute;inset:0;border-radius:var(--r-3xl);padding:1px;background:linear-gradient(135deg,var(--gold-2),transparent 40%,transparent 60%,var(--gold));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7}
+.gold-card:hover{transform:translateY(-8px);box-shadow:0 36px 70px -28px rgba(201,162,39,.55)}
+.gold-card .seal{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-2);font-weight:600;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.gold-card .gc-num{font-size:2.6rem;font-weight:800;letter-spacing:-.03em;background:linear-gradient(120deg,#f3d27a,#c9a227);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.gold-card .gc-tag{font-size:.95rem;color:rgba(255,255,255,.55);margin-top:8px}
+@media(max-width:820px){.founding-grid{grid-template-columns:1fr}}
+
+/* ---------- WORK CARDS ---------- */
+.work-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.work-card{
+  background:#fff;border-radius:var(--r-2xl);padding:30px;border:var(--border);
+  box-shadow:var(--shadow-sm);transition:transform .45s var(--ease),box-shadow .45s var(--ease);
+}
+.work-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
+.work-card .ic{
+  width:50px;height:50px;border-radius:14px;display:grid;place-items:center;margin-bottom:20px;
+  background:linear-gradient(160deg,rgba(230,0,126,.1),rgba(224,242,254,.7));
+}
+.work-card .ic svg{width:24px;height:24px;stroke:var(--magenta);fill:none;stroke-width:1.8}
+.work-card h4{font-size:1.12rem;margin-bottom:7px}
+.work-card p{font-size:.92rem}
+@media(max-width:980px){.work-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.work-grid{grid-template-columns:1fr}}
+
+/* ---------- JOURNEY ---------- */
+.journey{max-width:560px;margin:0 auto}
+.j-step{
+  display:flex;align-items:center;gap:22px;background:#fff;border:var(--border);
+  border-radius:var(--r-2xl);padding:22px 26px;box-shadow:var(--shadow-sm);
+  transition:transform .4s var(--ease),box-shadow .4s var(--ease);
+}
+.j-step:hover{transform:translateX(8px);box-shadow:var(--shadow-lg)}
+.j-step .j-idx{flex:none;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-weight:800;background:var(--grey-bg);color:var(--grey-d)}
+.j-step.peak .j-idx{background:var(--hero-grad);color:#fff;box-shadow:0 10px 24px -8px rgba(230,0,126,.5)}
+.j-step h4{font-size:1.15rem}
+.j-step p{font-size:.86rem;margin-top:2px}
+.j-arrow{display:grid;place-items:center;height:30px;color:var(--magenta);opacity:.5}
+.j-arrow svg{width:18px;height:18px}
+
+/* ---------- BADGES ---------- */
+.badge-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+.badge{
+  text-align:center;background:#fff;border-radius:var(--r-2xl);padding:32px 20px;
+  border:var(--border);box-shadow:var(--shadow-sm);
+  transition:transform .45s var(--ease),box-shadow .45s var(--ease);
+}
+.badge:hover{transform:translateY(-8px) scale(1.02);box-shadow:var(--shadow-lg)}
+.badge .seal-ic{
+  width:66px;height:66px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(from 140deg,var(--magenta),var(--magenta-2),var(--magenta-3),var(--magenta));
+  box-shadow:0 12px 28px -10px rgba(230,0,126,.5);position:relative;
+}
+.badge .seal-ic::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}
+.badge .seal-ic svg{width:26px;height:26px;stroke:var(--magenta);fill:none;stroke-width:1.9;position:relative;z-index:2}
+.badge h4{font-size:1.05rem;margin-bottom:5px}
+.badge p{font-size:.82rem}
+@media(max-width:960px){.badge-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.badge-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- VAULT ---------- */
+.vault-sec{background:linear-gradient(180deg,#0c0c0e,#161618);color:#fff;overflow:hidden;position:relative}
+.vault-sec::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:46px 46px;mask:radial-gradient(circle at 50% 40%,#000,transparent 75%)}
+.vault-sec h2{color:#fff}
+.vault-sec .sec-head p{color:rgba(255,255,255,.6)}
+.vault-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;position:relative;z-index:2}
+.vault-chip{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r-2xl);padding:28px 22px;backdrop-filter:blur(6px);
+  transition:transform .45s var(--ease),border-color .45s,background .45s;
+}
+.vault-chip:hover{transform:translateY(-8px);border-color:rgba(230,0,126,.6);background:rgba(230,0,126,.08)}
+.vault-chip .vn{font-size:.7rem;color:var(--magenta-3);letter-spacing:.1em;font-weight:600}
+.vault-chip h4{color:#fff;font-size:1.1rem;margin-top:10px}
+.vault-chip p{font-size:.82rem;color:rgba(255,255,255,.5);margin-top:6px}
+@media(max-width:960px){.vault-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- HALL OF FAME (Cube Wall feature) ---------- */
+.hof-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.hof-card{
+  border-radius:var(--r-2xl);padding:30px;background:#fff;border:var(--border);
+  box-shadow:var(--shadow-sm);transition:transform .45s var(--ease),box-shadow .45s var(--ease);
+}
+.hof-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
+.hof-card .hof-ic{width:44px;height:44px;border-radius:12px;background:var(--grey-bg);display:grid;place-items:center;margin-bottom:18px}
+.hof-card .hof-ic svg{width:22px;height:22px;stroke:var(--magenta);fill:none;stroke-width:1.8}
+.hof-card h4{font-size:1.08rem;margin-bottom:6px}
+.hof-card p{font-size:.86rem}
+@media(max-width:920px){.hof-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.hof-grid{grid-template-columns:1fr}}
+
+/* ---------- FELLOWSHIP ---------- */
+.fellow{
+  background:radial-gradient(1000px 600px at 50% -10%,rgba(230,0,126,.3),transparent 60%),linear-gradient(180deg,#120009,#0a0006);
+  color:#fff;text-align:center;overflow:hidden;
+}
+.fellow .crest{
+  width:120px;height:120px;margin:0 auto 36px;border-radius:30px;
+  background:var(--hero-grad);display:grid;place-items:center;
+  box-shadow:0 0 80px rgba(230,0,126,.6);animation:floaty 6s var(--ease) infinite;
+}
+.fellow .crest svg{width:56px;height:56px;stroke:#fff;fill:none;stroke-width:1.6}
+.fellow h2{color:#fff;font-size:clamp(2.2rem,4.5vw,3.6rem);max-width:760px;margin:0 auto 22px}
+.fellow p{color:rgba(255,255,255,.65);max-width:540px;margin:0 auto 14px;font-size:1.08rem}
+.fellow .pill-row{display:flex;gap:12px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+.fellow .mini-pill{font-size:.8rem;padding:9px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.8);backdrop-filter:blur(6px)}
+
+/* ---------- NETWORK ---------- */
+.net-wrap{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
+.net-list{display:flex;flex-direction:column;gap:14px}
+.net-node{
+  display:flex;align-items:center;gap:16px;background:#fff;border:var(--border);
+  border-radius:var(--r-2xl);padding:18px 22px;box-shadow:var(--shadow-sm);
+  transition:transform .4s var(--ease),box-shadow .4s var(--ease);
+}
+.net-node:hover{transform:translateX(6px);box-shadow:var(--shadow-lg)}
+.net-node .nd{width:12px;height:12px;border-radius:50%;background:var(--hero-grad);flex:none;box-shadow:0 0 12px rgba(230,0,126,.5)}
+.net-node span{font-weight:600;font-size:1rem}
+.net-viz{position:relative;aspect-ratio:1;max-width:460px;margin:0 auto;width:100%}
+.net-viz svg{width:100%;height:100%}
+.net-viz .core{fill:url(#netgrad)}
+.net-line{stroke:var(--magenta);stroke-width:1.2;opacity:.25}
+.net-dot{fill:#fff;stroke:var(--magenta);stroke-width:1.6}
+.net-dot.c{fill:var(--magenta)}
+@media(max-width:840px){.net-wrap{grid-template-columns:1fr;gap:30px}.net-viz{max-width:340px}}
+
+/* ---------- VISION ---------- */
+.vision{
+  background:var(--hero-grad);color:#fff;text-align:center;overflow:hidden;position:relative;
+}
+.vision::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.25),transparent 40%)}
+.vision h2{color:#fff;font-size:clamp(2.4rem,5.5vw,4.4rem);font-weight:800;max-width:900px;margin:0 auto;position:relative}
+.vision .v-sub{color:rgba(255,255,255,.92);max-width:620px;margin:30px auto 0;font-size:1.12rem;position:relative;font-weight:400}
+.vision .v-sub strong{color:#fff;font-weight:600}
+
+/* ---------- QUOTE ---------- */
+.quote-sec{background:#fff}
+.quote-card{max-width:880px;margin:0 auto;text-align:center}
+.quote-card .q-mark{font-size:5rem;line-height:0;color:var(--magenta);opacity:.18;font-weight:800;display:block;height:40px}
+.quote-card blockquote{font-size:clamp(1.4rem,2.8vw,2rem);font-weight:600;letter-spacing:-.02em;color:var(--black);line-height:1.4}
+.quote-card .q-by{margin-top:26px;font-size:.92rem;color:var(--grey-m);font-weight:500}
+.quote-card .q-by strong{color:var(--magenta)}
+
+/* ---------- APPLICATION ---------- */
+.apply-sec{background:linear-gradient(180deg,#fff,var(--grey-bg))}
+.apply-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:60px;align-items:start}
+.apply-intro h2{font-size:clamp(2.2rem,4vw,3.2rem);margin-bottom:18px}
+.apply-intro .scarcity{
+  margin-top:26px;background:linear-gradient(165deg,#1a0010,#111);color:#fff;
+  border-radius:var(--r-2xl);padding:26px;box-shadow:0 24px 50px -20px rgba(230,0,126,.4);
+}
+.apply-intro .scarcity .label{color:var(--magenta-3)}
+.apply-intro .scarcity p{color:rgba(255,255,255,.78);font-size:.95rem}
+.form-card{background:#fff;border-radius:var(--r-3xl);padding:40px;border:var(--border);box-shadow:var(--shadow-lg)}
+.field{margin-bottom:20px}
+.field label{display:block;font-size:.8rem;font-weight:600;letter-spacing:.04em;margin-bottom:8px;color:var(--grey-d)}
+.field input,.field select,.field textarea{
+  width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(17,17,17,.1);
+  background:var(--grey-bg);font-family:inherit;font-size:.95rem;color:var(--black);
+  transition:.25s;outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--magenta);background:#fff;box-shadow:0 0 0 4px rgba(230,0,126,.1)}
+.field textarea{resize:vertical;min-height:110px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-card .btn-primary{width:100%;justify-content:center;margin-top:8px}
+.form-note{font-size:.78rem;color:var(--grey-m);text-align:center;margin-top:16px}
+.form-success{display:none;text-align:center;padding:30px 10px}
+.form-success.show{display:block;animation:fadeUp .6s var(--ease)}
+.form-success .s-ic{width:70px;height:70px;border-radius:50%;background:var(--hero-grad);display:grid;place-items:center;margin:0 auto 22px;box-shadow:0 16px 36px -12px rgba(230,0,126,.5)}
+.form-success .s-ic svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2.4}
+.form-success h3{font-size:1.5rem;margin-bottom:10px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@media(max-width:880px){.apply-grid{grid-template-columns:1fr;gap:40px}.field-row{grid-template-columns:1fr}}
+
+/* ---------- FOOTER ---------- */
+footer{background:var(--black);color:rgba(255,255,255,.6);padding:60px 0 40px}
+.foot-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px;padding-bottom:34px;border-bottom:1px solid rgba(255,255,255,.1)}
+.foot-top .logo{color:#fff}
+.foot-links{display:flex;gap:28px;flex-wrap:wrap}
+.foot-links a{font-size:.88rem;transition:.25s}
+.foot-links a:hover{color:#fff}
+.foot-bottom{padding-top:26px;font-size:.82rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.foot-bottom .magenta{color:var(--magenta-3)}
+
+::selection{background:var(--magenta);color:#fff}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader"><div class="loader-cube"></div></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="logo"><span class="mark">X</span> Iceberg<span style="color:var(--magenta)">X</span></a>
+    <div class="nav-links">
+      <a href="#what">The Programme</a>
+      <a href="#cube">The Cube</a>
+      <a href="#journey">Journey</a>
+      <a href="#fellowship">Fellowship</a>
+      <a href="#apply" class="btn btn-primary nav-cta">Become a Cube</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ 1. HERO ============ -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="label reveal">Iceberg X — An Elite Technology Fellowship</span>
+      <h1 class="reveal" data-d="1">Iceberg <span class="gradient-text">X</span></h1>
+      <h1 class="reveal" data-d="1" style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:700;color:var(--grey-d)">Building the Next Generation of Innovators</h1>
+      <p class="sub reveal" data-d="2">Most internships teach you how a company works. <strong>Iceberg X gives you the opportunity to prove what you're capable of building.</strong></p>
+      <div class="hero-cta reveal" data-d="3">
+        <a href="#apply" class="btn btn-primary">Become a Cube →</a>
+        <a href="#what" class="btn btn-ghost">Learn More</a>
+      </div>
+      <div class="hero-meta reveal" data-d="4">
+        <div><div class="m-num" data-count="100" data-suffix="%">0%</div><div class="m-lab">Builders, not observers</div></div>
+        <div><div class="m-num" data-count="1" data-prefix="#">#0</div><div class="m-lab">Permanent Cube number</div></div>
+        <div><div class="m-num">∞</div><div class="m-lab">Once a Cube, always a Cube</div></div>
+      </div>
+    </div>
+    <div class="cube-stage reveal" data-d="2">
+      <div class="cube-glow"></div>
+      <div class="float-cube fc-1">
+        <div class="fc-top"><span class="fc-tag">Active Cube</span><span class="dot"></span></div>
+        <div class="fc-num">#<span>001</span></div>
+        <div class="fc-status">Founding Cube · AI Research</div>
+      </div>
+      <div class="float-cube fc-2">
+        <div class="fc-top"><span class="fc-tag">Active Cube</span><span class="dot"></span></div>
+        <div class="fc-num">#<span>014</span></div>
+        <div class="fc-status">Prototype Development</div>
+      </div>
+      <div class="float-cube fc-3">
+        <div class="fc-top"><span class="fc-tag">Active Cube</span><span class="dot"></span></div>
+        <div class="fc-num">#<span>072</span></div>
+        <div class="fc-status">Automation Experiments</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. WHAT IS ICEBERG X ============ -->
+<section class="sec bg-white" id="what">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">What Is Iceberg X?</span>
+      <h2>This is not a traditional internship.</h2>
+      <p>Real research and development projects. Real commercial challenges. Real mentors. Real outcomes. At Iceberg X, participants are builders — not observers.</p>
+    </div>
+    <div class="compare">
+      <div class="cmp-card trad reveal">
+        <span class="tag">The Old Way</span>
+        <h3>Traditional Internship</h3>
+        <ul class="cmp-list">
+          <li><span class="tick">○</span> Observe</li>
+          <li><span class="tick">○</span> Shadow</li>
+          <li><span class="tick">○</span> Assist</li>
+          <li><span class="tick">○</span> Learn</li>
+        </ul>
+      </div>
+      <div class="vs reveal" data-d="1"><span>vs</span></div>
+      <div class="cmp-card x reveal" data-d="2">
+        <span class="tag">The Iceberg X Way</span>
+        <h3>Iceberg X</h3>
+        <ul class="cmp-list">
+          <li><span class="tick">→</span> Build</li>
+          <li><span class="tick">→</span> Experiment</li>
+          <li><span class="tick">→</span> Prototype</li>
+          <li><span class="tick">→</span> Innovate</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. WHAT IS A CUBE ============ -->
+<section class="sec bg-grey" id="cube">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">The Identity</span>
+      <h2>Every participant becomes an Ice Cube.</h2>
+      <p>Cube numbers are permanent. They are never reused. Every Cube becomes part of the history of Iceberg X. <strong style="color:var(--black);font-weight:600">Once a Cube, always a Cube.</strong></p>
+    </div>
+    <div class="cube-wall reveal" data-d="1" id="cubeWall"></div>
+  </div>
+</section>
+
+<!-- ============ 4. FOUNDING CUBES ============ -->
+<section class="sec founding-sec">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label gold">The First Cohort</span>
+      <h2>The Founding Cubes</h2>
+      <p>The first cohort will become the Founding Cubes. Their numbers will forever represent the beginning of Iceberg X. This status can never be earned again.</p>
+    </div>
+    <div class="founding-grid">
+      <div class="gold-card reveal">
+        <div class="seal">◆ Founding Cube</div>
+        <div class="gc-num">#001</div>
+        <div class="gc-tag">The very first. Where it all begins.</div>
+      </div>
+      <div class="gold-card reveal" data-d="1">
+        <div class="seal">◆ Founding Cube</div>
+        <div class="gc-num">#002</div>
+        <div class="gc-tag">A permanent place in the history of Iceberg X.</div>
+      </div>
+      <div class="gold-card reveal" data-d="2">
+        <div class="seal">◆ Founding Cube</div>
+        <div class="gc-num">#003</div>
+        <div class="gc-tag">A status that can never be earned again.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. WHAT WILL YOU WORK ON ============ -->
+<section class="sec bg-white">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">The Work</span>
+      <h2>What will you work on?</h2>
+      <p>Real projects with real stakes — the kind that shape products, not slide decks.</p>
+    </div>
+    <div class="work-grid" id="workGrid"></div>
+  </div>
+</section>
+
+<!-- ============ 6. CUBE JOURNEY ============ -->
+<section class="sec bg-grey" id="journey">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">Growth & Leadership</span>
+      <h2>The Cube Journey</h2>
+      <p>Iceberg X is built to create growth and leadership opportunities — not a fixed-term placement.</p>
+    </div>
+    <div class="journey" id="journey"></div>
+  </div>
+</section>
+
+<!-- ============ 7. RECOGNITION & ACHIEVEMENTS ============ -->
+<section class="sec bg-white">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">Recognition & Achievements</span>
+      <h2>Earn your place. Earn your badge.</h2>
+      <p>Achievement is recognised, recorded, and remembered. Every badge marks something you actually did.</p>
+    </div>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </div>
+</section>
+
+<!-- ============ 8. THE CUBE VAULT ============ -->
+<section class="sec vault-sec">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">The Archive</span>
+      <h2>The Cube Vault</h2>
+      <p>Every project becomes part of the Cube Vault — a permanent archive of everything Cubes create. Some of it may become future Iceberg products.</p>
+    </div>
+    <div class="vault-grid" id="vaultGrid"></div>
+  </div>
+</section>
+
+<!-- ============ 9. THE CUBE WALL / HALL OF FAME ============ -->
+<section class="sec bg-grey">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">Hall of Fame</span>
+      <h2>The Cube Wall</h2>
+      <p>Every Cube receives a permanent place on the Cube Wall. A living record of the people who built Iceberg X.</p>
+    </div>
+    <div class="hof-grid" id="hofGrid"></div>
+  </div>
+</section>
+
+<!-- ============ 10. THE ICEBERG FELLOWSHIP ============ -->
+<section class="sec fellow" id="fellowship">
+  <div class="wrap">
+    <div class="crest reveal">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3 6 6 .8-4.5 4.2 1.2 6L12 16.8 6.3 19l1.2-6L3 8.8 9 8z"/></svg>
+    </div>
+    <span class="label reveal" data-d="1" style="color:var(--magenta-3)">The Highest Recognition</span>
+    <h2 class="reveal" data-d="1">The Iceberg Fellowship</h2>
+    <p class="reveal" data-d="2">Reserved for exceptional contributors. Few people achieve it.</p>
+    <p class="reveal" data-d="2">Those who do become lifelong members of the Iceberg X community.</p>
+    <div class="pill-row reveal" data-d="3">
+      <span class="mini-pill">Lifelong membership</span>
+      <span class="mini-pill">Direct mentorship</span>
+      <span class="mini-pill">A permanent seat at the table</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. THE CUBE NETWORK ============ -->
+<section class="sec bg-white">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="label">The Network</span>
+      <h2>The Cube Network</h2>
+      <p>Once a Cube, always a Cube. The network never closes — it only grows.</p>
+    </div>
+    <div class="net-wrap">
+      <div class="net-list reveal">
+        <div class="net-node"><span class="nd"></span><span>Current Cubes</span></div>
+        <div class="net-node"><span class="nd"></span><span>Former Cubes</span></div>
+        <div class="net-node"><span class="nd"></span><span>Mentors</span></div>
+        <div class="net-node"><span class="nd"></span><span>Iceberg Team Members</span></div>
+        <div class="net-node"><span class="nd"></span><span>Future Employers</span></div>
+        <div class="net-node"><span class="nd"></span><span>Future Founders</span></div>
+      </div>
+      <div class="net-viz reveal" data-d="2">
+        <svg viewBox="0 0 400 400" id="netSvg">
+          <defs><radialGradient id="netgrad"><stop offset="0%" stop-color="#ff4da6"/><stop offset="100%" stop-color="#e6007e"/></radialGradient></defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12. LONG TERM VISION ============ -->
+<section class="sec vision">
+  <div class="wrap">
+    <h2 class="reveal">We're not building interns.<br>We're building innovators.</h2>
+    <p class="v-sub reveal" data-d="2">Some Cubes will become engineers. Some will become founders. Some will become leaders. Some may eventually join Iceberg Digital. <strong>Every Cube will leave with experience, confidence, skills, and proof that they built something real.</strong></p>
+  </div>
+</section>
+
+<!-- ============ FOUNDER QUOTE ============ -->
+<section class="sec quote-sec">
+  <div class="wrap">
+    <div class="quote-card reveal">
+      <span class="q-mark">"</span>
+      <blockquote>The agencies that survive the next decade won't be the ones that hired the most people. They'll be the ones that built the smartest system — and freed their people to do the one thing intelligence cannot replace.</blockquote>
+      <div class="q-by"><strong>Mark Burgess</strong> · CEO, Iceberg Digital</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13. APPLICATION CTA ============ -->
+<section class="sec apply-sec" id="apply">
+  <div class="wrap apply-grid">
+    <div class="apply-intro reveal">
+      <span class="label">Applications Open</span>
+      <h2>Ready to become a Cube?</h2>
+      <p>This isn't a placement. It's the start of something you'll carry for the rest of your career.</p>
+      <div class="scarcity">
+        <span class="label">Founding Cohort</span>
+        <p>The first cohort will become the Founding Cubes. Those places will only exist once — and can never be earned again.</p>
+      </div>
+    </div>
+    <div class="form-card reveal" data-d="1">
+      <div id="formBody">
+        <div class="field">
+          <label for="f-name">Name</label>
+          <input id="f-name" type="text" placeholder="Your full name" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-uni">University</label>
+            <input id="f-uni" type="text" placeholder="e.g. UCL" required>
+          </div>
+          <div class="field">
+            <label for="f-deg">Degree</label>
+            <input id="f-deg" type="text" placeholder="e.g. Computer Science" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-year">Year of Study</label>
+          <select id="f-year" required>
+            <option value="">Select year…</option>
+            <option>First Year</option>
+            <option>Second Year</option>
+            <option>Penultimate Year</option>
+            <option>Final Year</option>
+            <option>Postgraduate</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-why">Why do you want to become a Cube?</label>
+          <textarea id="f-why" placeholder="Tell us what you'd build given the chance…" required></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-li">LinkedIn</label>
+            <input id="f-li" type="url" placeholder="linkedin.com/in/…">
+          </div>
+          <div class="field">
+            <label for="f-gh">Portfolio / GitHub</label>
+            <input id="f-gh" type="url" placeholder="github.com/…">
+          </div>
+        </div>
+        <button class="btn btn-primary" id="submitBtn">Submit Application →</button>
+        <p class="form-note">We review every application personally. Founding Cube places are limited.</p>
+      </div>
+      <div class="form-success" id="formSuccess">
+        <div class="s-ic"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+        <h3>Application received.</h3>
+        <p>You're in the running for a Founding Cube number. We'll be in touch — keep building in the meantime.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <a href="#top" class="logo"><span class="mark">X</span> Iceberg<span style="color:var(--magenta)">X</span></a>
+      <div class="foot-links">
+        <a href="#what">The Programme</a>
+        <a href="#cube">The Cube</a>
+        <a href="#journey">Journey</a>
+        <a href="#fellowship">Fellowship</a>
+        <a href="#apply">Apply</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="year"></span> Iceberg Digital. Iceberg X is a programme of Iceberg Digital.</span>
+      <span class="magenta">Once a Cube, always a Cube.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---------- LOADER ---------- */
+window.addEventListener('load',()=>{setTimeout(()=>document.getElementById('loader').classList.add('done'),650)});
+
+/* ---------- NAV scroll ---------- */
+const nav=document.getElementById('nav');
+addEventListener('scroll',()=>{nav.classList.toggle('scrolled',scrollY>30)});
+
+/* ---------- YEAR ---------- */
+document.getElementById('year').textContent=new Date().getFullYear();
+
+/* ---------- BUILD: Cube Wall ---------- */
+(function(){
+  const wall=document.getElementById('cubeWall');
+  for(let i=1;i<=24;i++){
+    const n=String(i).padStart(3,'0');
+    const cell=document.createElement('div');
+    cell.className='cw-cell'+(i<=3?' founding':'');
+    cell.innerHTML=`<span class="cw-hash">CUBE</span><span class="cw-n">#${n}</span>`;
+    wall.appendChild(cell);
+  }
+})();
+
+/* ---------- BUILD: Work cards ---------- */
+(function(){
+  const ic={
+    ai:'<path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1 0 8 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 0-8 4 4 0 0 1 4-4z"/><path d="M12 6v12M6 12h12"/>',
+    auto:'<path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/>',
+    api:'<path d="M8 4l-6 8 6 8M16 4l6 8-6 8"/>',
+    prod:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/>',
+    ux:'<path d="M3 12h18M12 3v18"/><circle cx="12" cy="12" r="5"/>',
+    tools:'<path d="M14 7l3 3-9 9-3-1-1-3 9-9z"/><path d="M14 7l-3-3"/>',
+    proto:'<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+    future:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>'
+  };
+  const items=[
+    ['ai','AI Research','Explore and apply frontier intelligence to real problems.'],
+    ['auto','Automation Experiments','Replace manual workflows with systems that never sleep.'],
+    ['api','API Integrations','Connect the disconnected. Make tools talk to each other.'],
+    ['prod','Product Concepts','Shape ideas that could become real Iceberg products.'],
+    ['ux','UX Improvements','Refine the moments where intelligence meets people.'],
+    ['tools','Internal Tools','Build the systems the Iceberg team uses every day.'],
+    ['proto','Prototype Development','Turn a thought into something that actually runs.'],
+    ['future','Future Technologies','Work on the things that don\'t exist yet.']
+  ];
+  const grid=document.getElementById('workGrid');
+  items.forEach((it,i)=>{
+    const c=document.createElement('div');
+    c.className='work-card reveal';c.dataset.d=(i%4);
+    c.innerHTML=`<div class="ic"><svg viewBox="0 0 24 24">${ic[it[0]]}</svg></div><h4>${it[1]}</h4><p>${it[2]}</p>`;
+    grid.appendChild(c);
+  });
+})();
+
+/* ---------- BUILD: Journey ---------- */
+(function(){
+  const arrow='<div class="j-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>';
+  const steps=[
+    ['Cube','Where every journey begins.',false],
+    ['Senior Cube','Trusted with bigger problems.',false],
+    ['Lead Cube','Leads projects and other Cubes.',false],
+    ['Cube Mentor','Guides the next generation.',false],
+    ['Iceberg Fellow','The highest recognition there is.',true]
+  ];
+  const j=document.getElementById('journey');
+  steps.forEach((s,i)=>{
+    const step=document.createElement('div');
+    step.className='j-step reveal'+(s[2]?' peak':'');step.dataset.d=Math.min(i,4);
+    step.innerHTML=`<div class="j-idx">${i+1}</div><div><h4>${s[0]}</h4><p>${s[1]}</p></div>`;
+    j.appendChild(step);
+    if(i<steps.length-1){const a=document.createElement('div');a.className='reveal';a.innerHTML=arrow;j.appendChild(a);}
+  });
+})();
+
+/* ---------- BUILD: Badges ---------- */
+(function(){
+  const ic={
+    build:'<path d="M14 7l3 3-9 9-3-1-1-3 9-9z"/>',
+    inno:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
+    collab:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 20a5 5 0 0 1 7 0"/>',
+    path:'<path d="M5 19l5-5-3-3 7-7M14 4h6v6"/>',
+    pioneer:'<path d="M12 2l3 6 6 .8-4.5 4.2 1.2 6L12 16.8 6.3 19l1.2-6L3 8.8 9 8z"/>'
+  };
+  const badges=[
+    ['build','Builder','Created a working prototype.'],
+    ['inno','Innovator','Created an original idea.'],
+    ['collab','Collaborator','Exceptional teamwork.'],
+    ['path','Pathfinder','Solved a difficult challenge.'],
+    ['pioneer','Pioneer','Work influenced a real Iceberg product.']
+  ];
+  const grid=document.getElementById('badgeGrid');
+  badges.forEach((b,i)=>{
+    const c=document.createElement('div');
+    c.className='badge reveal';c.dataset.d=Math.min(i,4);
+    c.innerHTML=`<div class="seal-ic"><svg viewBox="0 0 24 24">${ic[b[0]]}</svg></div><h4>${b[1]}</h4><p>${b[2]}</p>`;
+    grid.appendChild(c);
+  });
+})();
+
+/* ---------- BUILD: Vault ---------- */
+(function(){
+  const items=[['01','Ideas'],['02','Research'],['03','Experiments'],['04','Prototypes'],['05','Discoveries']];
+  const grid=document.getElementById('vaultGrid');
+  items.forEach((v,i)=>{
+    const c=document.createElement('div');
+    c.className='vault-chip reveal';c.dataset.d=Math.min(i,4);
+    c.innerHTML=`<div class="vn">VAULT · ${v[0]}</div><h4>${v[1]}</h4><p>Permanently archived.</p>`;
+    grid.appendChild(c);
+  });
+})();
+
+/* ---------- BUILD: Hall of Fame ---------- */
+(function(){
+  const ic={
+    f:'<path d="M12 2l3 6 6 .8-4.5 4.2 1.2 6L12 16.8 6.3 19l1.2-6L3 8.8 9 8z"/>',
+    p:'<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/>',
+    m:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5l2 2 4-4"/>',
+    fel:'<path d="M5 22V8a7 7 0 0 1 14 0v14M5 12h14"/>'
+  };
+  const items=[
+    ['f','Founding Cubes','The first cohort — forever first.'],
+    ['p','Pioneer Award Winners','Cubes whose work shaped real products.'],
+    ['m','Cube Mentors','Those who guide the next generation.'],
+    ['fel','Iceberg Fellows','The highest honour on the Wall.']
+  ];
+  const grid=document.getElementById('hofGrid');
+  items.forEach((h,i)=>{
+    const c=document.createElement('div');
+    c.className='hof-card reveal';c.dataset.d=Math.min(i,4);
+    c.innerHTML=`<div class="hof-ic"><svg viewBox="0 0 24 24">${ic[h[0]]}</svg></div><h4>${h[1]}</h4><p>${h[2]}</p>`;
+    grid.appendChild(c);
+  });
+})();
+
+/* ---------- BUILD: Network viz ---------- */
+(function(){
+  const svg=document.getElementById('netSvg');
+  const cx=200,cy=200,R=140,N=6,ns='http://www.w3.org/2000/svg';
+  const pts=[];
+  for(let i=0;i<N;i++){const a=(Math.PI*2/N)*i-Math.PI/2;pts.push([cx+Math.cos(a)*R,cy+Math.sin(a)*R]);}
+  // lines to centre + ring
+  pts.forEach((p,i)=>{
+    [[cx,cy],pts[(i+1)%N]].forEach(t=>{
+      const l=document.createElementNS(ns,'line');
+      l.setAttribute('x1',p[0]);l.setAttribute('y1',p[1]);
+      l.setAttribute('x2',t[0]);l.setAttribute('y2',t[1]);
+      l.setAttribute('class','net-line');svg.appendChild(l);
+    });
+  });
+  // core
+  const core=document.createElementNS(ns,'circle');
+  core.setAttribute('cx',cx);core.setAttribute('cy',cy);core.setAttribute('r',26);
+  core.setAttribute('class','core');svg.appendChild(core);
+  const ct=document.createElementNS(ns,'text');
+  ct.setAttribute('x',cx);ct.setAttribute('y',cy+5);ct.setAttribute('text-anchor','middle');
+  ct.setAttribute('fill','#fff');ct.setAttribute('font-size','13');ct.setAttribute('font-weight','700');
+  ct.textContent='X';svg.appendChild(ct);
+  // nodes
+  pts.forEach((p,i)=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',p[0]);c.setAttribute('cy',p[1]);c.setAttribute('r',13);
+    c.setAttribute('class','net-dot');
+    c.style.animation=`floaty ${5+i*0.4}s ease-in-out ${i*0.3}s infinite`;
+    svg.appendChild(c);
+  });
+})();
+
+/* ---------- REVEAL on scroll ---------- */
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+},{threshold:.12});
+function observeAll(){document.querySelectorAll('.reveal:not(.in)').forEach(el=>io.observe(el));}
+observeAll();
+
+/* ---------- NUMBER COUNTERS ---------- */
+const counters=document.querySelectorAll('[data-count]');
+const cio=new IntersectionObserver((es)=>{
+  es.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const el=e.target,end=+el.dataset.count,pre=el.dataset.prefix||'',suf=el.dataset.suffix||'';
+    let cur=0,step=Math.max(1,Math.ceil(end/40));
+    const t=setInterval(()=>{cur+=step;if(cur>=end){cur=end;clearInterval(t);}el.textContent=pre+cur+suf;},22);
+    cio.unobserve(el);
+  });
+},{threshold:.6});
+counters.forEach(c=>cio.observe(c));
+
+/* ---------- PARALLAX (hero cubes) ---------- */
+const cubes=document.querySelectorAll('.float-cube');
+addEventListener('scroll',()=>{
+  const y=scrollY;
+  cubes.forEach((c,i)=>{c.style.marginTop=(y*0.04*(i+1)*-0.5)+'px';});
+},{passive:true});
+
+/* ---------- FORM ---------- */
+document.getElementById('submitBtn').addEventListener('click',()=>{
+  const req=['f-name','f-uni','f-deg','f-year','f-why'];
+  let ok=true;
+  req.forEach(id=>{const el=document.getElementById(id);if(!el.value.trim()){el.style.borderColor='var(--magenta)';el.style.boxShadow='0 0 0 4px rgba(230,0,126,.12)';ok=false;}else{el.style.borderColor='';el.style.boxShadow='';}});
+  if(!ok){return;}
+  document.getElementById('formBody').style.display='none';
+  document.getElementById('formSuccess').classList.add('show');
+});
+</script>
+</body>
+</html>
