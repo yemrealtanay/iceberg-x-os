@@ -21,6 +21,7 @@ import { CubeVault } from './pages/CubeVault';
 import { DemoDays } from './pages/DemoDays';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminApplications } from './pages/AdminApplications';
+import { ChangePassword } from './pages/ChangePassword';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           >
             {/* Dashboard Router */}
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="change-password" element={<ChangePassword />} />
 
             {/* Cube Directory & Profile */}
             <Route path="directory" element={<Directory />} />

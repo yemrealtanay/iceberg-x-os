@@ -87,6 +87,48 @@ router.get('/auth/me', requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
+router.post('/auth/change-password', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthenticated' });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'New password must be different from the current password' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const currentPasswordMatches = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!currentPasswordMatches) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const password_hash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password_hash }
+    });
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // CUBES ROUTES
 // ==========================================
@@ -1950,8 +1992,13 @@ router.patch('/admin/applications/:id', requireAuth, isAdmin, async (req, res) =
     }
     const nextCubeNumber = String(nextNum).padStart(3, '0');
 
+    const defaultCubePassword = process.env.DEFAULT_CUBE_PASSWORD;
+    if (!defaultCubePassword) {
+      return res.status(500).json({ error: 'DEFAULT_CUBE_PASSWORD is not configured' });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await bcrypt.hash(defaultCubePassword, 10);
 
       const user = await tx.user.create({
         data: {

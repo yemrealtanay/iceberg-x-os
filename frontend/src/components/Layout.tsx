@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -97,6 +97,13 @@ export const Layout: React.FC = () => {
                   </div>
                 )}
               </div>
+              <Link
+                to="/change-password"
+                className="p-2 text-gray-400 hover:text-magenta hover:bg-gray-50 rounded-full transition-colors duration-200"
+                title="Change password"
+              >
+                <KeyRound className="w-5 h-5" />
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-400 hover:text-magenta hover:bg-gray-50 rounded-full transition-colors duration-200"
@@ -152,13 +159,23 @@ export const Layout: React.FC = () => {
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 text-gray-500 hover:text-magenta hover:bg-magenta/5 border border-gray-100 rounded-xl text-sm font-semibold transition-all duration-200"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/change-password"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-500 hover:text-magenta hover:bg-magenta/5 border border-gray-100 rounded-xl text-sm font-semibold transition-all duration-200"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>Password</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 text-gray-500 hover:text-magenta hover:bg-magenta/5 border border-gray-100 rounded-xl text-sm font-semibold transition-all duration-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

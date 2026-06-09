@@ -60,7 +60,7 @@ export const AdminApplications: React.FC = () => {
         cohort
       });
 
-      alert(`Application Approved!\n\nUser: ${res.user.name}\nEmail: ${res.user.email}\nCube Number: #${res.profile.cube_number}\nDefault Password: password123`);
+      alert(`Application Approved!\n\nUser: ${res.user.name}\nEmail: ${res.user.email}\nCube Number: #${res.profile.cube_number}\n\nShare login credentials through the approved secure channel.`);
       
       setApplications(prev => prev.map(a => a.id === selectedApp.id ? { ...a, status: 'approved' } : a));
       setSelectedApp(null);

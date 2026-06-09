@@ -51,6 +51,9 @@ OPENAI_API_KEY="your_openai_api_key_here"
 APP_URL="http://localhost:5173"
 NODE_ENV="development"
 PORT=5001
+SEED_STAFF_PASSWORD="set-a-secure-staff-seed-password"
+SEED_CUBE_PASSWORD="set-a-secure-cube-seed-password"
+DEFAULT_CUBE_PASSWORD="set-a-secure-default-cube-password"
 ```
 
 ### 2. Install Dependencies
@@ -78,20 +81,30 @@ Open the Vite dev server at [http://localhost:5173](http://localhost:5173). The 
 
 ---
 
-## Default Login Credentials
+## Seeded Users
 
-All seeded users use the password: `password123`
+Seeded Admin users:
+- `yunus.altanay@iceberg-digital.co.uk`
+- `mark@iceberg-digital.co.uk`
+- `ahmet.solmaz@iceberg-digital.co.uk`
+- `baris@iceberg-digital.co.uk`
+- `yusuf@iceberg-digital.co.uk`
 
-- **Admin User**: `admin@iceberg.com`
-- **Mentor 1**: `mentor1@iceberg.com` (Assigned to Cube 1, 3, 5)
-- **Mentor 2**: `mentor2@iceberg.com` (Assigned to Cube 2, 4)
-- **Cubes**: `cube1@iceberg.com` to `cube5@iceberg.com`
+Seeded Mentor users:
+- `onur.basterzi@iceberg-digital.co.uk`
+- `altug.ege@iceberg-digital.co.uk`
+- `bora.kucukkara@iceberg-digital.co.uk`
+- `furkan.meraloglu@iceberg-digital.co.uk`
+
+Seeded Iceberg Fellows use `Role.CUBE`, `current_level = Iceberg_Fellow`, and `status = alumni` until the dedicated Cube Mentor/Fellow layer is introduced.
+
+Passwords are intentionally not documented in the repository. Configure seed and default onboarding passwords with `SEED_STAFF_PASSWORD`, `SEED_CUBE_PASSWORD`, optional `SEED_YUNUS_PASSWORD`, and `DEFAULT_CUBE_PASSWORD` in the deployment environment or local `.env`.
 
 ---
 
 ## What Each User Type Can Do
 
-Iceberg X OS is built around three main user types: **Admin**, **Mentor**, and **Cube**. After login, all roles can access the shared workspace areas such as Dashboard, Cube Directory, Missions, Cube Vault, and Badges. Create, edit, review, and administration permissions vary by role.
+Iceberg X OS is built around three main user types: **Admin**, **Mentor**, and **Cube**. After login, all roles can access the shared workspace areas such as Dashboard, Cube Directory, Missions, Cube Vault, Badges, and Change Password. Create, edit, review, and administration permissions vary by role.
 
 ### Admin
 
