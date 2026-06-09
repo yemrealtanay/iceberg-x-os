@@ -124,7 +124,7 @@ export const Layout: React.FC = () => {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-gray-100 px-4 pt-2 pb-4 space-y-1 shadow-inner animate-fadeIn">
+          <div className="lg:hidden bg-white border-b border-gray-100 px-4 pt-2 pb-4 space-y-1 shadow-inner animate-fadeIn">
             {links.map((link) => {
               const Icon = link.icon;
               const isActive = location.pathname === link.path;

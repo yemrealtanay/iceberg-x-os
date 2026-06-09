@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { Check, ShieldAlert, Sparkles, Award, ArrowDown, Users, HelpCircle, Archive, Globe, Quote } from 'lucide-react';
+import { Check, ShieldAlert, Sparkles, Award, ArrowDown, Users, HelpCircle, Archive, Globe, Quote, Menu, X } from 'lucide-react';
 
 export const Welcome: React.FC = () => {
   const { user } = useAuth();
@@ -11,6 +11,7 @@ export const Welcome: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
@@ -257,7 +258,34 @@ export const Welcome: React.FC = () => {
               </Link>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden w-12 h-12 rounded-2xl bg-white/90 border border-black/5 shadow-sm text-slate-700 hover:text-[#e6007e] hover:bg-white transition-all flex items-center justify-center"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+        {mobileMenuOpen && (
+          <div className="md:hidden mx-4 mt-3 rounded-3xl bg-white/95 backdrop-blur-md border border-black/5 shadow-xl overflow-hidden">
+            <div className="flex flex-col p-2 text-sm font-bold text-slate-700">
+              <a href="#what" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">The Programme</a>
+              <a href="#cube" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">The Cube</a>
+              <a href="#journey" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">Journey</a>
+              <a href="#fellowship" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">Fellowship</a>
+              {user ? (
+                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="mt-2 px-4 py-3 rounded-2xl bg-[#e6007e] text-white text-center shadow-sm shadow-magenta/20">
+                  Enter Platform
+                </Link>
+              ) : (
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2 px-4 py-3 rounded-2xl bg-slate-950 text-white text-center shadow-sm">
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* 1. HERO */}
