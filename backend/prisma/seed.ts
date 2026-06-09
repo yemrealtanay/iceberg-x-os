@@ -71,21 +71,21 @@ async function main() {
 
   // 3. Seed Cubes (Students)
   const cubeStudents = [
-    { name: 'Mesut Umur Tokyürek', email: 'umrtkyrk@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Barış Tepe', email: 'baristepe04@gmail.com', internship_status: 'Zorunlu Staj Belgesi Gönderecek' },
-    { name: 'Süleyman Emre Parlak', email: 'emre-parlak2002@hotmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Ozan Uslan', email: 'uslanozan@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Gözde Kaçar', email: 'kcr.gozde@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Ayşenur Demezoğlu', email: 'aysenurdemezoglu@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Zelal Erpay', email: 'zelalerpay06@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Tarık Deniz', email: 'tarikdeniz2002@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Emir Bakkal', email: 'ebakkal2@gmail.com', internship_status: 'Zorunlu Stajı yok' },
-    { name: 'Henife Yaylı', email: 'henifeyayli@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
-    { name: 'Medine Kaynak', email: 'medinekaynak2906@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
-    { name: 'Ali Çağlar Koçer', email: 'alicaglarkocer@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
-    { name: 'Doğukan Taha Tıraş', email: 'dogukantt27@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
-    { name: 'Enes Yusuf Gökçe', email: 'eyusufgokce@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' },
-    { name: 'Seyfullah Korkmaz', email: 'seyfullahkorkmaz115@gmail.com', internship_status: 'Staj Belgesi Dolduruldu Gönderildi' }
+    { name: 'Mesut Umur Tokyürek', email: 'umrtkyrk@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Barış Tepe', email: 'baristepe04@gmail.com', internship_status: 'Will submit mandatory internship document' },
+    { name: 'Süleyman Emre Parlak', email: 'emre-parlak2002@hotmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Ozan Uslan', email: 'uslanozan@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Gözde Kaçar', email: 'kcr.gozde@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Ayşenur Demezoğlu', email: 'aysenurdemezoglu@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Zelal Erpay', email: 'zelalerpay06@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Tarık Deniz', email: 'tarikdeniz2002@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Emir Bakkal', email: 'ebakkal2@gmail.com', internship_status: 'No mandatory internship' },
+    { name: 'Henife Yaylı', email: 'henifeyayli@gmail.com', internship_status: 'Internship document submitted' },
+    { name: 'Medine Kaynak', email: 'medinekaynak2906@gmail.com', internship_status: 'Internship document submitted' },
+    { name: 'Ali Çağlar Koçer', email: 'alicaglarkocer@gmail.com', internship_status: 'Internship document submitted' },
+    { name: 'Doğukan Taha Tıraş', email: 'dogukantt27@gmail.com', internship_status: 'Internship document submitted' },
+    { name: 'Enes Yusuf Gökçe', email: 'eyusufgokce@gmail.com', internship_status: 'Internship document submitted' },
+    { name: 'Seyfullah Korkmaz', email: 'seyfullahkorkmaz115@gmail.com', internship_status: 'Internship document submitted' }
   ];
 
   for (const student of cubeStudents) {

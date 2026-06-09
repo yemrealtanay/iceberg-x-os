@@ -156,7 +156,7 @@ export const Directory: React.FC = () => {
                   </p>
                   {cube.internship_status && (
                     <p>
-                      <span className="font-bold text-gray-600">Staj:</span> <span className="text-magenta font-semibold">{cube.internship_status}</span>
+                      <span className="font-bold text-gray-600">Internship:</span> <span className="text-magenta font-semibold">{cube.internship_status}</span>
                     </p>
                   )}
                   {cube.assigned_mentor && (

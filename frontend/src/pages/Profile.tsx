@@ -235,7 +235,7 @@ export const Profile: React.FC = () => {
             <p><span className="font-bold text-gray-700">Department:</span> {profile.department}</p>
             <p><span className="font-bold text-gray-700">Slack:</span> {profile.slack_handle || 'N/A'}</p>
             {profile.internship_status && (
-              <p><span className="font-bold text-gray-700">Staj Durumu:</span> <span className="text-magenta font-semibold">{profile.internship_status}</span></p>
+              <p><span className="font-bold text-gray-700">Internship Status:</span> <span className="text-magenta font-semibold">{profile.internship_status}</span></p>
             )}
             <p><span className="font-bold text-gray-700">Status:</span> <span className="uppercase text-[10px] font-extrabold bg-gray-100 border border-gray-200/50 px-2 py-0.5 rounded-full text-gray-500">{profile.status.replace(/_/g, ' ')}</span></p>
             {profile.assigned_mentor && (
@@ -299,7 +299,7 @@ export const Profile: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Staj Durumu (Zorunlu staj durumu vb.)</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Internship Status (e.g., compulsory internship details)</label>
               <input type="text" value={editInternshipStatus} onChange={e => setEditInternshipStatus(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
             </div>
 
