@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle } from 'lucide-react';
+import { getBadgeConfig } from '../utils/badgeHelper';
 
 export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // CubeProfile ID
@@ -574,20 +575,25 @@ export const Profile: React.FC = () => {
 
           {profile.cube_badges && profile.cube_badges.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {profile.cube_badges.map((award: any) => (
-                <div key={award.id} className="border border-gray-100 p-4 rounded-xl flex flex-col items-center text-center gap-2 bg-gray-50/50" title={award.reason}>
-                  <div className="w-12 h-12 rounded-full bg-magenta/10 text-magenta flex items-center justify-center font-extrabold text-sm">
-                    {award.badge.name[0]}
+              {profile.cube_badges.map((award: any) => {
+                const config = getBadgeConfig(award.badge.icon, award.badge.name);
+                const IconComp = config.icon;
+
+                return (
+                  <div key={award.id} className="border border-gray-100 p-4 rounded-xl flex flex-col items-center text-center gap-2 bg-gray-50/50 hover:border-magenta/20 hover:scale-[1.02] transition-all duration-300 group" title={award.reason}>
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${config.gradient} text-white flex items-center justify-center ${config.glow} transition-all duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+                      <IconComp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-gray-900 leading-tight">{award.badge.name}</h4>
+                      <p className="text-[9px] text-gray-400 mt-1 uppercase tracking-wider">
+                        {award.mission ? award.mission.title : 'General Award'}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-semibold line-clamp-2 mt-1 italic">"{award.reason}"</p>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-xs text-gray-900 leading-tight">{award.badge.name}</h4>
-                    <p className="text-[9px] text-gray-400 mt-1 uppercase tracking-wider">
-                      {award.mission ? award.mission.title : 'General Award'}
-                    </p>
-                  </div>
-                  <p className="text-[10px] text-gray-500 font-semibold line-clamp-2 mt-1 italic">"{award.reason}"</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-gray-400 text-sm py-4 text-center">No badges awarded yet.</p>

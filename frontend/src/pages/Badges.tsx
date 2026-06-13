@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Plus, Award, Check, Trash2, X } from 'lucide-react';
+import { getBadgeConfig } from '../utils/badgeHelper';
 
 export const Badges: React.FC = () => {
   const { user } = useAuth();
@@ -266,61 +267,75 @@ export const Badges: React.FC = () => {
 
       {/* Grid listing Badges */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {badges.map((badge) => (
-          <div key={badge.id} className="bg-white border border-gray-100 p-6 rounded-2xl shadow-subtle flex flex-col gap-4 relative group">
-            {isAdmin && (
-              <button
-                onClick={() => handleDeleteBadge(badge.id)}
-                className="absolute top-4 right-4 p-1.5 hover:bg-red-50 border border-transparent rounded-lg text-gray-400 hover:text-red-500 hover:border-red-100 transition-all opacity-0 group-hover:opacity-100"
-                title="Delete badge definition"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-magenta/10 text-magenta flex items-center justify-center font-black text-sm">
-                {badge.name[0]}
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base text-gray-900 leading-tight">{badge.name}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Icon tag: {badge.icon}</p>
-              </div>
-            </div>
+        {badges.map((badge) => {
+          const config = getBadgeConfig(badge.icon, badge.name);
+          const IconComp = config.icon;
 
-            <p className="text-xs text-gray-500 leading-relaxed font-medium">{badge.description}</p>
-
-            {/* List of earners */}
-            <div className="border-t border-gray-50 pt-4 flex flex-col gap-2">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Earned by ({badge.cube_badges?.length || 0})
-              </p>
-              {badge.cube_badges && badge.cube_badges.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {badge.cube_badges.map((award: any) => (
-                    <span
-                      key={award.id}
-                      className="bg-magenta/5 border border-magenta/10 text-magenta text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
-                      title={award.reason}
-                    >
-                      <span>{award.cube.user.name}</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleRevokeAward(award.id)}
-                          className="hover:bg-magenta/10 rounded-full p-0.5 flex items-center justify-center"
-                          title="Revoke award"
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-gray-400 italic">No Cubes have earned this badge yet.</p>
+          return (
+            <div
+              key={badge.id}
+              className={`bg-white border ${config.borderColor} p-6 rounded-2xl shadow-subtle hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col gap-4 relative group`}
+            >
+              {isAdmin && (
+                <button
+                  onClick={() => handleDeleteBadge(badge.id)}
+                  className="absolute top-4 right-4 p-1.5 hover:bg-red-50 border border-transparent rounded-lg text-gray-400 hover:text-red-500 hover:border-red-100 transition-all opacity-0 group-hover:opacity-100 z-10"
+                  title="Delete badge definition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               )}
+
+              {/* Category Pill Tag */}
+              <span className={`absolute top-4 ${isAdmin ? 'right-12' : 'right-4'} text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${config.badgeBg} ${config.textColor} tracking-wider font-sans`}>
+                {config.category}
+              </span>
+
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${config.gradient} text-white flex items-center justify-center ${config.glow} transition-all duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+                  <IconComp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-gray-900 leading-tight">{badge.name}</h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase tracking-wider">Icon: {badge.icon}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 leading-relaxed font-medium">{badge.description}</p>
+
+              {/* List of earners */}
+              <div className="border-t border-gray-50 pt-4 flex flex-col gap-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Earned by ({badge.cube_badges?.length || 0})
+                </p>
+                {badge.cube_badges && badge.cube_badges.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {badge.cube_badges.map((award: any) => (
+                      <span
+                        key={award.id}
+                        className="bg-magenta/5 border border-magenta/10 text-magenta text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
+                        title={award.reason}
+                      >
+                        <span>{award.cube.user.name}</span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleRevokeAward(award.id)}
+                            className="hover:bg-magenta/10 rounded-full p-0.5 flex items-center justify-center"
+                            title="Revoke award"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-gray-400 italic">No Cubes have earned this badge yet.</p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
     </div>
