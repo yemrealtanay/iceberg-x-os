@@ -315,8 +315,8 @@ export const DemoSubmission: React.FC = () => {
 
             {aiRefResult ? (
               <div className="flex flex-col gap-3">
-                <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium">
-                  <ReactMarkdown className="markdown-body text-xs font-medium text-gray-700">{aiRefResult}</ReactMarkdown>
+                <div className="markdown-body bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium leading-relaxed">
+                  <ReactMarkdown>{aiRefResult}</ReactMarkdown>
                 </div>
                 <button
                   onClick={handleFetchAIReflection}

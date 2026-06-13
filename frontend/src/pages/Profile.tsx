@@ -481,8 +481,8 @@ export const Profile: React.FC = () => {
                 ) : (
                   <div className="flex flex-col gap-4">
                     {/* Overview Paragraph */}
-                    <div className="bg-slate-50/50 border border-gray-100 p-3.5 rounded-xl text-xs text-gray-600 font-semibold leading-relaxed italic">
-                      <ReactMarkdown className="markdown-body text-xs font-semibold text-gray-600 italic leading-relaxed">{parsedAiSummary.overview}</ReactMarkdown>
+                    <div className="markdown-body bg-slate-50/50 border border-gray-100 p-3.5 rounded-xl text-xs text-gray-600 font-semibold leading-relaxed italic">
+                      <ReactMarkdown>{parsedAiSummary.overview}</ReactMarkdown>
                     </div>
 
                     {/* Strengths & Improvements Lists */}
@@ -497,7 +497,9 @@ export const Profile: React.FC = () => {
                             {parsedAiSummary.strengths.map((s: string, idx: number) => (
                               <li key={idx} className="flex items-start gap-1.5 leading-tight">
                                 <span className="text-green-500">✓</span>
-                                <ReactMarkdown className="markdown-body inline-block text-[11px] text-gray-600 font-semibold" components={{ p: 'span' }}>{s}</ReactMarkdown>
+                                <div className="markdown-body inline-block text-[11px] text-gray-600 font-semibold">
+                                  <ReactMarkdown components={{ p: 'span' }}>{s}</ReactMarkdown>
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -514,7 +516,9 @@ export const Profile: React.FC = () => {
                             {parsedAiSummary.improvements.map((imp: string, idx: number) => (
                               <li key={idx} className="flex items-start gap-1.5 leading-tight">
                                 <span className="text-amber-500">•</span>
-                                <ReactMarkdown className="markdown-body inline-block text-[11px] text-gray-600 font-semibold" components={{ p: 'span' }}>{imp}</ReactMarkdown>
+                                <div className="markdown-body inline-block text-[11px] text-gray-600 font-semibold">
+                                  <ReactMarkdown components={{ p: 'span' }}>{imp}</ReactMarkdown>
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -527,7 +531,9 @@ export const Profile: React.FC = () => {
                       <div className="border-t border-gray-50 pt-3">
                         <div className="bg-magenta/5 border border-magenta/10 p-3 rounded-xl flex flex-col gap-1">
                           <p className="text-[9px] font-extrabold uppercase tracking-wider text-magenta">Suggested Progression Path</p>
-                          <ReactMarkdown className="markdown-body text-xs font-bold text-slate-800 leading-tight">{parsedAiSummary.nextSteps}</ReactMarkdown>
+                          <div className="markdown-body text-xs font-bold text-slate-800 leading-tight">
+                            <ReactMarkdown>{parsedAiSummary.nextSteps}</ReactMarkdown>
+                          </div>
                         </div>
                       </div>
                     )}
