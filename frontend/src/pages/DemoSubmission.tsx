@@ -3,6 +3,7 @@ import { api } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Rocket, ShieldAlert, Sparkles, Send } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const DemoSubmission: React.FC = () => {
   const { user } = useAuth();
@@ -314,8 +315,8 @@ export const DemoSubmission: React.FC = () => {
 
             {aiRefResult ? (
               <div className="flex flex-col gap-3">
-                <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium prose prose-sm">
-                  {aiRefResult.split('\n').map((para, i) => <p key={i} className="mb-2 last:mb-0">{para}</p>)}
+                <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium">
+                  <ReactMarkdown className="markdown-body text-xs font-medium text-gray-700">{aiRefResult}</ReactMarkdown>
                 </div>
                 <button
                   onClick={handleFetchAIReflection}

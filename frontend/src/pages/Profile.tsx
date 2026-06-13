@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle } from 'lucide-react';
 import { getBadgeConfig } from '../utils/badgeHelper';
+import ReactMarkdown from 'react-markdown';
 
 export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // CubeProfile ID
@@ -481,7 +482,7 @@ export const Profile: React.FC = () => {
                   <div className="flex flex-col gap-4">
                     {/* Overview Paragraph */}
                     <div className="bg-slate-50/50 border border-gray-100 p-3.5 rounded-xl text-xs text-gray-600 font-semibold leading-relaxed italic">
-                      "{parsedAiSummary.overview}"
+                      <ReactMarkdown className="markdown-body text-xs font-semibold text-gray-600 italic leading-relaxed">{parsedAiSummary.overview}</ReactMarkdown>
                     </div>
 
                     {/* Strengths & Improvements Lists */}
@@ -496,7 +497,7 @@ export const Profile: React.FC = () => {
                             {parsedAiSummary.strengths.map((s: string, idx: number) => (
                               <li key={idx} className="flex items-start gap-1.5 leading-tight">
                                 <span className="text-green-500">✓</span>
-                                <span>{s}</span>
+                                <ReactMarkdown className="markdown-body inline-block text-[11px] text-gray-600 font-semibold" components={{ p: 'span' }}>{s}</ReactMarkdown>
                               </li>
                             ))}
                           </ul>
@@ -513,7 +514,7 @@ export const Profile: React.FC = () => {
                             {parsedAiSummary.improvements.map((imp: string, idx: number) => (
                               <li key={idx} className="flex items-start gap-1.5 leading-tight">
                                 <span className="text-amber-500">•</span>
-                                <span>{imp}</span>
+                                <ReactMarkdown className="markdown-body inline-block text-[11px] text-gray-600 font-semibold" components={{ p: 'span' }}>{imp}</ReactMarkdown>
                               </li>
                             ))}
                           </ul>
@@ -526,7 +527,7 @@ export const Profile: React.FC = () => {
                       <div className="border-t border-gray-50 pt-3">
                         <div className="bg-magenta/5 border border-magenta/10 p-3 rounded-xl flex flex-col gap-1">
                           <p className="text-[9px] font-extrabold uppercase tracking-wider text-magenta">Suggested Progression Path</p>
-                          <p className="text-xs font-bold text-slate-800 leading-tight">{parsedAiSummary.nextSteps}</p>
+                          <ReactMarkdown className="markdown-body text-xs font-bold text-slate-800 leading-tight">{parsedAiSummary.nextSteps}</ReactMarkdown>
                         </div>
                       </div>
                     )}

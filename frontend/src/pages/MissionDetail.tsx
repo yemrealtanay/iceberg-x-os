@@ -749,8 +749,8 @@ export const MissionDetail: React.FC = () => {
                     className="w-full p-2.5 border border-gray-200 focus:border-magenta text-xs font-semibold rounded-lg outline-none"
                   />
                 ) : (
-                  <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium prose prose-sm">
-                    {editedSummary.split('\n').map((para, i) => <p key={i} className="mb-2 last:mb-0">{para}</p>)}
+                  <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium">
+                    <ReactMarkdown className="markdown-body text-xs font-medium text-gray-700">{editedSummary}</ReactMarkdown>
                   </div>
                 )}
 

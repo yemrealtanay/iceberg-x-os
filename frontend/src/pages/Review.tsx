@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Sparkles, Star, Save } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const Review: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Optional mission ID
@@ -349,8 +350,8 @@ export const Review: React.FC = () => {
 
             {aiDraft ? (
               <div className="flex flex-col gap-3">
-                <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium prose prose-sm">
-                  {aiDraft.split('\n').map((para, i) => <p key={i} className="mb-2 last:mb-0">{para}</p>)}
+                <div className="bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium">
+                  <ReactMarkdown className="markdown-body text-xs font-medium text-gray-700">{aiDraft}</ReactMarkdown>
                 </div>
                 <div className="flex gap-2">
                   <button
