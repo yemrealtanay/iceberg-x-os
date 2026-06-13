@@ -561,14 +561,14 @@ export const Welcome: React.FC = () => {
               <div className="relative z-10 flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[10px] text-[#ff99cc] font-extrabold tracking-[0.22em] uppercase">Active</div>
-                  <h4 className="mt-3 text-3xl font-black text-white tracking-tight">#000</h4>
+                  <h4 className="mt-3 text-[1.35rem] font-black text-white tracking-tight">#000 / #001 / #007</h4>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white/60">
                   Classified
                 </span>
               </div>
               <div className="relative z-10 mt-auto">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">The Original Cube</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Classified Cubes</p>
                 <p className="mt-2 text-xs font-semibold leading-relaxed text-white/50">No further information available.</p>
               </div>
             </div>

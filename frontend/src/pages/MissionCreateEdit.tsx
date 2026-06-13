@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, ArrowLeft, Save } from 'lucide-react';
+import { MarkdownEditor } from '../components/MarkdownEditor';
 
 export const MissionCreateEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Optional Mission ID
@@ -166,14 +167,13 @@ export const MissionCreateEdit: React.FC = () => {
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">
             Description <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <MarkdownEditor
             required
-            rows={3}
+            rows={4}
             placeholder="Provide a general overview of the mission..."
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={setDescription}
             disabled={submitting}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-magenta focus:bg-white text-xs font-semibold transition-all resize-none"
           />
         </div>
 
@@ -181,14 +181,13 @@ export const MissionCreateEdit: React.FC = () => {
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">
             Context & Background <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <MarkdownEditor
             required
-            rows={3}
+            rows={4}
             placeholder="Why is this mission valuable? What is the background detail?"
             value={context}
-            onChange={(e) => setContext(e.target.value)}
+            onChange={setContext}
             disabled={submitting}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-magenta focus:bg-white text-xs font-semibold transition-all resize-none"
           />
         </div>
 
@@ -196,14 +195,13 @@ export const MissionCreateEdit: React.FC = () => {
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">
             Problem Statement <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <MarkdownEditor
             required
-            rows={3}
+            rows={4}
             placeholder="Specify the exact technical challenge to solve..."
             value={problemStatement}
-            onChange={(e) => setProblemStatement(e.target.value)}
+            onChange={setProblemStatement}
             disabled={submitting}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-magenta focus:bg-white text-xs font-semibold transition-all resize-none"
           />
         </div>
 
@@ -211,14 +209,13 @@ export const MissionCreateEdit: React.FC = () => {
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">
             Expected Outputs & Deliverables <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <MarkdownEditor
             required
-            rows={2}
+            rows={3}
             placeholder="e.g. Working API microservice and React UI dashboard skeleton"
             value={expectedOutput}
-            onChange={(e) => setExpectedOutput(e.target.value)}
+            onChange={setExpectedOutput}
             disabled={submitting}
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-magenta focus:bg-white text-xs font-semibold transition-all resize-none"
           />
         </div>
 

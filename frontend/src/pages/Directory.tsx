@@ -49,7 +49,7 @@ export const Directory: React.FC = () => {
 
   // Filter cubes
   const filteredCubes = cubes.filter((cube) => {
-    const isOriginalCube = cube.cube_number === '000';
+    const isOriginalCube = ['000', '001', '007'].includes(cube.cube_number);
     const normalizedSearch = searchQuery.toLowerCase();
     const matchesSearch =
       cube.user.name.toLowerCase().includes(normalizedSearch) ||
@@ -123,7 +123,7 @@ export const Directory: React.FC = () => {
       {filteredCubes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCubes.map((cube) => {
-            const isOriginalCube = cube.cube_number === '000';
+            const isOriginalCube = ['000', '001', '007'].includes(cube.cube_number);
             const isFounding = cube.is_founding_cube;
 
             if (isOriginalCube) {
@@ -137,7 +137,7 @@ export const Directory: React.FC = () => {
                   <div className="relative z-10 flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-magenta">Classified Record</p>
-                      <h3 className="mt-3 text-2xl font-black tracking-tight text-white">Cube #000</h3>
+                      <h3 className="mt-3 text-2xl font-black tracking-tight text-white">Cube #{cube.cube_number}</h3>
                     </div>
                     <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-200">
                       Active

@@ -83,13 +83,18 @@ async function main() {
     cube_number: '000',
   };
 
+  const mysteriousCubes = [
+    { name: 'Cube #001', email: 'mysterious.001@iceberg-digital.co.uk', cube_number: '001' },
+    { name: 'Cube #007', email: 'mysterious.007@iceberg-digital.co.uk', cube_number: '007' },
+  ];
+
   const seniorCubes = [
-    { name: 'Elif Yıldız', email: 'elif.yildiz@iceberg-digital.co.uk', cube_number: '001' },
-    { name: 'İlayda Günay', email: 'ilayda.gunay@iceberg-digital.co.uk', cube_number: '002' },
-    { name: 'Özcan Yıldızhan', email: 'ozcan.yildizhan@iceberg-digital.co.uk', cube_number: '003' },
-    { name: 'Cenk Yalçın', email: 'cenk.yalcin@iceberg-digital.co.uk', cube_number: '004' },
-    { name: 'Batuhan Koç', email: 'batuhan.koc@iceberg-digital.co.uk', cube_number: '005' },
-    { name: 'Doğancan Acar', email: 'dogancan.acar@iceberg-digital.co.uk', cube_number: '006' },
+    { name: 'Elif Yıldız', email: 'elif.yildiz@iceberg-digital.co.uk', cube_number: '002' },
+    { name: 'İlayda Günay', email: 'ilayda.gunay@iceberg-digital.co.uk', cube_number: '003' },
+    { name: 'Özcan Yıldızhan', email: 'ozcan.yildizhan@iceberg-digital.co.uk', cube_number: '004' },
+    { name: 'Cenk Yalçın', email: 'cenk.yalcin@iceberg-digital.co.uk', cube_number: '005' },
+    { name: 'Batuhan Koç', email: 'batuhan.koc@iceberg-digital.co.uk', cube_number: '006' },
+    { name: 'Doğancan Acar', email: 'dogancan.acar@iceberg-digital.co.uk', cube_number: '008' },
   ];
 
   const badgeDefinitions = [
@@ -210,26 +215,49 @@ async function main() {
     }
   }
 
-  // 4. Seed the original Cube and experienced Cubes first. They keep #000-#006.
-  const reservedCubeEmails = [originalCube.email, ...seniorCubes.map(cube => cube.email)];
+  // 4. Seed the original Cube, mysterious Cubes, and experienced Cubes.
   await prisma.$transaction(async (tx) => {
-    const reservedNumbers = [originalCube.cube_number, ...seniorCubes.map(cube => cube.cube_number)];
-    const displacedProfiles = await tx.cubeProfile.findMany({
+    // Check if we need to shift existing profiles (idempotent shift check)
+    const needShiftProfile = await tx.cubeProfile.findFirst({
       where: {
-        cube_number: { in: reservedNumbers },
-        user: { email: { notIn: reservedCubeEmails } }
-      },
-      include: { user: true },
-      orderBy: { cube_number: 'asc' }
+        cube_number: '001',
+        user: { email: 'elif.yildiz@iceberg-digital.co.uk' }
+      }
     });
 
-    for (const profile of displacedProfiles) {
-      await tx.cubeProfile.update({
-        where: { id: profile.id },
-        data: { cube_number: `TEMP-${profile.id}` }
+    if (needShiftProfile) {
+      console.log('Database shift detected. Moving profiles in descending order to avoid unique constraints...');
+      const allProfiles = await tx.cubeProfile.findMany({
+        include: { user: true }
       });
+      
+      const sortedProfiles = allProfiles
+        .map(p => ({ p, num: parseInt(p.cube_number, 10) }))
+        .filter(item => !isNaN(item.num))
+        .sort((a, b) => b.num - a.num);
+
+      for (const { p, num } of sortedProfiles) {
+        let newNum: number;
+        if (num >= 1 && num <= 5) {
+          newNum = num + 1;
+        } else if (num === 6) {
+          newNum = 8;
+        } else if (num >= 7) {
+          newNum = num + 2;
+        } else {
+          continue; // Keep 000 as is
+        }
+        
+        const newCubeNumber = String(newNum).padStart(3, '0');
+        console.log(`Shifting profile of ${p.user.email} from ${p.cube_number} to ${newCubeNumber}`);
+        await tx.cubeProfile.update({
+          where: { id: p.id },
+          data: { cube_number: newCubeNumber }
+        });
+      }
     }
 
+    // A. Seed Original Cube #000
     const originalCubePasswordHash = await bcrypt.hash(cubePassword, 10);
     const existingOriginalUser = await tx.user.findUnique({
       where: { email: originalCube.email }
@@ -306,6 +334,77 @@ async function main() {
       }
     }
 
+    // B. Seed Mysterious Cubes #001 & #007
+    for (const myst of mysteriousCubes) {
+      const mystPasswordHash = await bcrypt.hash(cubePassword, 10);
+      const existingUser = await tx.user.findUnique({
+        where: { email: myst.email }
+      });
+
+      if (!existingUser) {
+        console.log(`Creating Mysterious Cube: ${myst.name} (${myst.email}) as Cube #${myst.cube_number}...`);
+        const user = await tx.user.create({
+          data: {
+            name: myst.name,
+            email: myst.email,
+            password_hash: mystPasswordHash,
+            role: Role.CUBE
+          }
+        });
+
+        await tx.cubeProfile.create({
+          data: {
+            user_id: user.id,
+            cube_number: myst.cube_number,
+            cohort: 'Unknown',
+            university: '',
+            department: '',
+            skills: [],
+            interests: [],
+            current_level: CubeLevel.Cube,
+            status: CubeStatus.active,
+            internship_status: 'No further information available.',
+            is_founding_cube: false
+          }
+        });
+      } else {
+        console.log(`Updating Mysterious Cube: ${myst.email} as Cube #${myst.cube_number}.`);
+        await tx.user.update({
+          where: { email: myst.email },
+          data: {
+            name: myst.name,
+            role: Role.CUBE,
+          }
+        });
+        
+        await tx.cubeProfile.upsert({
+          where: { user_id: existingUser.id },
+          create: {
+            user_id: existingUser.id,
+            cube_number: myst.cube_number,
+            cohort: 'Unknown',
+            university: '',
+            department: '',
+            skills: [],
+            interests: [],
+            current_level: CubeLevel.Cube,
+            status: CubeStatus.active,
+            internship_status: 'No further information available.',
+            is_founding_cube: false
+          },
+          update: {
+            cube_number: myst.cube_number,
+            cohort: 'Unknown',
+            current_level: CubeLevel.Cube,
+            status: CubeStatus.active,
+            internship_status: 'No further information available.',
+            is_founding_cube: false
+          }
+        });
+      }
+    }
+
+    // C. Seed Senior Cubes (002-006, 008)
     for (const fellow of seniorCubes) {
       const passwordHash = await bcrypt.hash(cubePassword, 10);
       const existingUser = await tx.user.findUnique({
@@ -382,32 +481,6 @@ async function main() {
           });
         }
       }
-    }
-
-    const usedProfiles = await tx.cubeProfile.findMany({
-      select: { cube_number: true }
-    });
-    const usedNumbers = new Set(
-      usedProfiles
-        .map(profile => profile.cube_number)
-        .filter(number => !number.startsWith('TEMP-'))
-    );
-    let nextNum = 1;
-
-    for (const profile of displacedProfiles) {
-      let nextCubeNumber = cubeNumber(nextNum);
-      while (usedNumbers.has(nextCubeNumber)) {
-        nextNum += 1;
-        nextCubeNumber = cubeNumber(nextNum);
-      }
-
-      console.log(`Reassigning existing Cube ${profile.user.email} to Cube #${nextCubeNumber}.`);
-      await tx.cubeProfile.update({
-        where: { id: profile.id },
-        data: { cube_number: nextCubeNumber }
-      });
-      usedNumbers.add(nextCubeNumber);
-      nextNum += 1;
     }
   });
 

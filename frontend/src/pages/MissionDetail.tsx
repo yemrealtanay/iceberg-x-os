@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Calendar, Plus, Save, Trash2, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const MissionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Mission ID
@@ -236,22 +237,30 @@ export const MissionDetail: React.FC = () => {
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-6">
           <div>
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Mission Description</h3>
-            <p className="text-gray-600 text-sm mt-2 leading-relaxed">{mission.description}</p>
+            <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed">
+              <ReactMarkdown>{mission.description}</ReactMarkdown>
+            </div>
           </div>
 
           <div className="border-t border-gray-50 pt-4">
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Context & Background</h3>
-            <p className="text-gray-600 text-sm mt-2 leading-relaxed">{mission.context}</p>
+            <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed">
+              <ReactMarkdown>{mission.context}</ReactMarkdown>
+            </div>
           </div>
 
           <div className="border-t border-gray-50 pt-4">
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Problem Statement</h3>
-            <p className="text-gray-600 text-sm mt-2 leading-relaxed font-mono bg-gray-50 border border-gray-100 p-3.5 rounded-xl">{mission.problem_statement}</p>
+            <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed bg-gray-50 border border-gray-100 p-3.5 rounded-xl font-mono">
+              <ReactMarkdown>{mission.problem_statement}</ReactMarkdown>
+            </div>
           </div>
 
           <div className="border-t border-gray-50 pt-4">
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Expected Deliverables</h3>
-            <p className="text-gray-600 text-sm mt-2 leading-relaxed">{mission.expected_output}</p>
+            <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed">
+              <ReactMarkdown>{mission.expected_output}</ReactMarkdown>
+            </div>
           </div>
 
           {/* Links Row */}

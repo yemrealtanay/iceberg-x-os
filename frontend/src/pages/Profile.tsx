@@ -208,6 +208,45 @@ export const Profile: React.FC = () => {
   const maxCount = sortedCategories.length > 0 ? sortedCategories[0][1] : 1;
 
 
+  const isOriginalCube = ['000', '001', '007'].includes(profile.cube_number);
+
+  if (isOriginalCube) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 rounded-3xl bg-[#111113] border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.25)] text-center relative overflow-hidden flex flex-col items-center gap-6">
+        <div className="absolute -right-24 -top-24 w-72 h-72 rounded-full border border-white/5 opacity-40"></div>
+        <div className="absolute left-6 bottom-6 text-[12rem] font-black leading-none text-white/[0.02] select-none">X</div>
+        
+        <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-magenta">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        
+        <div className="space-y-2">
+          <span className="text-magenta text-xs uppercase font-extrabold tracking-[0.25em]">Classified Record</span>
+          <h1 className="text-4xl font-black text-white tracking-tight">Cube #{profile.cube_number}</h1>
+        </div>
+        
+        <div className="w-full max-w-md border border-white/10 bg-white/[0.03] p-6 rounded-2xl text-left space-y-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Classification</p>
+            <p className="mt-1 text-sm font-extrabold text-white">The Original Cube</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Status</p>
+            <span className="mt-1 inline-block rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-200">
+              Active
+            </span>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Access Level</p>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-white/60">
+              No further information available in this directory.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
