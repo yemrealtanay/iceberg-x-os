@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { FolderOpen, Filter, ShieldAlert, GitBranch, ExternalLink } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const CubeVault: React.FC = () => {
   const [missions, setMissions] = useState<any[]>([]);
@@ -134,11 +135,15 @@ export const CubeVault: React.FC = () => {
                   <div className="flex flex-col gap-3">
                     <div>
                       <h4 className="font-bold text-gray-800 uppercase tracking-wide">Problem Statement</h4>
-                      <p className="mt-1 font-mono bg-gray-50 p-3 rounded-lg border border-gray-100">{m.problem_statement}</p>
+                      <div className="markdown-body mt-1 font-mono bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs font-semibold text-gray-650">
+                        <ReactMarkdown>{m.problem_statement}</ReactMarkdown>
+                      </div>
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-800 uppercase tracking-wide">What Was Tried</h4>
-                      <p className="mt-1">{m.description}</p>
+                      <div className="markdown-body mt-1 text-xs font-semibold text-gray-655">
+                        <ReactMarkdown>{m.description}</ReactMarkdown>
+                      </div>
                     </div>
                   </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { Users, Rocket, Clock, MessageSquare, AlertCircle, Sparkles, BookOpen } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const MentorDashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -68,7 +69,9 @@ export const MentorDashboard: React.FC = () => {
                     <p className="text-xs text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded w-max mt-1.5 uppercase font-bold tracking-wider">
                       {m.status.replace(/_/g, ' ')}
                     </p>
-                    <p className="text-xs text-gray-400 mt-2 line-clamp-2">{m.description}</p>
+                    <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed">
+                      <ReactMarkdown>{m.description}</ReactMarkdown>
+                    </div>
                   </div>
                   <Link to={`/missions/${m.id}`} className="text-xs font-bold text-magenta hover:underline mt-2 self-start flex items-center gap-1">
                     <span>Configure & Review</span>

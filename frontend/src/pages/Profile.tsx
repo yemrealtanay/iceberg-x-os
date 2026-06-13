@@ -208,7 +208,7 @@ export const Profile: React.FC = () => {
   const maxCount = sortedCategories.length > 0 ? sortedCategories[0][1] : 1;
 
 
-  const isOriginalCube = ['000', '001', '007'].includes(profile.cube_number);
+  const isOriginalCube = [0, 1, 7].includes(parseInt(profile.cube_number, 10));
 
   if (isOriginalCube) {
     return (

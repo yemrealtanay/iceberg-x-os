@@ -3,6 +3,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Award, Rocket, MessageSquare, ShieldAlert, Sparkles, Send, PlayCircle, ExternalLink, MessageCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const CubeDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -170,7 +171,9 @@ export const CubeDashboard: React.FC = () => {
                   <Link to={`/missions/${activeMission.id}`} className="text-xl font-bold hover:text-magenta transition-colors">
                     {activeMission.title}
                   </Link>
-                  <p className="text-gray-500 text-sm mt-2">{activeMission.description}</p>
+                  <div className="markdown-body text-gray-500 text-xs mt-2 leading-relaxed">
+                    <ReactMarkdown>{activeMission.description}</ReactMarkdown>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">

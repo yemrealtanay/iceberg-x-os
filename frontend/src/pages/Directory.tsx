@@ -49,7 +49,7 @@ export const Directory: React.FC = () => {
 
   // Filter cubes
   const filteredCubes = cubes.filter((cube) => {
-    const isOriginalCube = ['000', '001', '007'].includes(cube.cube_number);
+    const isOriginalCube = [0, 1, 7].includes(parseInt(cube.cube_number, 10));
     const normalizedSearch = searchQuery.toLowerCase();
     const matchesSearch =
       cube.user.name.toLowerCase().includes(normalizedSearch) ||
@@ -123,7 +123,7 @@ export const Directory: React.FC = () => {
       {filteredCubes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCubes.map((cube) => {
-            const isOriginalCube = ['000', '001', '007'].includes(cube.cube_number);
+            const isOriginalCube = [0, 1, 7].includes(parseInt(cube.cube_number, 10));
             const isFounding = cube.is_founding_cube;
 
             if (isOriginalCube) {
