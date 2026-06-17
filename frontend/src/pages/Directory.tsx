@@ -173,12 +173,6 @@ export const Directory: React.FC = () => {
                       <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {isFounding && (
-                        <span className="bg-amber-400/10 border border-amber-400/30 text-amber-700 font-extrabold text-[10px] px-2 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
-                          <Award className="w-3 h-3 text-amber-500" />
-                          Founding Cube
-                        </span>
-                      )}
                       <span className={`font-extrabold text-xs px-2.5 py-0.5 rounded ${
                         isIceberger
                           ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-300'
@@ -201,6 +195,12 @@ export const Directory: React.FC = () => {
                     }`}>
                       {cube.current_level.replace('_', ' ')}
                     </span>
+                    {isFounding && (
+                      <span className="bg-amber-400/10 border border-amber-400/20 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm uppercase tracking-wide">
+                        <Award className="w-3 h-3 text-amber-500" />
+                        Founding Cube
+                      </span>
+                    )}
                   </div>
 
                   <div className={`mt-4 flex flex-col gap-1 text-xs ${isIceberger ? 'text-slate-300' : 'text-gray-500'}`}>
