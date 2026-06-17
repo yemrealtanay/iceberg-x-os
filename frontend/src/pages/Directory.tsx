@@ -12,7 +12,6 @@ export const Directory: React.FC = () => {
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
 
   useEffect(() => {
@@ -49,7 +48,7 @@ export const Directory: React.FC = () => {
 
   // Filter cubes
   const filteredCubes = cubes.filter((cube) => {
-    const isOriginalCube = [0, 1, 7].includes(parseInt(cube.cube_number, 10));
+    const isOriginalCube = parseInt(cube.cube_number, 10) === 0;
     const normalizedSearch = searchQuery.toLowerCase();
     const matchesSearch =
       cube.user.name.toLowerCase().includes(normalizedSearch) ||
@@ -58,10 +57,9 @@ export const Directory: React.FC = () => {
       (cube.university || '').toLowerCase().includes(normalizedSearch) ||
       (cube.skills || []).some((s: string) => s.toLowerCase().includes(normalizedSearch));
 
-    const matchesStatus = statusFilter ? cube.status === statusFilter : true;
     const matchesLevel = levelFilter ? cube.current_level === levelFilter : true;
 
-    return matchesSearch && matchesStatus && matchesLevel;
+    return matchesSearch && matchesLevel;
   });
 
   return (
@@ -86,45 +84,31 @@ export const Directory: React.FC = () => {
         </div>
 
         <div className="flex gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-44">
-            <Filter className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer"
-            >
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="observer">Observer</option>
-              <option value="project_contributor">Project Contributor</option>
-              <option value="part_time_candidate">Part-Time Candidate</option>
-              <option value="part_time">Part-Time</option>
-              <option value="full_time_candidate">Full-Time Candidate</option>
-              <option value="alumni">Alumni</option>
-            </select>
-          </div>
-
-          <div className="relative flex-1 md:w-44">
-            <Filter className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
+          <div className="relative flex-1 md:w-56">
+            <Filter className="absolute left-3.5 top-3 w-4.5 h-4.5 text-gray-400" />
             <select
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer"
             >
-              <option value="">All Levels</option>
+              <option value="">All Statuses (Levels)</option>
               <option value="Cube">Cube</option>
               <option value="Senior_Cube">Senior Cube</option>
+              <option value="Former_Cube">Former Cube</option>
+              <option value="Iceberger">Iceberger</option>
+              <option value="Alumni">Alumni</option>
             </select>
           </div>
         </div>
       </div>
+
       {/* Grid */}
       {filteredCubes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCubes.map((cube) => {
-            const isOriginalCube = [0, 1, 7].includes(parseInt(cube.cube_number, 10));
+            const isOriginalCube = parseInt(cube.cube_number, 10) === 0;
             const isFounding = cube.is_founding_cube;
+            const isIceberger = cube.current_level === 'Iceberger';
 
             if (isOriginalCube) {
               return (
@@ -139,8 +123,8 @@ export const Directory: React.FC = () => {
                       <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-magenta">Classified Record</p>
                       <h3 className="mt-3 text-2xl font-black tracking-tight text-white">Cube #{cube.cube_number}</h3>
                     </div>
-                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-200">
-                      Active
+                    <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-400">
+                      Classified
                     </span>
                   </div>
 
@@ -157,28 +141,36 @@ export const Directory: React.FC = () => {
               );
             }
 
+            let cardClassName = "p-6 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-5 group relative ";
+            if (isIceberger) {
+              cardClassName += "bg-gradient-to-br from-[#0c1b33] via-[#090f1d] to-[#04060c] border-2 border-cyan-500/70 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] hover:-translate-y-1 text-white";
+            } else if (isFounding) {
+              cardClassName += "bg-gradient-to-br from-amber-50/20 via-white to-white border-2 border-amber-400/80 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.08)] hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:-translate-y-1";
+            } else {
+              cardClassName += "bg-white border border-gray-100 hover:border-magenta/20 hover:-translate-y-1 shadow-subtle hover:shadow-premium";
+            }
+
             return (
               <Link
                 key={cube.id}
                 to={`/cubes/${cube.id}`}
-                className={`p-6 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-5 group relative ${
-                  isFounding
-                    ? 'bg-gradient-to-br from-amber-50/20 via-white to-white border-2 border-amber-400/80 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.08)] hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:-translate-y-1'
-                    : 'bg-white border border-gray-100 hover:border-magenta/20 hover:-translate-y-1 shadow-subtle hover:shadow-premium'
-                }`}
+                className={cardClassName}
               >
                 <div>
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className={`font-extrabold transition-colors flex items-center gap-1.5 ${
-                        isFounding
-                          ? 'text-gray-900 group-hover:text-amber-600'
-                          : 'text-gray-900 group-hover:text-magenta'
+                        isIceberger
+                          ? 'text-white group-hover:text-cyan-400'
+                          : isFounding
+                            ? 'text-gray-900 group-hover:text-amber-600'
+                            : 'text-gray-900 group-hover:text-magenta'
                       }`}>
                         <span>{cube.user.name}</span>
                         {isFounding && <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse flex-shrink-0" />}
+                        {isIceberger && <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />}
                       </h3>
-                      <p className="text-xs text-gray-400 mt-0.5">{cube.cohort}</p>
+                      <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {isFounding && (
@@ -188,9 +180,11 @@ export const Directory: React.FC = () => {
                         </span>
                       )}
                       <span className={`font-extrabold text-xs px-2.5 py-0.5 rounded ${
-                        isFounding
-                          ? 'bg-amber-400/10 border border-amber-400/20 text-amber-700'
-                          : 'bg-magenta/5 border border-magenta/10 text-magenta'
+                        isIceberger
+                          ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-300'
+                          : isFounding
+                            ? 'bg-amber-400/10 border border-amber-400/20 text-amber-700'
+                            : 'bg-magenta/5 border border-magenta/10 text-magenta'
                       }`}>
                         #{cube.cube_number}
                       </span>
@@ -199,29 +193,31 @@ export const Directory: React.FC = () => {
 
                   <div className="flex flex-wrap gap-2 mt-4">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
-                      isFounding
-                        ? 'text-amber-700 bg-amber-400/10 border-amber-400/20'
-                        : 'text-magenta bg-magenta/5 border-magenta/10'
+                      isIceberger
+                        ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/20'
+                        : isFounding
+                          ? 'text-amber-700 bg-amber-400/10 border-amber-400/20'
+                          : 'text-magenta bg-magenta/5 border-magenta/10'
                     }`}>
                       {cube.current_level.replace('_', ' ')}
                     </span>
-                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200/50 px-2 py-0.5 rounded-full uppercase tracking-wide">
-                      {cube.status.replace(/_/g, ' ')}
-                    </span>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-1 text-xs text-gray-500">
+                  <div className={`mt-4 flex flex-col gap-1 text-xs ${isIceberger ? 'text-slate-300' : 'text-gray-500'}`}>
                     <p>
-                      <span className="font-bold text-gray-600">Uni:</span> {cube.university || 'N/A'}
+                      <span className={`font-bold ${isIceberger ? 'text-cyan-400/90' : 'text-gray-600'}`}>Uni:</span> {cube.university || 'N/A'}
                     </p>
                     {cube.internship_status && (
                       <p>
-                        <span className="font-bold text-gray-600">Internship:</span> <span className="text-magenta font-semibold">{cube.internship_status}</span>
+                        <span className={`font-bold ${isIceberger ? 'text-cyan-400/90' : 'text-gray-600'}`}>Current Role:</span>{' '}
+                        <span className={isIceberger ? 'text-cyan-300 font-semibold' : 'text-magenta font-semibold'}>
+                          {cube.internship_status}
+                        </span>
                       </p>
                     )}
                     {cube.assigned_mentor && (
                       <p>
-                        <span className="font-bold text-gray-600">Mentor:</span> {cube.assigned_mentor.name}
+                        <span className={`font-bold ${isIceberger ? 'text-cyan-400/90' : 'text-gray-600'}`}>Mentor:</span> {cube.assigned_mentor.name}
                       </p>
                     )}
                   </div>
@@ -229,14 +225,27 @@ export const Directory: React.FC = () => {
 
                 {/* Skills Tags */}
                 {cube.skills && cube.skills.length > 0 && (
-                  <div className="border-t border-gray-50 pt-4 flex flex-wrap gap-1.5">
+                  <div className={`border-t pt-4 flex flex-wrap gap-1.5 ${isIceberger ? 'border-slate-800' : 'border-gray-50'}`}>
                     {cube.skills.slice(0, 3).map((skill: string) => (
-                      <span key={skill} className="bg-slate-50 border border-gray-100 text-[10px] font-semibold text-gray-500 px-2 py-0.5 rounded-lg">
+                      <span
+                        key={skill}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg border ${
+                          isIceberger
+                            ? 'bg-slate-800/40 border-slate-700/50 text-slate-300'
+                            : 'bg-slate-50 border-gray-100 text-gray-500'
+                        }`}
+                      >
                         {skill}
                       </span>
                     ))}
                     {cube.skills.length > 3 && (
-                      <span className="bg-slate-50 border border-gray-100 text-[10px] font-semibold text-gray-400 px-1.5 py-0.5 rounded-lg">
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-lg border ${
+                          isIceberger
+                            ? 'bg-slate-800/40 border-slate-700/50 text-slate-400'
+                            : 'bg-slate-50 border-gray-100 text-gray-400'
+                        }`}
+                      >
                         +{cube.skills.length - 3} more
                       </span>
                     )}

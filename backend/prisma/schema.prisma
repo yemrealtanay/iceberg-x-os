@@ -13,23 +13,12 @@ enum Role {
   CUBE
 }
 
-enum CubeStatus {
-  active
-  inactive
-  observer
-  project_contributor
-  part_time_candidate
-  part_time
-  full_time_candidate
-  alumni
-}
-
 enum CubeLevel {
   Cube
   Senior_Cube
-  Lead_Cube
-  Cube_Mentor
-  Iceberg_Fellow
+  Former_Cube
+  Iceberger
+  Alumni
 }
 
 enum MissionStatus {
@@ -80,10 +69,9 @@ enum UpdateType {
 enum RecommendedNextStep {
   Continue_as_Cube
   Consider_for_Senior_Cube
-  Consider_for_Lead_Cube
-  Consider_as_Observer
-  Consider_as_Project_Contributor
-  Consider_as_Part_Time_Candidate
+  Consider_as_Former_Cube
+  Consider_as_Iceberger
+  Consider_as_Alumni
   Needs_Support
   Inactive_Risk
 }
@@ -125,7 +113,6 @@ model CubeProfile {
   skills             String[]
   interests          String[]
   current_level      CubeLevel   @default(Cube)
-  status             CubeStatus  @default(active)
   internship_status  String?
   is_founding_cube   Boolean     @default(false)
   assigned_mentor_id String?

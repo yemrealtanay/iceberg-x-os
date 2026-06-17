@@ -140,7 +140,7 @@ export const CubeDashboard: React.FC = () => {
           <div className="text-center border-l border-white/10 pl-8">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Status</p>
             <h2 className="text-xl font-bold text-gray-100 mt-2 uppercase tracking-wide">
-              {profile.status.replace(/_/g, ' ')}
+              {profile.current_level.replace(/_/g, ' ')}
             </h2>
           </div>
         </div>

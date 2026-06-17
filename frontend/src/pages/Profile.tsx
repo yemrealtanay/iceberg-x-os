@@ -31,7 +31,6 @@ export const Profile: React.FC = () => {
 
   // Admin progression states
   const [adminLevel, setAdminLevel] = useState('');
-  const [adminStatus, setAdminStatus] = useState('');
   const [adminMentorId, setAdminMentorId] = useState('');
   const [mentorsList, setMentorsList] = useState<any[]>([]);
   const [mentorSearch, setMentorSearch] = useState('');
@@ -61,7 +60,6 @@ export const Profile: React.FC = () => {
 
       // Seed admin fields
       setAdminLevel(res.profile.current_level);
-      setAdminStatus(res.profile.status);
       setAdminMentorId(res.profile.assigned_mentor_id || '');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch profile data');
@@ -127,7 +125,6 @@ export const Profile: React.FC = () => {
     try {
       const updated = await api.post(`/cubes/${id}/progression`, {
         current_level: adminLevel,
-        status: adminStatus,
         assigned_mentor_id: adminMentorId || null
       });
       setData((prev: any) => ({
@@ -210,7 +207,7 @@ export const Profile: React.FC = () => {
   const maxCount = sortedCategories.length > 0 ? sortedCategories[0][1] : 1;
 
 
-  const isOriginalCube = [0, 1, 7].includes(parseInt(profile.cube_number, 10));
+  const isOriginalCube = parseInt(profile.cube_number, 10) === 0;
 
   if (isOriginalCube) {
     return (
@@ -304,9 +301,9 @@ export const Profile: React.FC = () => {
             <p><span className="font-bold text-gray-700">Department:</span> {profile.department}</p>
             <p><span className="font-bold text-gray-700">Slack:</span> {profile.slack_handle || 'N/A'}</p>
             {profile.internship_status && (
-              <p><span className="font-bold text-gray-700">Internship Status:</span> <span className="text-magenta font-semibold">{profile.internship_status}</span></p>
+              <p><span className="font-bold text-gray-700">Current Role:</span> <span className="text-magenta font-semibold">{profile.internship_status}</span></p>
             )}
-            <p><span className="font-bold text-gray-700">Status:</span> <span className="uppercase text-[10px] font-extrabold bg-gray-100 border border-gray-200/50 px-2 py-0.5 rounded-full text-gray-500">{profile.status.replace(/_/g, ' ')}</span></p>
+            <p><span className="font-bold text-gray-700">Current Status:</span> <span className="uppercase text-[10px] font-extrabold bg-gray-100 border border-gray-200/50 px-2 py-0.5 rounded-full text-gray-500">{profile.current_level.replace(/_/g, ' ')}</span></p>
             {profile.assigned_mentor && (
               <p><span className="font-bold text-gray-700">Mentor:</span> {profile.assigned_mentor.name}</p>
             )}
@@ -368,7 +365,7 @@ export const Profile: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Internship Status (e.g., compulsory internship details)</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Current Role (e.g., Podcast Editor, Iceberg Consultant)</label>
               <input type="text" value={editInternshipStatus} onChange={e => setEditInternshipStatus(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
             </div>
 
@@ -405,24 +402,13 @@ export const Profile: React.FC = () => {
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Progression Level</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Progression Level (Status)</label>
               <select value={adminLevel} onChange={e => setAdminLevel(e.target.value)} className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none">
                 <option value="Cube">Cube</option>
                 <option value="Senior_Cube">Senior Cube</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Fellowship Status</label>
-              <select value={adminStatus} onChange={e => setAdminStatus(e.target.value)} className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="observer">Observer</option>
-                <option value="project_contributor">Project Contributor</option>
-                <option value="part_time_candidate">Part-Time Candidate</option>
-                <option value="part_time">Part-Time</option>
-                <option value="full_time_candidate">Full-Time Candidate</option>
-                <option value="alumni">Alumni</option>
+                <option value="Former_Cube">Former Cube</option>
+                <option value="Iceberger">Iceberger</option>
+                <option value="Alumni">Alumni</option>
               </select>
             </div>
 

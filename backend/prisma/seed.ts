@@ -1,4 +1,4 @@
-import { PrismaClient, Role, CubeLevel, CubeStatus } from '@prisma/client';
+import { PrismaClient, Role, CubeLevel } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -83,9 +83,25 @@ async function main() {
     cube_number: '000',
   };
 
-  const mysteriousCubes = [
-    { name: 'Cube #001', email: 'mysterious.001@iceberg-digital.co.uk', cube_number: '001' },
-    { name: 'Cube #007', email: 'mysterious.007@iceberg-digital.co.uk', cube_number: '007' },
+  const newSpecialCubes = [
+    {
+      name: 'Emre Dennis Yılmaz',
+      email: 'emre.yilmaz@iceberg-digital.co.uk',
+      cube_number: '001',
+      current_level: CubeLevel.Iceberger,
+      internship_status: 'Iceberg Consultant',
+      cohort: 'Founding Cohort',
+      is_founding_cube: true
+    },
+    {
+      name: 'Fraser Burgess',
+      email: 'fraser@iceberg-digital.co.uk',
+      cube_number: '007',
+      current_level: CubeLevel.Cube,
+      internship_status: 'Podcast Editor',
+      cohort: 'Founding Cohort',
+      is_founding_cube: true
+    }
   ];
 
   const seniorCubes = [
@@ -284,7 +300,6 @@ async function main() {
           skills: [],
           interests: [],
           current_level: CubeLevel.Cube,
-          status: CubeStatus.active,
           internship_status: 'No further information available.',
           is_founding_cube: false
         }
@@ -310,7 +325,6 @@ async function main() {
             cube_number: originalCube.cube_number,
             cohort: 'Unknown',
             current_level: CubeLevel.Cube,
-            status: CubeStatus.active,
             internship_status: 'No further information available.',
             is_founding_cube: false
           }
@@ -326,7 +340,6 @@ async function main() {
             skills: [],
             interests: [],
             current_level: CubeLevel.Cube,
-            status: CubeStatus.active,
             internship_status: 'No further information available.',
             is_founding_cube: false
           }
@@ -334,20 +347,25 @@ async function main() {
       }
     }
 
-    // B. Seed Mysterious Cubes #001 & #007
-    for (const myst of mysteriousCubes) {
-      const mystPasswordHash = await bcrypt.hash(cubePassword, 10);
+    // B. Seed Special Cubes #001 & #007
+    const markMentor = await tx.user.findUnique({
+      where: { email: 'mark@iceberg-digital.co.uk' }
+    });
+    const markMentorId = markMentor ? markMentor.id : null;
+
+    for (const spec of newSpecialCubes) {
+      const specPasswordHash = await bcrypt.hash(cubePassword, 10);
       const existingUser = await tx.user.findUnique({
-        where: { email: myst.email }
+        where: { email: spec.email }
       });
 
       if (!existingUser) {
-        console.log(`Creating Mysterious Cube: ${myst.name} (${myst.email}) as Cube #${myst.cube_number}...`);
+        console.log(`Creating Special Cube: ${spec.name} (${spec.email}) as Cube #${spec.cube_number}...`);
         const user = await tx.user.create({
           data: {
-            name: myst.name,
-            email: myst.email,
-            password_hash: mystPasswordHash,
+            name: spec.name,
+            email: spec.email,
+            password_hash: specPasswordHash,
             role: Role.CUBE
           }
         });
@@ -355,50 +373,50 @@ async function main() {
         await tx.cubeProfile.create({
           data: {
             user_id: user.id,
-            cube_number: myst.cube_number,
-            cohort: 'Unknown',
+            cube_number: spec.cube_number,
+            cohort: spec.cohort,
             university: '',
             department: '',
             skills: [],
             interests: [],
-            current_level: CubeLevel.Cube,
-            status: CubeStatus.active,
-            internship_status: 'No further information available.',
-            is_founding_cube: false
+            current_level: spec.current_level,
+            internship_status: spec.internship_status,
+            is_founding_cube: spec.is_founding_cube,
+            assigned_mentor_id: markMentorId
           }
         });
       } else {
-        console.log(`Updating Mysterious Cube: ${myst.email} as Cube #${myst.cube_number}.`);
+        console.log(`Updating Special Cube: ${spec.email} as Cube #${spec.cube_number}.`);
         await tx.user.update({
-          where: { email: myst.email },
+          where: { email: spec.email },
           data: {
-            name: myst.name,
+            name: spec.name,
             role: Role.CUBE,
           }
         });
-        
+
         await tx.cubeProfile.upsert({
           where: { user_id: existingUser.id },
           create: {
             user_id: existingUser.id,
-            cube_number: myst.cube_number,
-            cohort: 'Unknown',
+            cube_number: spec.cube_number,
+            cohort: spec.cohort,
             university: '',
             department: '',
             skills: [],
             interests: [],
-            current_level: CubeLevel.Cube,
-            status: CubeStatus.active,
-            internship_status: 'No further information available.',
-            is_founding_cube: false
+            current_level: spec.current_level,
+            internship_status: spec.internship_status,
+            is_founding_cube: spec.is_founding_cube,
+            assigned_mentor_id: markMentorId
           },
           update: {
-            cube_number: myst.cube_number,
-            cohort: 'Unknown',
-            current_level: CubeLevel.Cube,
-            status: CubeStatus.active,
-            internship_status: 'No further information available.',
-            is_founding_cube: false
+            cube_number: spec.cube_number,
+            cohort: spec.cohort,
+            current_level: spec.current_level,
+            internship_status: spec.internship_status,
+            is_founding_cube: spec.is_founding_cube,
+            assigned_mentor_id: markMentorId
           }
         });
       }
@@ -432,8 +450,7 @@ async function main() {
             skills: [],
             interests: [],
             current_level: CubeLevel.Senior_Cube,
-            status: CubeStatus.alumni,
-            internship_status: 'Alumni',
+            internship_status: 'Senior Cube',
             is_founding_cube: true
           }
         });
@@ -458,8 +475,7 @@ async function main() {
               cube_number: fellow.cube_number,
               cohort: existingProfile.cohort || 'Iceberg Fellows',
               current_level: CubeLevel.Senior_Cube,
-              status: CubeStatus.alumni,
-              internship_status: 'Alumni',
+              internship_status: 'Senior Cube',
               is_founding_cube: true
             }
           });
@@ -474,8 +490,7 @@ async function main() {
               skills: [],
               interests: [],
               current_level: CubeLevel.Senior_Cube,
-              status: CubeStatus.alumni,
-              internship_status: 'Alumni',
+              internship_status: 'Senior Cube',
               is_founding_cube: true
             }
           });
@@ -533,7 +548,6 @@ async function main() {
             skills: [],
             interests: [],
             current_level: CubeLevel.Cube,
-            status: CubeStatus.active,
             internship_status: student.internship_status,
             is_founding_cube: true
           }

@@ -475,28 +475,73 @@ export const Welcome: React.FC = () => {
       <section className="py-24 bg-[#f6f6f8]" id="journey">
         <div className="max-w-[1200px] mx-auto px-7">
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Growth & Leadership</span>
+            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Growth & Progression</span>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Cube Journey</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">This program is built to create growth and leadership opportunities — not a fixed-term placement.</p>
+            <p className="text-slate-500 font-medium leading-relaxed">This program is built to support career growth and skill progression. Explore the branching paths of a Cube.</p>
           </div>
 
-          <div className="max-w-[560px] mx-auto flex flex-col gap-4">
-            {journeySteps.map((step, idx) => (
-              <React.Fragment key={idx}>
-                <div className={`flex items-center gap-6 border border-black/5 rounded-3xl p-6 shadow-sm hover:translate-x-2 hover:shadow-lg transition-all ${step.peak ? 'bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] text-white' : 'bg-white'}`}>
-                  <div className={`w-[46px] h-[46px] rounded-xl font-extrabold flex items-center justify-center ${step.peak ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-500'}`}>{idx + 1}</div>
-                  <div>
-                    <h4 className={`font-black text-[1.15rem] ${step.peak ? 'text-white' : 'text-slate-900'}`}>{step.title}</h4>
-                    <p className={`text-xs ${step.peak ? 'text-white/80' : 'text-slate-500'}`}>{step.desc}</p>
-                  </div>
-                </div>
-                {idx < journeySteps.length - 1 && (
-                  <div className="flex items-center justify-center py-1 text-[#e6007e] opacity-40">
-                    <ArrowDown className="w-5 h-5" />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[900px] mx-auto text-left">
+            {/* Step 1: Cube */}
+            <div className="md:col-span-2 bg-white border border-black/5 rounded-3xl p-8 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+              <div className="absolute right-6 top-6 text-slate-100 text-7xl font-black select-none">01</div>
+              <span className="text-magenta text-xs font-extrabold uppercase tracking-widest">Stage 1: The Start</span>
+              <h3 className="text-xl font-extrabold text-slate-900 mt-2">Cube</h3>
+              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+                Where every journey begins. You enter the program, learn the fundamentals, dive into R&D missions, build research prototypes, and explore modern engineering practices under mentor guidance.
+              </p>
+            </div>
+
+            {/* Connection Arrow */}
+            <div className="md:col-span-2 flex justify-center -my-4 relative z-10 text-magenta/40">
+              <ArrowDown className="w-8 h-8" />
+            </div>
+
+            {/* Stage 2: The Core split */}
+            <div className="bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] text-white border border-black/5 rounded-3xl p-8 shadow-md relative overflow-hidden group hover:translate-y-[-4px] transition-all">
+              <div className="absolute right-6 top-6 text-white/10 text-7xl font-black select-none">02A</div>
+              <span className="text-white/80 text-xs font-extrabold uppercase tracking-widest">Stage 2: Advanced Path</span>
+              <h3 className="text-xl font-extrabold text-white mt-2">Senior Cube</h3>
+              <p className="text-white/90 text-sm mt-2 leading-relaxed">
+                Demonstrated competence in technical and research domains. Trusted with larger system architectures, team collaboration leadership, and direct R&D demo delivery.
+              </p>
+            </div>
+
+            <div className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm relative overflow-hidden group hover:translate-y-[-4px] transition-all">
+              <div className="absolute right-6 top-6 text-slate-100 text-7xl font-black select-none">02B</div>
+              <span className="text-slate-400 text-xs font-extrabold uppercase tracking-widest">Stage 2: Exit Path</span>
+              <h3 className="text-slate-700 text-xl font-extrabold mt-2">Former Cube</h3>
+              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+                Decided to pause or stop the program. Cubes are welcome to exit gracefully while retaining access to the community and their verified badge achievements.
+              </p>
+            </div>
+
+            {/* Connection Arrow splitting */}
+            <div className="md:col-span-2 flex justify-around px-24 -my-4 relative z-10 text-magenta/40">
+              <ArrowDown className="w-8 h-8" />
+              <div className="w-8"></div>
+            </div>
+
+            {/* Stage 3: The Graduation branching */}
+            <div className="bg-gradient-to-br from-[#0c1b33] via-[#090f1d] to-[#04060c] border-2 border-cyan-500/70 shadow-[0_0_20px_rgba(6,182,212,0.15)] text-white rounded-3xl p-8 relative overflow-hidden group hover:translate-y-[-4px] transition-all">
+              <div className="absolute right-6 top-6 text-cyan-500/10 text-7xl font-black select-none">03A</div>
+              <span className="text-cyan-400 text-xs font-extrabold uppercase tracking-widest">Stage 3: Corporate Path</span>
+              <h3 className="text-xl font-extrabold text-white mt-2 flex items-center gap-1.5">
+                <span>Iceberger</span>
+                <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+              </h3>
+              <p className="text-slate-300 text-sm mt-2 leading-relaxed">
+                Upon graduation, join the full-time team at Iceberg Digital. Transition into consulting, software engineering, or product management roles to continue building the future.
+              </p>
+            </div>
+
+            <div className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm relative overflow-hidden group hover:translate-y-[-4px] transition-all">
+              <div className="absolute right-6 top-6 text-slate-100 text-7xl font-black select-none">03B</div>
+              <span className="text-magenta text-xs font-extrabold uppercase tracking-widest">Stage 3: External Path</span>
+              <h3 className="text-xl font-extrabold text-slate-900 mt-2">Alumni</h3>
+              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+                Leave Iceberg and carry the innovative mindset elsewhere. Alumni move on to top-tier global tech giants, start their own VC-backed companies, or pursue advanced research.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -560,16 +605,16 @@ export const Welcome: React.FC = () => {
               <div className="absolute right-4 bottom-2 text-[6.5rem] font-black leading-none text-white/[0.035] select-none">X</div>
               <div className="relative z-10 flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-[10px] text-[#ff99cc] font-extrabold tracking-[0.22em] uppercase">Active</div>
-                  <h4 className="mt-3 text-[1.35rem] font-black text-white tracking-tight">#000 / #001 / #007</h4>
+                  <div className="text-[10px] text-[#ff99cc] font-extrabold tracking-[0.22em] uppercase">Classified</div>
+                  <h4 className="mt-3 text-[1.35rem] font-black text-white tracking-tight">#000</h4>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white/60">
                   Classified
                 </span>
               </div>
               <div className="relative z-10 mt-auto">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Classified Cubes</p>
-                <p className="mt-2 text-xs font-semibold leading-relaxed text-white/50">No further information available.</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Classified Cube</p>
+                <p className="mt-2 text-xs font-semibold leading-relaxed text-white/55">The Original Cube. No further information available.</p>
               </div>
             </div>
             {hofCategories.map((item, idx) => (
