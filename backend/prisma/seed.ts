@@ -355,9 +355,48 @@ async function main() {
 
     for (const spec of newSpecialCubes) {
       const specPasswordHash = await bcrypt.hash(cubePassword, 10);
-      const existingUser = await tx.user.findUnique({
+      
+      let existingUser = await tx.user.findUnique({
         where: { email: spec.email }
       });
+
+      if (!existingUser) {
+        const placeholderEmail = `mysterious.${spec.cube_number}@iceberg-digital.co.uk`;
+        const placeholderUser = await tx.user.findUnique({
+          where: { email: placeholderEmail }
+        });
+        if (placeholderUser) {
+          console.log(`Found placeholder user ${placeholderEmail}. Renaming to ${spec.email}...`);
+          existingUser = await tx.user.update({
+            where: { id: placeholderUser.id },
+            data: {
+              email: spec.email,
+              name: spec.name
+            }
+          });
+        }
+      }
+
+      // Check for conflicting cube number
+      const conflictingProfile = await tx.cubeProfile.findUnique({
+        where: { cube_number: spec.cube_number },
+        include: { user: true }
+      });
+      if (conflictingProfile && (!existingUser || conflictingProfile.user_id !== existingUser.id)) {
+        console.log(`Warning: Cube #${spec.cube_number} is currently assigned to user ${conflictingProfile.user.email}.`);
+        if (conflictingProfile.user.email.startsWith('mysterious.')) {
+          console.log(`Deleting placeholder user ${conflictingProfile.user.email} to resolve collision...`);
+          await tx.cubeProfile.delete({ where: { id: conflictingProfile.id } });
+          await tx.user.delete({ where: { id: conflictingProfile.user_id } });
+        } else {
+          const tempNum = `TEMP-${conflictingProfile.id.slice(0, 8)}`;
+          console.log(`Temporarily reassigning user ${conflictingProfile.user.email} to Cube #${tempNum} to avoid collision.`);
+          await tx.cubeProfile.update({
+            where: { id: conflictingProfile.id },
+            data: { cube_number: tempNum }
+          });
+        }
+      }
 
       if (!existingUser) {
         console.log(`Creating Special Cube: ${spec.name} (${spec.email}) as Cube #${spec.cube_number}...`);
@@ -425,6 +464,27 @@ async function main() {
     // C. Seed Senior Cubes (002-006, 008)
     for (const fellow of seniorCubes) {
       const passwordHash = await bcrypt.hash(cubePassword, 10);
+      
+      const conflictingProfile = await tx.cubeProfile.findUnique({
+        where: { cube_number: fellow.cube_number },
+        include: { user: true }
+      });
+      if (conflictingProfile && conflictingProfile.user.email !== fellow.email) {
+        console.log(`Warning: Cube #${fellow.cube_number} is currently assigned to user ${conflictingProfile.user.email}.`);
+        if (conflictingProfile.user.email.startsWith('mysterious.')) {
+          console.log(`Deleting placeholder user ${conflictingProfile.user.email} to resolve collision...`);
+          await tx.cubeProfile.delete({ where: { id: conflictingProfile.id } });
+          await tx.user.delete({ where: { id: conflictingProfile.user_id } });
+        } else {
+          const tempNum = `TEMP-${conflictingProfile.id.slice(0, 8)}`;
+          console.log(`Temporarily reassigning user ${conflictingProfile.user.email} to Cube #${tempNum} to avoid collision.`);
+          await tx.cubeProfile.update({
+            where: { id: conflictingProfile.id },
+            data: { cube_number: tempNum }
+          });
+        }
+      }
+
       const existingUser = await tx.user.findUnique({
         where: { email: fellow.email }
       });
