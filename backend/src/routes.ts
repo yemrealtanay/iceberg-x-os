@@ -205,6 +205,7 @@ router.post('/cubes/create', requireAuth, isAdmin, async (req, res) => {
       gitlab_url,
       linkedin_url,
       slack_handle,
+      phone_number,
       skills,
       interests,
       assigned_mentor_id,
@@ -249,6 +250,7 @@ router.post('/cubes/create', requireAuth, isAdmin, async (req, res) => {
           gitlab_url,
           linkedin_url,
           slack_handle,
+          phone_number,
           skills: skills || [],
           interests: interests || [],
           current_level: CubeLevel.Cube,
@@ -311,6 +313,7 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
       gitlab_url,
       linkedin_url,
       slack_handle,
+      phone_number,
       skills,
       interests,
       name, // Allow changing name on User table
@@ -340,6 +343,7 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
           gitlab_url,
           linkedin_url,
           slack_handle,
+          phone_number,
           skills: skills ? skills : undefined,
           interests: interests ? interests : undefined,
           internship_status: internship_status !== undefined ? internship_status : undefined
@@ -1620,6 +1624,7 @@ router.post('/admin/users/create', requireAuth, isAdmin, async (req, res) => {
       gitlab_url,
       linkedin_url,
       slack_handle,
+      phone_number,
       skills,
       interests,
       assigned_mentor_id
@@ -1666,6 +1671,7 @@ router.post('/admin/users/create', requireAuth, isAdmin, async (req, res) => {
             gitlab_url,
             linkedin_url,
             slack_handle,
+            phone_number,
             skills: skills || [],
             interests: interests || [],
             current_level: CubeLevel.Cube,

@@ -23,6 +23,7 @@ export const Profile: React.FC = () => {
   const [editGitlab, setEditGitlab] = useState('');
   const [editLinkedin, setEditLinkedin] = useState('');
   const [editSlack, setEditSlack] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [editSkills, setEditSkills] = useState('');
   const [editInterests, setEditInterests] = useState('');
   const [editInternshipStatus, setEditInternshipStatus] = useState('');
@@ -54,6 +55,7 @@ export const Profile: React.FC = () => {
       setEditGitlab(res.profile.gitlab_url || '');
       setEditLinkedin(res.profile.linkedin_url || '');
       setEditSlack(res.profile.slack_handle || '');
+      setEditPhone(res.profile.phone_number || '');
       setEditSkills(res.profile.skills?.join(', ') || '');
       setEditInterests(res.profile.interests?.join(', ') || '');
       setEditInternshipStatus(res.profile.internship_status || '');
@@ -97,6 +99,7 @@ export const Profile: React.FC = () => {
         gitlab_url: editGitlab,
         linkedin_url: editLinkedin,
         slack_handle: editSlack,
+        phone_number: editPhone,
         skills: editSkills.split(',').map(s => s.trim()).filter(Boolean),
         interests: editInterests.split(',').map(s => s.trim()).filter(Boolean),
         internship_status: editInternshipStatus
@@ -300,6 +303,7 @@ export const Profile: React.FC = () => {
             <p><span className="font-bold text-gray-700">University:</span> {profile.university}</p>
             <p><span className="font-bold text-gray-700">Department:</span> {profile.department}</p>
             <p><span className="font-bold text-gray-700">Slack:</span> {profile.slack_handle || 'N/A'}</p>
+            <p><span className="font-bold text-gray-700">Phone:</span> {profile.phone_number || 'N/A'}</p>
             {profile.internship_status && (
               <p><span className="font-bold text-gray-700">Current Role:</span> <span className="text-magenta font-semibold">{profile.internship_status}</span></p>
             )}
@@ -362,6 +366,11 @@ export const Profile: React.FC = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-500 uppercase">Slack Handle</label>
               <input type="text" value={editSlack} onChange={e => setEditSlack(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Phone Number</label>
+              <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
             </div>
 
             <div className="flex flex-col gap-1">

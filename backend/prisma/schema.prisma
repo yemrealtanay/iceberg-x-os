@@ -110,6 +110,7 @@ model CubeProfile {
   gitlab_url         String?
   linkedin_url       String?
   slack_handle       String?
+  phone_number       String?
   skills             String[]
   interests          String[]
   current_level      CubeLevel   @default(Cube)
