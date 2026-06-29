@@ -124,6 +124,7 @@ model CubeProfile {
   // Relations
   team_memberships   MissionTeamMember[]
   cube_badges        CubeBadge[]
+  meeting_attendance MeetingAttendance[]
 }
 
 model Mission {
@@ -326,4 +327,32 @@ model CubeApplication {
   status        String   @default("pending") // pending, approved, rejected
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
+}
+model Meeting {
+  id           String              @id @default(uuid())
+  title        String
+  description  String?             @db.Text
+  date         DateTime
+  is_completed Boolean             @default(false)
+  decisions    String?             @db.Text
+  summary      String?             @db.Text
+  created_at   DateTime            @default(now())
+  updated_at   DateTime            @updatedAt
+
+  // Relations
+  attendance   MeetingAttendance[]
+}
+
+model MeetingAttendance {
+  id         String      @id @default(uuid())
+  meeting_id String
+  meeting    Meeting     @relation(fields: [meeting_id], references: [id], onDelete: Cascade)
+  cube_id    String
+  cube       CubeProfile @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  attended   Boolean     @default(true)
+  excuse     String?     @db.Text
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  @@unique([meeting_id, cube_id])
 }

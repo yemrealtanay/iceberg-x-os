@@ -22,6 +22,7 @@ export const Layout: React.FC = () => {
       { path: '/directory', label: 'Cube Directory', icon: Users },
       { path: '/missions', label: 'Missions', icon: Rocket },
       { path: '/vault', label: 'Cube Vault', icon: FolderOpen },
+      { path: '/meetings', label: 'Meetings', icon: Calendar },
       { path: '/badges', label: 'Badges', icon: Award },
     ];
 

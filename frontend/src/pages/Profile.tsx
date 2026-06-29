@@ -192,6 +192,13 @@ export const Profile: React.FC = () => {
   const isOwner = user?.cubeProfileId === id;
   const isMentorOrAdmin = user?.role === 'ADMIN' || user?.role === 'MENTOR';
 
+  // Compute meeting attendance stats
+  const attendanceList = profile.meeting_attendance || [];
+  const totalMeetings = attendanceList.length;
+  const attendedMeetings = attendanceList.filter((a: any) => a.attended).length;
+  const missedMeetings = totalMeetings - attendedMeetings;
+  const attendanceRate = totalMeetings > 0 ? Math.round((attendedMeetings / totalMeetings) * 100) : 100;
+
   // Compute category strengths from completed missions
   const completedMissions = profile.team_memberships
     ? profile.team_memberships
@@ -329,6 +336,35 @@ export const Profile: React.FC = () => {
               <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
                 LinkedIn
               </a>
+            )}
+          </div>
+
+          {/* Meeting Attendance Stats */}
+          <div className="border-t border-gray-50 pt-4 flex flex-col gap-2.5">
+            <h3 className="font-extrabold text-xs text-gray-700 uppercase tracking-wider">Meeting Attendance</h3>
+            <div className="flex justify-between items-center text-xs mt-1">
+              <span className="text-gray-500 font-semibold">Attendance Rate:</span>
+              <span className={`font-bold px-2 py-0.5 rounded-lg ${
+                attendanceRate >= 90 ? 'bg-emerald-50 text-emerald-700' :
+                attendanceRate >= 75 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
+              }`}>{attendanceRate}%</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-semibold">Attended:</span>
+              <span className="font-bold text-gray-800">{attendedMeetings} / {totalMeetings}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-semibold">Missed Meetings:</span>
+              <span className={`font-bold ${missedMeetings > 0 ? 'text-red-600' : 'text-gray-800'}`}>{missedMeetings}</span>
+            </div>
+            {missedMeetings > 0 && (
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3 mt-1.5 flex gap-2 items-start">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] text-red-800 font-extrabold">Negative Mark Warning</span>
+                  <p className="text-[10px] text-red-600 leading-snug font-medium">Has missed {missedMeetings} meeting(s). This is evaluated as negative points on the scorecard.</p>
+                </div>
+              </div>
             )}
           </div>
         </div>

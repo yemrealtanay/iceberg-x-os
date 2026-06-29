@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Sparkles, Star, Save } from 'lucide-react';
+import { ShieldAlert, Sparkles, Star, Save, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export const Review: React.FC = () => {
@@ -45,6 +45,27 @@ export const Review: React.FC = () => {
   // AI draft states
   const [aiDraft, setAiDraft] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [profileDetails, setProfileDetails] = useState<any | null>(null);
+
+  useEffect(() => {
+    const fetchProfileDetails = async () => {
+      const selectedProfile = cubes.find((c: any) => c.user.id === cubeId);
+      if (selectedProfile) {
+        try {
+          const details = await api.get(`/cubes/${selectedProfile.id}`);
+          setProfileDetails(details.profile);
+        } catch (err) {
+          console.error('Failed to fetch detailed profile for attendance', err);
+        }
+      }
+    };
+
+    if (cubeId && cubes.length > 0) {
+      fetchProfileDetails();
+    } else {
+      setProfileDetails(null);
+    }
+  }, [cubeId, cubes]);
 
   useEffect(() => {
     const initializePageData = async () => {
@@ -336,8 +357,65 @@ export const Review: React.FC = () => {
           </button>
         </form>
 
-        {/* Sidebar: AI Review Helper */}
+        {/* Sidebar: AI Review Helper & Attendance */}
         <div className="flex flex-col gap-6">
+          {/* Attendance Stats Card */}
+          {profileDetails && (
+            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-subtle flex flex-col gap-4 animate-fadeIn">
+              <h3 className="font-extrabold text-sm border-b border-gray-50 pb-2 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-magenta" />
+                <span>Meeting Attendance</span>
+              </h3>
+
+              {(() => {
+                const attList = profileDetails.meeting_attendance || [];
+                const tot = attList.length;
+                const att = attList.filter((a: any) => a.attended).length;
+                const miss = tot - att;
+                const rate = tot > 0 ? Math.round((att / tot) * 100) : 100;
+
+                return (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500 font-semibold">Attendance Rate:</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-lg ${
+                        rate >= 90 ? 'bg-emerald-50 text-emerald-700' :
+                        rate >= 75 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
+                      }`}>{rate}%</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500 font-semibold">Attended:</span>
+                      <span className="font-bold text-gray-800">{att} / {tot}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500 font-semibold">Missed Meetings:</span>
+                      <span className={`font-bold ${miss > 0 ? 'text-red-600' : 'text-gray-800'}`}>{miss}</span>
+                    </div>
+
+                    {miss > 0 ? (
+                      <div className="bg-red-50 border border-red-100 rounded-xl p-3 mt-1.5 flex gap-2 items-start">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] text-red-800 font-extrabold">Minus Point Penalty</span>
+                          <p className="text-[10px] text-red-600 leading-snug font-medium">This Cube missed {miss} meeting(s). Adjust reliability/grade scores accordingly.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 mt-1.5 flex gap-2 items-start">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] text-emerald-800 font-extrabold">Perfect Attendance</span>
+                          <p className="text-[10px] text-emerald-600 leading-snug font-medium">Attended all scheduled meetings.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Sidebar: AI Review Helper */}
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-subtle flex flex-col gap-4">
             <h3 className="font-extrabold text-sm border-b border-gray-50 pb-2 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-magenta" />

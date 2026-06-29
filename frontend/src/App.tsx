@@ -22,6 +22,7 @@ import { DemoDays } from './pages/DemoDays';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminApplications } from './pages/AdminApplications';
 import { ChangePassword } from './pages/ChangePassword';
+import { Meetings } from './pages/Meetings';
 
 function App() {
   return (
@@ -105,6 +106,9 @@ function App() {
 
             {/* Cube Vault (Archive) */}
             <Route path="vault" element={<CubeVault />} />
+
+            {/* Meetings Management */}
+            <Route path="meetings" element={<Meetings />} />
 
             {/* Demo Days Scheduling (Admins & Mentors) */}
             <Route

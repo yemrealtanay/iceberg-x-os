@@ -406,6 +406,14 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
               }
             }
           }
+        },
+        meeting_attendance: {
+          include: {
+            meeting: true
+          },
+          orderBy: {
+            created_at: 'desc'
+          }
         }
       }
     });
@@ -494,6 +502,15 @@ router.get('/missions', requireAuth, async (req, res) => {
     if (status) filters.status = status as MissionStatus;
     if (difficulty_level) filters.difficulty_level = difficulty_level as DifficultyLevel;
     if (mentor_id) filters.mentor_id = mentor_id as string;
+
+    // Apply unassigned privacy filter for Cubes
+    const userRole = (req as AuthenticatedRequest).user?.role;
+    if (userRole === 'CUBE') {
+      filters.OR = [
+        { mentor_id: { not: null } },
+        { teams: { some: {} } }
+      ];
+    }
 
     const missions = await prisma.mission.findMany({
       where: filters,
@@ -608,6 +625,14 @@ router.get('/missions/:id', requireAuth, async (req: AuthenticatedRequest, res) 
 
     if (!mission) {
       return res.status(404).json({ error: 'Mission not found' });
+    }
+
+    // Check unassigned privacy filter for Cubes
+    if (req.user?.role === 'CUBE') {
+      const hasTeams = mission.teams.length > 0;
+      if (!mission.mentor_id && !hasTeams) {
+        return res.status(403).json({ error: 'Access denied. This mission is unassigned and private.' });
+      }
     }
 
     // Get feedback related to this mission. CRITICAL check.
@@ -1164,6 +1189,170 @@ router.post('/demodays/:id/presentations', requireAuth, isMentorOrAdmin, async (
   }
 });
 
+// ==========================================
+// MEETINGS ROUTES
+// ==========================================
+
+// List all meetings
+router.get('/meetings', requireAuth, async (req, res) => {
+  try {
+    const meetings = await prisma.meeting.findMany({
+      include: {
+        attendance: {
+          include: {
+            cube: {
+              include: {
+                user: { select: { name: true } }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
+    return res.json(meetings);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single meeting detail
+router.get('/meetings/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const meeting = await prisma.meeting.findUnique({
+      where: { id },
+      include: {
+        attendance: {
+          include: {
+            cube: {
+              include: {
+                user: { select: { id: true, name: true, email: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+    return res.json(meeting);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Create meeting (Admin/Mentor only)
+router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { title, description, date } = req.body;
+    if (!title || !date) {
+      return res.status(400).json({ error: 'title and date are required' });
+    }
+
+    const meeting = await prisma.meeting.create({
+      data: {
+        title,
+        description,
+        date: new Date(date)
+      }
+    });
+    return res.status(201).json(meeting);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Edit meeting (Admin/Mentor only)
+router.put('/meetings/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, date } = req.body;
+
+    const meeting = await prisma.meeting.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        date: date ? new Date(date) : undefined
+      }
+    });
+    return res.json(meeting);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Complete meeting and log attendance (Admin/Mentor only)
+router.post('/meetings/:id/complete', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { decisions, summary, attendance } = req.body; // attendance: Array of { cube_id: string, attended: boolean, excuse?: string }
+
+    if (!Array.isArray(attendance)) {
+      return res.status(400).json({ error: 'attendance must be an array' });
+    }
+
+    // Wrap in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update meeting details
+      const updatedMeeting = await tx.meeting.update({
+        where: { id },
+        data: {
+          is_completed: true,
+          decisions,
+          summary
+        }
+      });
+
+      // 2. Upsert attendance records
+      for (const att of attendance) {
+        await tx.meetingAttendance.upsert({
+          where: {
+            meeting_id_cube_id: {
+              meeting_id: id,
+              cube_id: att.cube_id
+            }
+          },
+          update: {
+            attended: att.attended,
+            excuse: att.excuse || null
+          },
+          create: {
+            meeting_id: id,
+            cube_id: att.cube_id,
+            attended: att.attended,
+            excuse: att.excuse || null
+          }
+        });
+      }
+
+      return updatedMeeting;
+    });
+
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete meeting (Admin/Mentor only)
+router.delete('/meetings/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.meeting.delete({
+      where: { id }
+    });
+    return res.json({ message: 'Meeting deleted successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// MISSION APPLICATION ROUTES
 // ==========================================
 // AI HELPER ROUTES
 // ==========================================
