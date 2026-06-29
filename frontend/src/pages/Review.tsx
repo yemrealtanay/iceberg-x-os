@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Sparkles, Star, Save, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { RadarChart } from '../components/RadarChart';
 
 export const Review: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Optional mission ID
@@ -46,6 +47,7 @@ export const Review: React.FC = () => {
   const [aiDraft, setAiDraft] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [profileDetails, setProfileDetails] = useState<any | null>(null);
+  const [cubeFeedback, setCubeFeedback] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProfileDetails = async () => {
@@ -54,6 +56,7 @@ export const Review: React.FC = () => {
         try {
           const details = await api.get(`/cubes/${selectedProfile.id}`);
           setProfileDetails(details.profile);
+          setCubeFeedback(details.mentorFeedback || []);
         } catch (err) {
           console.error('Failed to fetch detailed profile for attendance', err);
         }
@@ -64,8 +67,37 @@ export const Review: React.FC = () => {
       fetchProfileDetails();
     } else {
       setProfileDetails(null);
+      setCubeFeedback([]);
     }
   }, [cubeId, cubes]);
+
+  // Calculate average scores for selected Cube's radar chart
+  const averageScores: { [key: string]: number } = {};
+  const skillKeys = [
+    'technical_ability_score',
+    'research_ability_score',
+    'demo_output_score',
+    'ownership_score',
+    'communication_score',
+    'leadership_score',
+    'product_thinking_score',
+    'reliability_score',
+    'self_reflection_score'
+  ];
+  skillKeys.forEach(k => {
+    averageScores[k] = 0;
+  });
+
+  if (cubeFeedback && cubeFeedback.length > 0) {
+    cubeFeedback.forEach((fb: any) => {
+      skillKeys.forEach(k => {
+        averageScores[k] += fb[k] || 0;
+      });
+    });
+    skillKeys.forEach(k => {
+      averageScores[k] = parseFloat((averageScores[k] / cubeFeedback.length).toFixed(1));
+    });
+  }
 
   useEffect(() => {
     const initializePageData = async () => {
@@ -413,6 +445,15 @@ export const Review: React.FC = () => {
                 );
               })()}
             </div>
+          )}
+
+          {/* Radar Chart Card */}
+          {profileDetails && (
+            <RadarChart
+              scores={averageScores}
+              feedbackCount={cubeFeedback ? cubeFeedback.length : 0}
+              size={280}
+            />
           )}
 
           {/* Sidebar: AI Review Helper */}

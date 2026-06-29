@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle } from 'lucide-react';
 import { getBadgeConfig } from '../utils/badgeHelper';
 import ReactMarkdown from 'react-markdown';
+import { RadarChart } from '../components/RadarChart';
 
 export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // CubeProfile ID
@@ -198,6 +199,34 @@ export const Profile: React.FC = () => {
   const attendedMeetings = attendanceList.filter((a: any) => a.attended).length;
   const missedMeetings = totalMeetings - attendedMeetings;
   const attendanceRate = totalMeetings > 0 ? Math.round((attendedMeetings / totalMeetings) * 100) : 100;
+
+  // Calculate average scores for radar chart
+  const averageScores: { [key: string]: number } = {};
+  const skillKeys = [
+    'technical_ability_score',
+    'research_ability_score',
+    'demo_output_score',
+    'ownership_score',
+    'communication_score',
+    'leadership_score',
+    'product_thinking_score',
+    'reliability_score',
+    'self_reflection_score'
+  ];
+  skillKeys.forEach(k => {
+    averageScores[k] = 0;
+  });
+
+  if (mentorFeedback && mentorFeedback.length > 0) {
+    mentorFeedback.forEach((fb: any) => {
+      skillKeys.forEach(k => {
+        averageScores[k] += fb[k] || 0;
+      });
+    });
+    skillKeys.forEach(k => {
+      averageScores[k] = parseFloat((averageScores[k] / mentorFeedback.length).toFixed(1));
+    });
+  }
 
   // Compute category strengths from completed missions
   const completedMissions = profile.team_memberships
@@ -707,6 +736,12 @@ export const Profile: React.FC = () => {
             <p className="text-gray-400 text-xs py-2 italic">No completed missions recorded yet to build category strengths.</p>
           )}
         </div>
+
+        {/* Radar Chart Section */}
+        <RadarChart
+          scores={averageScores}
+          feedbackCount={mentorFeedback ? mentorFeedback.length : 0}
+        />
 
         {/* Demo Submissions list */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
