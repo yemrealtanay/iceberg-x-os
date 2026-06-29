@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { Users, Rocket, Clock, MessageSquare, AlertCircle, Sparkles, BookOpen } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { CustomMarkdown } from '../components/CustomMarkdown';
 
 export const MentorDashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -70,7 +70,7 @@ export const MentorDashboard: React.FC = () => {
                       {m.status.replace(/_/g, ' ')}
                     </p>
                     <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed">
-                      <ReactMarkdown>{m.description}</ReactMarkdown>
+                      <CustomMarkdown>{m.description}</CustomMarkdown>
                     </div>
                   </div>
                   <Link to={`/missions/${m.id}`} className="text-xs font-bold text-magenta hover:underline mt-2 self-start flex items-center gap-1">

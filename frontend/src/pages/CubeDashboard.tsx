@@ -3,7 +3,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Award, Rocket, MessageSquare, ShieldAlert, Sparkles, Send, PlayCircle, ExternalLink, MessageCircle } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { CustomMarkdown } from '../components/CustomMarkdown';
 import { getBadgeConfig } from '../utils/badgeHelper';
 
 export const CubeDashboard: React.FC = () => {
@@ -173,7 +173,7 @@ export const CubeDashboard: React.FC = () => {
                     {activeMission.title}
                   </Link>
                   <div className="markdown-body text-gray-500 text-xs mt-2 leading-relaxed">
-                    <ReactMarkdown>{activeMission.description}</ReactMarkdown>
+                    <CustomMarkdown>{activeMission.description}</CustomMarkdown>
                   </div>
                 </div>
 

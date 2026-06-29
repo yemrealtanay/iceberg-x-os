@@ -3,7 +3,7 @@ import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Rocket, Plus, Filter, ShieldAlert } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { CustomMarkdown } from '../components/CustomMarkdown';
 
 export const Missions: React.FC = () => {
   const { user } = useAuth();
@@ -140,7 +140,7 @@ export const Missions: React.FC = () => {
                   {m.title}
                 </h3>
                 <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-3 leading-relaxed">
-                  <ReactMarkdown>{m.description}</ReactMarkdown>
+                  <CustomMarkdown>{m.description}</CustomMarkdown>
                 </div>
               </div>
 

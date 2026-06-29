@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Calendar, Plus, Save, Trash2, Check } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { CustomMarkdown } from '../components/CustomMarkdown';
 
 export const MissionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Mission ID
@@ -238,28 +238,28 @@ export const MissionDetail: React.FC = () => {
           <div>
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Mission Description</h3>
             <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed">
-              <ReactMarkdown>{mission.description}</ReactMarkdown>
+              <CustomMarkdown>{mission.description}</CustomMarkdown>
             </div>
           </div>
 
           <div className="border-t border-gray-50 pt-4">
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Context & Background</h3>
             <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed">
-              <ReactMarkdown>{mission.context}</ReactMarkdown>
+              <CustomMarkdown>{mission.context}</CustomMarkdown>
             </div>
           </div>
 
           <div className="border-t border-gray-50 pt-4">
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Problem Statement</h3>
             <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed bg-gray-50 border border-gray-100 p-3.5 rounded-xl font-mono">
-              <ReactMarkdown>{mission.problem_statement}</ReactMarkdown>
+              <CustomMarkdown>{mission.problem_statement}</CustomMarkdown>
             </div>
           </div>
 
           <div className="border-t border-gray-50 pt-4">
             <h3 className="font-extrabold text-sm text-gray-400 uppercase tracking-wider">Expected Deliverables</h3>
             <div className="markdown-body text-xs font-semibold text-gray-600 mt-2 leading-relaxed">
-              <ReactMarkdown>{mission.expected_output}</ReactMarkdown>
+              <CustomMarkdown>{mission.expected_output}</CustomMarkdown>
             </div>
           </div>
 
@@ -750,7 +750,7 @@ export const MissionDetail: React.FC = () => {
                   />
                 ) : (
                   <div className="markdown-body bg-magenta/5 border border-magenta/10 p-4 rounded-xl text-xs text-gray-700 max-h-80 overflow-y-auto font-medium leading-relaxed">
-                    <ReactMarkdown>{editedSummary}</ReactMarkdown>
+                    <CustomMarkdown>{editedSummary}</CustomMarkdown>
                   </div>
                 )}
 
