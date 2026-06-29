@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
 import prisma from './services/prisma';
+import fs from 'fs';
+import path from 'path';
 import { requireAuth, isAdmin, isMentor, isMentorOrAdmin, AuthenticatedRequest } from './middlewares/auth.middleware';
 import {
   generateMissionSummary,
@@ -362,6 +364,75 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
 
     return res.json(updated);
   } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Avatar upload endpoint
+router.post('/cubes/:id/avatar', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params; // CubeProfile ID
+    const { avatar_base64 } = req.body;
+
+    if (!avatar_base64) {
+      return res.status(400).json({ error: 'Missing avatar image base64 data' });
+    }
+
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Authorize: Only own profile or Admin/Mentor
+    if (req.user?.role === 'CUBE' && req.user.cubeProfileId !== id) {
+      return res.status(403).json({ error: 'Cannot update avatar for another Cube' });
+    }
+
+    // Validate and parse base64
+    const matches = avatar_base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ error: 'Invalid base64 image data URL format' });
+    }
+
+    const imageType = matches[1];
+    const base64Data = matches[2];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+
+    if (!allowedTypes.includes(imageType)) {
+      return res.status(400).json({ error: 'Only PNG, JPEG, and WEBP image uploads are allowed' });
+    }
+
+    // Convert to binary buffer
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Resolve directory and create it if not exists
+    const uploadsDir = path.resolve(__dirname, '../uploads/avatars');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Define file name and path
+    const extension = imageType.split('/')[1];
+    const filename = `${id}.${extension}`;
+    const filePath = path.join(uploadsDir, filename);
+
+    // Save image
+    fs.writeFileSync(filePath, buffer);
+
+    const avatarUrl = `/uploads/avatars/${filename}`;
+
+    // Update database
+    const updatedProfile = await prisma.cubeProfile.update({
+      where: { id },
+      data: { avatar_url: avatarUrl }
+    });
+
+    return res.json({ avatar_url: updatedProfile.avatar_url });
+  } catch (error: any) {
+    console.error('Error uploading avatar:', error);
     return res.status(500).json({ error: error.message });
   }
 });

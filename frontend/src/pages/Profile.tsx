@@ -2,10 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle } from 'lucide-react';
+import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera } from 'lucide-react';
 import { getBadgeConfig } from '../utils/badgeHelper';
 import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
+
+const formatExternalUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
+const getAssetUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  const base = window.location.origin.includes(':5173')
+    ? 'http://localhost:5001'
+    : '';
+  return `${base}${path}`;
+};
+
 
 export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // CubeProfile ID
@@ -14,6 +32,47 @@ export const Profile: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      setAvatarUploading(true);
+      try {
+        const res = await api.post(`/cubes/${id}/avatar`, { avatar_base64: base64 });
+        setData((prev: any) => ({
+          ...prev,
+          profile: {
+            ...prev.profile,
+            avatar_url: res.avatar_url
+          }
+        }));
+      } catch (err: any) {
+        alert(err.message || 'Failed to upload avatar');
+      } finally {
+        setAvatarUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Edit profile states
   const [isEditing, setIsEditing] = useState(false);
@@ -324,6 +383,58 @@ export const Profile: React.FC = () => {
             )}
           </div>
 
+          {/* Avatar Section */}
+          <div className="flex justify-center mt-2 relative">
+            <div 
+              onClick={() => isOwner && fileInputRef.current?.click()}
+              className={`w-24 h-24 rounded-full overflow-hidden relative group border-2 ${
+                profile.is_founding_cube ? 'border-amber-400' : 'border-magenta/25'
+              } shadow-sm ${isOwner ? 'cursor-pointer' : ''}`}
+            >
+              {profile.avatar_url ? (
+                <img 
+                  src={getAssetUrl(profile.avatar_url) || ''} 
+                  alt={profile.user.name} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className={`w-full h-full flex items-center justify-center font-black text-xl ${
+                  profile.is_founding_cube 
+                    ? 'bg-gradient-to-tr from-amber-400 to-amber-500 text-white' 
+                    : 'bg-gradient-to-tr from-magenta to-pink-600 text-white'
+                }`}>
+                  {getInitials(profile.user.name)}
+                </div>
+              )}
+
+              {/* Upload Overlay */}
+              {isOwner && (
+                <div className="absolute inset-0 bg-black/45 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 gap-1 select-none">
+                  <Camera className="w-5 h-5 text-white" />
+                  <span className="text-[9px] text-white/90 font-bold uppercase tracking-wider">Upload</span>
+                </div>
+              )}
+
+              {/* Uploading indicator */}
+              {avatarUploading && (
+                <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            
+            {/* Hidden Input */}
+            {isOwner && (
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAvatarChange} 
+                accept="image/png, image/jpeg, image/webp" 
+                className="hidden" 
+              />
+            )}
+          </div>
+
           <div>
             <h2 className="text-2xl font-extrabold text-gray-900 leading-snug flex items-center gap-2">
               <span>{profile.user.name}</span>
@@ -349,20 +460,19 @@ export const Profile: React.FC = () => {
             )}
           </div>
 
-          {/* Social Links */}
           <div className="flex flex-wrap gap-2 border-t border-gray-50 pt-4">
             {profile.github_url && (
-              <a href={profile.github_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
+              <a href={formatExternalUrl(profile.github_url)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
                 GitHub
               </a>
             )}
             {profile.gitlab_url && (
-              <a href={profile.gitlab_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
+              <a href={formatExternalUrl(profile.gitlab_url)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
                 GitLab
               </a>
             )}
             {profile.linkedin_url && (
-              <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
+              <a href={formatExternalUrl(profile.linkedin_url)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-xs font-semibold rounded-lg hover:text-magenta hover:bg-magenta/5 transition-all">
                 LinkedIn
               </a>
             )}
@@ -782,13 +892,13 @@ export const Profile: React.FC = () => {
                   {/* Resource URLs */}
                   <div className="flex flex-wrap gap-2.5 border-t border-gray-50 pt-3.5 mt-1">
                     {demo.repository_url && (
-                      <a href={demo.repository_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-magenta">
+                      <a href={formatExternalUrl(demo.repository_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-magenta">
                         <GitBranch className="w-3.5 h-3.5" />
                         <span>Repo</span>
                       </a>
                     )}
                     {demo.video_url && (
-                      <a href={demo.video_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-magenta">
+                      <a href={formatExternalUrl(demo.video_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-magenta">
                         <Video className="w-3.5 h-3.5" />
                         <span>Demo Video</span>
                       </a>

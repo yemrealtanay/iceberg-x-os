@@ -40,13 +40,16 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Path to frontend build output
 const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
 
 // Serve static assets in production/Docker
 app.use(express.static(frontendDistPath));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 // Mount all API routes
 app.use('/api', router);
