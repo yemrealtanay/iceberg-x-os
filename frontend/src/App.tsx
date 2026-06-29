@@ -80,6 +80,14 @@ function App() {
                 </RouteGuard>
               }
             />
+            <Route
+              path="review"
+              element={
+                <RouteGuard allowedRoles={['ADMIN', 'MENTOR']}>
+                  <Review />
+                </RouteGuard>
+              }
+            />
 
             {/* Teams Management (Admins & Mentors) */}
             <Route

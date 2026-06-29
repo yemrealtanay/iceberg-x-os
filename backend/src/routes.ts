@@ -979,7 +979,7 @@ router.post('/feedback', requireAuth, isMentorOrAdmin, async (req: Authenticated
     } = req.body;
 
     if (
-      !cube_id || !mission_id || !recommended_next_step ||
+      !cube_id || !recommended_next_step ||
       technical_ability_score === undefined ||
       research_ability_score === undefined ||
       demo_output_score === undefined ||
@@ -996,16 +996,20 @@ router.post('/feedback', requireAuth, isMentorOrAdmin, async (req: Authenticated
 
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-    // Upsert feedback
-    const feedback = await prisma.mentorFeedback.upsert({
-      where: {
-        cube_id_mission_id_mentor_id: {
+    const targetMissionId = mission_id ? String(mission_id) : null;
+    let feedback;
+
+    if (!targetMissionId) {
+      // Find if there is an existing general feedback for this cube by this mentor
+      const existing = await prisma.mentorFeedback.findFirst({
+        where: {
           cube_id,
-          mission_id,
+          mission_id: null,
           mentor_id: req.user.id
         }
-      },
-      update: {
+      });
+
+      const feedbackData = {
         technical_ability_score: Number(technical_ability_score),
         research_ability_score: Number(research_ability_score),
         demo_output_score: Number(demo_output_score),
@@ -1020,27 +1024,70 @@ router.post('/feedback', requireAuth, isMentorOrAdmin, async (req: Authenticated
         private_notes,
         visible_to_cube: !!visible_to_cube,
         recommended_next_step: recommended_next_step as RecommendedNextStep
-      },
-      create: {
-        cube_id,
-        mission_id,
-        mentor_id: req.user.id,
-        technical_ability_score: Number(technical_ability_score),
-        research_ability_score: Number(research_ability_score),
-        demo_output_score: Number(demo_output_score),
-        ownership_score: Number(ownership_score),
-        communication_score: Number(communication_score),
-        leadership_score: Number(leadership_score),
-        product_thinking_score: Number(product_thinking_score),
-        reliability_score: Number(reliability_score),
-        self_reflection_score: Number(self_reflection_score),
-        strengths,
-        areas_to_improve,
-        private_notes,
-        visible_to_cube: !!visible_to_cube,
-        recommended_next_step: recommended_next_step as RecommendedNextStep
+      };
+
+      if (existing) {
+        feedback = await prisma.mentorFeedback.update({
+          where: { id: existing.id },
+          data: feedbackData
+        });
+      } else {
+        feedback = await prisma.mentorFeedback.create({
+          data: {
+            cube_id,
+            mission_id: null,
+            mentor_id: req.user.id,
+            ...feedbackData
+          }
+        });
       }
-    });
+    } else {
+      // Upsert feedback for mission-based feedback
+      feedback = await prisma.mentorFeedback.upsert({
+        where: {
+          cube_id_mission_id_mentor_id: {
+            cube_id,
+            mission_id: targetMissionId,
+            mentor_id: req.user.id
+          }
+        },
+        update: {
+          technical_ability_score: Number(technical_ability_score),
+          research_ability_score: Number(research_ability_score),
+          demo_output_score: Number(demo_output_score),
+          ownership_score: Number(ownership_score),
+          communication_score: Number(communication_score),
+          leadership_score: Number(leadership_score),
+          product_thinking_score: Number(product_thinking_score),
+          reliability_score: Number(reliability_score),
+          self_reflection_score: Number(self_reflection_score),
+          strengths,
+          areas_to_improve,
+          private_notes,
+          visible_to_cube: !!visible_to_cube,
+          recommended_next_step: recommended_next_step as RecommendedNextStep
+        },
+        create: {
+          cube_id,
+          mission_id: targetMissionId,
+          mentor_id: req.user.id,
+          technical_ability_score: Number(technical_ability_score),
+          research_ability_score: Number(research_ability_score),
+          demo_output_score: Number(demo_output_score),
+          ownership_score: Number(ownership_score),
+          communication_score: Number(communication_score),
+          leadership_score: Number(leadership_score),
+          product_thinking_score: Number(product_thinking_score),
+          reliability_score: Number(reliability_score),
+          self_reflection_score: Number(self_reflection_score),
+          strengths,
+          areas_to_improve,
+          private_notes,
+          visible_to_cube: !!visible_to_cube,
+          recommended_next_step: recommended_next_step as RecommendedNextStep
+        }
+      });
+    }
 
     return res.status(201).json(feedback);
   } catch (error: any) {

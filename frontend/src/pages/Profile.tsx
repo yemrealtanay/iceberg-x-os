@@ -368,6 +368,17 @@ export const Profile: React.FC = () => {
             )}
           </div>
 
+          {/* Evaluate Cube Action for Mentors/Admins */}
+          {isMentorOrAdmin && (
+            <Link
+              to={`/review?cube=${profile.user.id}`}
+              className="mt-2 w-full bg-magenta text-white font-bold text-xs py-2.5 px-4 rounded-xl hover:bg-magenta-hover transition text-center flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <Star className="w-3.5 h-3.5 fill-current" />
+              Evaluate Cube (Scorecard)
+            </Link>
+          )}
+
           {/* Meeting Attendance Stats */}
           <div className="border-t border-gray-50 pt-4 flex flex-col gap-2.5">
             <h3 className="font-extrabold text-xs text-gray-700 uppercase tracking-wider">Meeting Attendance</h3>

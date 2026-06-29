@@ -234,8 +234,8 @@ model MentorFeedback {
   id                       String              @id @default(uuid())
   cube_id                  String
   cube                     User                @relation("FeedbackCube", fields: [cube_id], references: [id], onDelete: Cascade)
-  mission_id               String
-  mission                  Mission             @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  mission_id               String?
+  mission                  Mission?            @relation(fields: [mission_id], references: [id], onDelete: Cascade)
   mentor_id                String
   mentor                   User                @relation("FeedbackMentor", fields: [mentor_id], references: [id], onDelete: Cascade)
   technical_ability_score  Int

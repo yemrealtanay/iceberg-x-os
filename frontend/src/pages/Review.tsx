@@ -171,7 +171,7 @@ export const Review: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!cubeId || !missionId || !strengths || !areasToImprove || !recommendedNextStep) {
+    if (!cubeId || !strengths || !areasToImprove || !recommendedNextStep) {
       setError('Please fill in all required fields and scores.');
       return;
     }
@@ -206,7 +206,16 @@ export const Review: React.FC = () => {
 
     try {
       await api.post('/feedback', payload);
-      navigate(`/missions/${missionId}`);
+      if (missionId) {
+        navigate(`/missions/${missionId}`);
+      } else {
+        const selectedProfile = cubes.find(c => c.user.id === cubeId);
+        if (selectedProfile) {
+          navigate(`/cubes/${selectedProfile.id}`);
+        } else {
+          navigate('/directory');
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to submit feedback');
     } finally {
@@ -267,6 +276,7 @@ export const Review: React.FC = () => {
                 onChange={e => setMissionId(e.target.value)}
                 className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs font-semibold outline-none cursor-pointer"
               >
+                <option value="">General Evaluation (No Mission)</option>
                 {missions.map(m => (
                   <option key={m.id} value={m.id}>{m.title}</option>
                 ))}
