@@ -107,7 +107,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({ scores, feedbackCount, s
               const ly = center + labelRadius * Math.sin(angle);
 
               // Smart text positioning based on quadrant
-              let textAnchor = 'middle';
+              let textAnchor: "end" | "inherit" | "middle" | "start" | undefined = 'middle';
               const cosVal = Math.cos(angle);
               if (cosVal > 0.1) textAnchor = 'start';
               else if (cosVal < -0.1) textAnchor = 'end';

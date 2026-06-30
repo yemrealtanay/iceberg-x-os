@@ -48,6 +48,9 @@ export const api = {
   put: <T = any>(endpoint: string, body: any, headers?: Record<string, string>) => 
     request<T>(endpoint, { method: 'PUT', body, headers }),
     
+  patch: <T = any>(endpoint: string, body: any, headers?: Record<string, string>) => 
+    request<T>(endpoint, { method: 'PATCH', body, headers }),
+    
   delete: <T = any>(endpoint: string, headers?: Record<string, string>) => 
     request<T>(endpoint, { method: 'DELETE', headers }),
 };

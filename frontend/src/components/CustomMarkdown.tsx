@@ -44,8 +44,10 @@ interface CustomMarkdownProps {
 
 export const CustomMarkdown: React.FC<CustomMarkdownProps> = ({ children, className }) => {
   return (
-    <ReactMarkdown components={markdownComponents} className={className}>
-      {children}
-    </ReactMarkdown>
+    <div className={className}>
+      <ReactMarkdown components={markdownComponents}>
+        {children}
+      </ReactMarkdown>
+    </div>
   );
 };

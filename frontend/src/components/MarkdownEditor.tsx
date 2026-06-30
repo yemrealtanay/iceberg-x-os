@@ -165,7 +165,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         ) : (
           <div className="w-full h-full min-h-[140px] p-4 overflow-y-auto max-h-[400px] border-0 select-text">
             {value.trim() ? (
-              <ReactMarkdown className="markdown-body text-xs font-semibold text-gray-800">{value}</ReactMarkdown>
+              <div className="markdown-body text-xs font-semibold text-gray-800">
+                <ReactMarkdown>{value}</ReactMarkdown>
+              </div>
             ) : (
               <p className="text-gray-400 text-xs italic">Nothing to preview. Start typing in the Write tab.</p>
             )}

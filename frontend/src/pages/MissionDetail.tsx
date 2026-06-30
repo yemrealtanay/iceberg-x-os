@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Calendar, Plus, Save, Trash2, Check } from 'lucide-react';
+import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Plus, Save, Trash2, Check } from 'lucide-react';
 import { CustomMarkdown } from '../components/CustomMarkdown';
 
 export const MissionDetail: React.FC = () => {
@@ -209,6 +209,12 @@ export const MissionDetail: React.FC = () => {
   const { mission, mentorFeedback } = data;
   const isMentorOrAdmin = user?.role === 'ADMIN' || user?.role === 'MENTOR';
   const isAdmin = user?.role === 'ADMIN';
+
+  const teamMembers = mission.teams
+    ? mission.teams.flatMap((t: any) => t.members || [])
+    : [];
+
+  const myMemberRecord = teamMembers.find((m: any) => m.cube?.user_id === user?.id);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
