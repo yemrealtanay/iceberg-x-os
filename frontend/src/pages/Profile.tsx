@@ -33,6 +33,7 @@ export const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const getInitials = (name: string) => {
@@ -65,6 +66,7 @@ export const Profile: React.FC = () => {
             avatar_url: res.avatar_url
           }
         }));
+        setAvatarLoadError(false);
       } catch (err: any) {
         alert(err.message || 'Failed to upload avatar');
       } finally {
@@ -106,6 +108,7 @@ export const Profile: React.FC = () => {
     try {
       const res = await api.get(`/cubes/${id}`);
       setData(res);
+      setAvatarLoadError(false);
       
       // Seed edit fields
       setEditName(res.profile.user.name);
@@ -391,11 +394,12 @@ export const Profile: React.FC = () => {
                 profile.is_founding_cube ? 'border-amber-400' : 'border-magenta/25'
               } shadow-sm ${isOwner ? 'cursor-pointer' : ''}`}
             >
-              {profile.avatar_url ? (
+              {profile.avatar_url && !avatarLoadError ? (
                 <img 
                   src={getAssetUrl(profile.avatar_url) || ''} 
                   alt={profile.user.name} 
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarLoadError(true)}
                 />
               ) : (
                 <div className={`w-full h-full flex items-center justify-center font-black text-xl ${

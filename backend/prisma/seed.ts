@@ -319,16 +319,8 @@ async function main() {
       });
 
       if (existingOriginalProfile) {
-        await tx.cubeProfile.update({
-          where: { user_id: existingOriginalUser.id },
-          data: {
-            cube_number: originalCube.cube_number,
-            cohort: 'Unknown',
-            current_level: CubeLevel.Cube,
-            internship_status: 'No further information available.',
-            is_founding_cube: false
-          }
-        });
+        console.log(`Original Cube profile already exists. Skipping profile update.`);
+      }
       } else {
         await tx.cubeProfile.create({
           data: {
@@ -450,12 +442,7 @@ async function main() {
             assigned_mentor_id: markMentorId
           },
           update: {
-            cube_number: spec.cube_number,
-            cohort: spec.cohort,
-            current_level: spec.current_level,
-            internship_status: spec.internship_status,
-            is_founding_cube: spec.is_founding_cube,
-            assigned_mentor_id: markMentorId
+            cube_number: spec.cube_number
           }
         });
       }
@@ -529,16 +516,8 @@ async function main() {
         });
 
         if (existingProfile) {
-          await tx.cubeProfile.update({
-            where: { user_id: existingUser.id },
-            data: {
-              cube_number: fellow.cube_number,
-              cohort: existingProfile.cohort || 'Iceberg Fellows',
-              current_level: CubeLevel.Senior_Cube,
-              internship_status: 'Senior Cube',
-              is_founding_cube: true
-            }
-          });
+          console.log(`Senior Cube profile already exists. Skipping profile update.`);
+        }
         } else {
           await tx.cubeProfile.create({
             data: {
@@ -614,15 +593,7 @@ async function main() {
         });
       });
     } else {
-      console.log(`Cube user already exists: ${student.email}. Updating details if needed.`);
-      await prisma.cubeProfile.updateMany({
-        where: { user_id: existingUser.id },
-        data: {
-          internship_status: student.internship_status,
-          university: 'Muğla Sıtkı Koçman Üniversitesi',
-          is_founding_cube: true
-        }
-      });
+      console.log(`Cube user already exists: ${student.email}. Skipping profile update.`);
     }
   }
 
