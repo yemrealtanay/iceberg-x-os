@@ -320,7 +320,6 @@ async function main() {
 
       if (existingOriginalProfile) {
         console.log(`Original Cube profile already exists. Skipping profile update.`);
-      }
       } else {
         await tx.cubeProfile.create({
           data: {
@@ -517,7 +516,6 @@ async function main() {
 
         if (existingProfile) {
           console.log(`Senior Cube profile already exists. Skipping profile update.`);
-        }
         } else {
           await tx.cubeProfile.create({
             data: {
