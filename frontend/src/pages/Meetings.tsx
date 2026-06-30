@@ -61,7 +61,7 @@ export const Meetings: React.FC = () => {
     if (!title || !date) return;
 
     try {
-      await api.post('/meetings', { title, description, date });
+      await api.post('/meetings', { title, description, date: date + '+03:00' });
       setShowCreateModal(false);
       setTitle('');
       setDescription('');
@@ -77,7 +77,7 @@ export const Meetings: React.FC = () => {
     if (!selectedMeeting || !title || !date) return;
 
     try {
-      await api.put(`/meetings/${selectedMeeting.id}`, { title, description, date });
+      await api.put(`/meetings/${selectedMeeting.id}`, { title, description, date: date + '+03:00' });
       setShowEditModal(false);
       setSelectedMeeting(null);
       setTitle('');
@@ -146,15 +146,35 @@ export const Meetings: React.FC = () => {
     }));
   };
 
+  const toTurkeyDateTimeString = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Istanbul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const parts = formatter.formatToParts(d);
+    const val = (type: string) => parts.find(p => p.type === type)?.value || '';
+    
+    // Format: yyyy-MM-ddThh:mm
+    return `${val('year')}-${val('month')}-${val('day')}T${val('hour')}:${val('minute')}`;
+  };
+
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
     return d.toLocaleDateString('tr-TR', {
+      timeZone: 'Europe/Istanbul',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
+    }) + ' (TSİ)';
   };
 
   const upcomingMeetings = meetings.filter(m => !m.is_completed);
@@ -225,7 +245,7 @@ export const Meetings: React.FC = () => {
                               setSelectedMeeting(meeting);
                               setTitle(meeting.title);
                               setDescription(meeting.description || '');
-                              setDate(new Date(meeting.date).toISOString().slice(0, 16));
+                              setDate(toTurkeyDateTimeString(meeting.date));
                               setShowEditModal(true);
                             }}
                             className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition"
