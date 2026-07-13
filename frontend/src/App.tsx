@@ -23,6 +23,9 @@ import { AdminUsers } from './pages/AdminUsers';
 import { AdminApplications } from './pages/AdminApplications';
 import { ChangePassword } from './pages/ChangePassword';
 import { Meetings } from './pages/Meetings';
+import { Offboarding } from './pages/Offboarding';
+import { Certificate } from './pages/Certificate';
+import { VerifyCertificate } from './pages/VerifyCertificate';
 
 function App() {
   return (
@@ -34,6 +37,9 @@ function App() {
 
           {/* Public Login Route */}
           <Route path="/login" element={<Login />} />
+
+          {/* Public Certificate Verification Route */}
+          <Route path="/verify/:certNo" element={<VerifyCertificate />} />
 
           {/* Secure App Routes */}
           <Route
@@ -117,6 +123,17 @@ function App() {
 
             {/* Meetings Management */}
             <Route path="meetings" element={<Meetings />} />
+
+            {/* Offboarding & Certificate Management */}
+            <Route
+              path="offboarding"
+              element={
+                <RouteGuard allowedRoles={['ADMIN', 'MENTOR']}>
+                  <Offboarding />
+                </RouteGuard>
+              }
+            />
+            <Route path="offboarding/certificate/:cubeId" element={<Certificate />} />
 
             {/* Demo Days Scheduling (Admins & Mentors) */}
             <Route

@@ -485,7 +485,8 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
           orderBy: {
             created_at: 'desc'
           }
-        }
+        },
+        offboarding_record: true
       }
     });
 
@@ -1464,6 +1465,159 @@ router.delete('/meetings/:id', requireAuth, isMentorOrAdmin, async (req, res) =>
       where: { id }
     });
     return res.json({ message: 'Meeting deleted successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// OFFBOARDING & CERTIFICATE ROUTES (Admins & Mentors only, public verify)
+// ==========================================
+
+// Get Cube stats for offboarding preview
+router.get('/offboarding/stats/:cubeId', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { cubeId } = req.params;
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeId },
+      include: {
+        user: true,
+        team_memberships: {
+          include: {
+            team: {
+              include: {
+                mission: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Cube profile not found' });
+    }
+
+    const completedMissionsCount = profile.team_memberships.filter((m: any) => 
+      m.is_submitted && 
+      (m.team.mission.status === 'completed' || m.team.mission.status === 'reviewed')
+    ).length;
+
+    const badgesCount = await prisma.cubeBadge.count({
+      where: { cube_id: cubeId }
+    });
+
+    const attendance = await prisma.meetingAttendance.findMany({
+      where: { cube_id: cubeId }
+    });
+    const totalMeetings = attendance.length;
+    const attendedMeetings = attendance.filter((a: any) => a.attended).length;
+    const attendanceRate = totalMeetings > 0 ? Math.round((attendedMeetings / totalMeetings) * 100) : 100;
+
+    return res.json({
+      completedMissions: completedMissionsCount,
+      badgesEarned: badgesCount,
+      attendanceRate
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Get offboarded alumni list
+router.get('/offboarding/alumni', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const alumni = await prisma.cubeProfile.findMany({
+      where: { current_level: CubeLevel.Alumni },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        offboarding_record: true
+      },
+      orderBy: { cube_number: 'asc' }
+    });
+    return res.json(alumni);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Perform offboarding
+router.post('/offboarding', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { cubeProfileId, type, mentorName, emailTextTr, emailTextEn } = req.body;
+    if (!cubeProfileId || !type || !mentorName || !emailTextTr || !emailTextEn) {
+      return res.status(400).json({ error: 'cubeProfileId, type, mentorName, emailTextTr, and emailTextEn are required' });
+    }
+
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Cube profile not found' });
+    }
+
+    // Generate unique Certificate No: ICE-YYYY-0000XX
+    const currentYear = new Date().getFullYear();
+    const cubeNumStr = profile.cube_number.padStart(6, '0');
+    const certificateNo = `ICE-${currentYear}-${cubeNumStr}`;
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Update Cube Level to Alumni
+      await tx.cubeProfile.update({
+        where: { id: cubeProfileId },
+        data: { current_level: CubeLevel.Alumni }
+      });
+
+      // Create OffboardingRecord
+      const record = await tx.offboardingRecord.create({
+        data: {
+          cube_id: cubeProfileId,
+          certificate_no: certificateNo,
+          type,
+          mentor_name: mentorName,
+          email_text_tr: emailTextTr,
+          email_text_en: emailTextEn
+        }
+      });
+
+      return record;
+    });
+
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Public verify certificate endpoint
+router.get('/offboarding/verify/:certNo', async (req, res) => {
+  try {
+    const { certNo } = req.params;
+    const record = await prisma.offboardingRecord.findUnique({
+      where: { certificate_no: certNo },
+      include: {
+        cube: {
+          include: {
+            user: { select: { name: true } }
+          }
+        }
+      }
+    });
+
+    if (!record) {
+      return res.status(404).json({ error: 'Certificate not found' });
+    }
+
+    return res.json({
+      certificate_no: record.certificate_no,
+      type: record.type,
+      cube_name: record.cube.user.name,
+      cube_number: record.cube.cube_number,
+      mentor_name: record.mentor_name,
+      issue_date: record.issue_date,
+      cohort: record.cube.cohort
+    });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

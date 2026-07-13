@@ -126,6 +126,7 @@ model CubeProfile {
   team_memberships   MissionTeamMember[]
   cube_badges        CubeBadge[]
   meeting_attendance MeetingAttendance[]
+  offboarding_record OffboardingRecord?
 }
 
 model Mission {
@@ -356,4 +357,18 @@ model MeetingAttendance {
   updated_at DateTime    @updatedAt
 
   @@unique([meeting_id, cube_id])
+}
+
+model OffboardingRecord {
+  id             String      @id @default(uuid())
+  cube_id        String      @unique
+  cube           CubeProfile @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  certificate_no String      @unique // e.g., "ICE-2026-000047"
+  type           String      // "success" or "participation"
+  mentor_name    String
+  issue_date     DateTime    @default(now())
+  email_text_tr  String      @db.Text
+  email_text_en  String      @db.Text
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
 }

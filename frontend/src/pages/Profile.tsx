@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera } from 'lucide-react';
+import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap } from 'lucide-react';
 import { getBadgeConfig } from '../utils/badgeHelper';
 import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
@@ -447,6 +447,16 @@ export const Profile: React.FC = () => {
             <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mt-1">
               {profile.current_level.replace('_', ' ')}
             </p>
+            {profile.offboarding_record && (
+              <Link
+                to={`/offboarding/certificate/${profile.id}`}
+                target="_blank"
+                className="mt-3 w-full py-2 bg-gradient-to-r from-magenta to-pink-600 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-magenta/15 hover:opacity-95 transition-opacity"
+              >
+                <GraduationCap className="w-4 h-4" />
+                <span>View Offboarding Certificate</span>
+              </Link>
+            )}
           </div>
 
           <div className="flex flex-col gap-2.5 border-t border-gray-50 pt-4 text-xs text-gray-500 font-medium">

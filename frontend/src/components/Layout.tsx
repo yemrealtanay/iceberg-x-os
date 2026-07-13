@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -31,6 +31,7 @@ export const Layout: React.FC = () => {
         ...common,
         { path: '/teams', label: 'Teams', icon: Shield },
         { path: '/demodays', label: 'Demo Days', icon: Calendar },
+        { path: '/offboarding', label: 'Offboarding', icon: GraduationCap },
         { path: '/admin/users', label: 'Users Admin', icon: Users },
       ];
     }
@@ -40,6 +41,7 @@ export const Layout: React.FC = () => {
         ...common,
         { path: '/teams', label: 'Teams', icon: Shield },
         { path: '/demodays', label: 'Demo Days', icon: Calendar },
+        { path: '/offboarding', label: 'Offboarding', icon: GraduationCap },
       ];
     }
 
