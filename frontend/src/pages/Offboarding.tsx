@@ -28,6 +28,9 @@ export const Offboarding: React.FC = () => {
   // View Modal for already offboarded alumni email
   const [viewingAlumni, setViewingAlumni] = useState<any | null>(null);
 
+  // Enlarge Preview Modal state
+  const [showLargePreview, setShowLargePreview] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -344,68 +347,105 @@ Iceberg Digital Team`
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                    
                     {/* Visual Certificate Card Preview */}
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">Certificate Preview</span>
-                      <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm relative group bg-slate-100 flex items-center justify-center p-4 min-h-[220px]">
+                      <div className="flex justify-between items-center pl-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Certificate Preview</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowLargePreview(true)}
+                          className="text-[9px] font-extrabold text-magenta hover:underline"
+                        >
+                          Ön İzlemeyi Büyüt (Enlarge)
+                        </button>
+                      </div>
+                      <div 
+                        onClick={() => setShowLargePreview(true)}
+                        className="border border-gray-100 rounded-xl overflow-hidden shadow-sm relative group bg-slate-100 flex items-center justify-center p-4 min-h-[220px] cursor-pointer"
+                      >
                         
                         {certType === 'success' ? (
                           /* Dark mode success preview card */
-                          <div className="w-full max-w-[340px] aspect-[1.41] bg-gradient-to-br from-[#120F0C] to-[#201813] text-white p-3 rounded-lg border border-amber-900/30 flex flex-col justify-between shadow-md text-[8px]">
-                            <div className="flex justify-between items-start">
-                              <span className="font-black text-[6px] tracking-wider text-amber-400/90">ICEBERG PORTAL</span>
-                              <span className="text-[5px] text-amber-500/70 font-semibold uppercase">ELİT FELLOWSHIP</span>
+                          <div className="w-full max-w-[340px] aspect-[1.41] bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] text-white p-3 rounded-lg border border-amber-955/20 flex flex-col justify-between shadow-md text-[8px] relative">
+                            {/* Inner border */}
+                            <div className="absolute inset-1.5 border border-amber-400/20 pointer-events-none rounded" />
+                            
+                            <div className="flex justify-between items-start z-10">
+                              <img src="/images/iceberg-x-logo-blackbg.png" alt="Logo" className="h-3 rounded-sm object-contain" />
+                              <span className="text-[4px] text-amber-500/70 font-semibold uppercase">ELİT FELLOWSHIP</span>
                             </div>
-                            <div className="text-center my-1.5 flex flex-col gap-0.5">
-                              <span className="bg-amber-400/10 text-amber-400 text-[5px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Başarı Sertifikası</span>
-                              <h5 className="font-black text-[12px] text-white tracking-wide mt-1">{selectedCube.user.name}</h5>
-                              <p className="text-[5px] text-gray-400 leading-normal max-w-[260px] mx-auto mt-0.5">
+                            <div className="text-center my-1 flex flex-col gap-0.5 z-10">
+                              <span className="bg-amber-400/10 text-amber-400 text-[4px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Başarı Sertifikası</span>
+                              <h5 className="font-black text-[10px] text-white tracking-wide mt-0.5">{selectedCube.user.name}</h5>
+                              <p className="text-[4.5px] text-gray-400 leading-normal max-w-[260px] mx-auto mt-0.5">
                                 Fellowship programını üstün bir performansla tamamladığını ve Cube #{selectedCube.cube_number} olarak kalıcı yerini aldığını belgeler.
                               </p>
-                              <span className="text-[4px] text-amber-400 font-bold tracking-widest uppercase mt-0.5">Once a Cube, Always a Cube</span>
+                              <span className="text-[3.5px] text-amber-400 font-bold tracking-widest uppercase mt-0.5">Once a Cube, Always a Cube</span>
                             </div>
-                            <div className="flex justify-between items-end border-t border-white/5 pt-1.5 text-[4px] text-gray-400 font-semibold">
-                              <div>
-                                <p className="font-bold text-white">{mentorName}</p>
-                                <p className="text-[3px]">PROGRAM MENTORU</p>
+                            <div className="flex justify-between items-end border-t border-white/5 pt-1 text-[4px] text-gray-400 font-semibold z-10">
+                              <div className="flex gap-2">
+                                <div>
+                                  <p className="font-bold text-white text-[4px]">M. Burgess</p>
+                                  <p className="text-[2.5px] text-gray-500">CEO</p>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white text-[4px]">Y. Tokgöz</p>
+                                  <p className="text-[2.5px] text-gray-500">CTO</p>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white text-[4px]">Y. E. Altanay</p>
+                                  <p className="text-[2.5px] text-gray-500">DIR</p>
+                                </div>
                               </div>
                               <div className="text-right">
                                 <p>Sertifika No: ICE-2026-000{selectedCube.cube_number}</p>
-                                <p>Tarih: {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                <p>Mentor: {mentorName}</p>
                               </div>
                             </div>
                           </div>
                         ) : (
                           /* Light mode participation preview card */
-                          <div className="w-full max-w-[340px] aspect-[1.41] bg-[#F9F8F6] text-gray-800 p-3 rounded-lg border border-gray-200/60 flex flex-col justify-between shadow-md text-[8px]">
-                            <div className="flex justify-between items-start">
-                              <span className="font-black text-[6px] tracking-wider text-magenta">ICEBERG DIGITAL</span>
-                              <span className="text-[5px] text-gray-400 font-semibold uppercase">STAJ PROGRAMI</span>
+                          <div className="w-full max-w-[340px] aspect-[1.41] bg-[#F8F6F2] text-gray-800 p-3 rounded-lg border border-gray-200/60 flex flex-col justify-between shadow-md text-[8px] relative">
+                            {/* Inner border */}
+                            <div className="absolute inset-1.5 border border-magenta/20 pointer-events-none rounded" />
+
+                            <div className="flex justify-between items-start z-10">
+                              <img src="/images/iceberg-x-logo-blackbg.png" alt="Logo" className="h-3 rounded-sm object-contain" />
+                              <span className="text-[4px] text-gray-400 font-semibold uppercase">STAJ PROGRAMI</span>
                             </div>
-                            <div className="text-center my-1.5 flex flex-col gap-0.5">
-                              <span className="bg-magenta/5 text-magenta text-[5px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Katılım Sertifikası</span>
-                              <h5 className="font-black text-[12px] text-gray-900 mt-1">{selectedCube.user.name}</h5>
-                              <p className="text-[5px] text-gray-500 leading-normal max-w-[260px] mx-auto mt-0.5">
+                            <div className="text-center my-1 flex flex-col gap-0.5 z-10">
+                              <span className="bg-magenta/5 text-magenta text-[4px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Katılım Sertifikası</span>
+                              <h5 className="font-black text-[10px] text-gray-900 mt-0.5">{selectedCube.user.name}</h5>
+                              <p className="text-[4.5px] text-gray-505 leading-normal max-w-[260px] mx-auto mt-0.5">
                                 Teknoloji staj programına Cube #{selectedCube.cube_number} olarak katılım gösterdiğini ve programı başarıyla tamamladığını belgeler.
                               </p>
                             </div>
-                            <div className="flex justify-between items-end border-t border-gray-100 pt-1.5 text-[4px] text-gray-500 font-semibold">
-                              <div>
-                                <p className="font-bold text-gray-900">{mentorName}</p>
-                                <p className="text-[3px]">PROGRAM MENTORU</p>
+                            <div className="flex justify-between items-end border-t border-gray-100 pt-1 text-[4px] text-gray-500 font-semibold z-10">
+                              <div className="flex gap-2">
+                                <div>
+                                  <p className="font-bold text-gray-900 text-[4px]">M. Burgess</p>
+                                  <p className="text-[2.5px] text-gray-400">CEO</p>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 text-[4px]">Y. Tokgöz</p>
+                                  <p className="text-[2.5px] text-gray-400">CTO</p>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 text-[4px]">Y. E. Altanay</p>
+                                  <p className="text-[2.5px] text-gray-400">DIR</p>
+                                </div>
                               </div>
                               <div className="text-right">
                                 <p>Sertifika No: ICE-2026-000{selectedCube.cube_number}</p>
-                                <p>Tarih: {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                <p>Mentor: {mentorName}</p>
                               </div>
                             </div>
                           </div>
                         )}
 
                         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="bg-white/90 text-gray-900 border border-gray-200 text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-subtle uppercase tracking-wider">
-                            Full template prints in high res
+                          <span className="bg-white/90 text-gray-900 border border-gray-200 text-[9px] font-bold px-3 py-1.5 rounded-xl shadow-subtle uppercase tracking-wider">
+                            Ön İzlemeyi Büyüt
                           </span>
                         </div>
                       </div>
@@ -630,6 +670,184 @@ Iceberg Digital Team`
                 className="px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Large Certificate Preview */}
+      {showLargePreview && selectedCube && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-gray-100 overflow-hidden relative">
+            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-sm">Certificate High-Res Preview</h3>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Cube: {selectedCube.user.name} (#{selectedCube.cube_number})</p>
+              </div>
+              <button 
+                onClick={() => setShowLargePreview(false)} 
+                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 bg-slate-100 flex items-center justify-center overflow-x-auto min-h-[460px]">
+              {/* Scale down the container to fit nicely on screen while keeping high res */}
+              <div className="transform scale-[0.65] md:scale-[0.8] origin-center shadow-lg rounded-2xl overflow-hidden border">
+                
+                <div className={`relative aspect-[1.414] select-text transition-all ${
+                  certType === 'success' 
+                    ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-955/20 text-white' 
+                    : 'bg-[#F8F6F2] border-gray-200/50 text-gray-800'
+                  }`}
+                  style={{
+                    width: '297mm',
+                    height: '210mm',
+                  }}
+                >
+                  {/* Inner Border Frame */}
+                  <div className={`absolute inset-8 border-2 pointer-events-none rounded-xl ${
+                    certType === 'success' ? 'border-amber-400/20' : 'border-magenta/20'
+                  }`} />
+
+                  {/* Large stylized watermarked background logo */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+                    <img src="/images/iceberg-x-logo-whitebg.png" alt="" className="w-[500px] h-[500px] object-contain" />
+                  </div>
+
+                  {/* Header Row */}
+                  <div className="absolute top-12 left-14 right-14 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <img src="/images/iceberg-x-logo-blackbg.png" alt="Logo" className="h-8 rounded-lg object-contain shadow-sm" />
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-widest uppercase ${certType === 'success' ? 'text-amber-500/70' : 'text-gray-400'}`}>
+                      {certType === 'success' ? "ELİT TEKNOLOJİ FELLOWSHIP'İ" : "STAJ PROGRAMI • TEKNOLOJİ FELLOWSHIP'İ"}
+                    </span>
+                  </div>
+
+                  {/* Main Content Area */}
+                  <div className="h-full flex flex-col justify-center items-center px-16 text-center pt-8">
+                    
+                    {/* Pill Category Label */}
+                    <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      certType === 'success' 
+                        ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' 
+                        : 'bg-magenta/5 text-magenta border border-magenta/15'
+                    }`}>
+                      {certType === 'success' ? 'BAŞARI SERTİFİKASI' : 'STAJ SERTİFİKASI'}
+                    </span>
+
+                    {/* Certificate Title */}
+                    <h2 className={`font-black tracking-wide leading-none mt-5 text-[42px] ${certType === 'success' ? 'text-white' : 'text-gray-900'}`}>
+                      {certType === 'success' ? 'Başarı Sertifikası' : 'Katılım Sertifikası'}
+                    </h2>
+
+                    {/* Subtitle */}
+                    <p className={`text-[9px] font-extrabold tracking-widest uppercase mt-4 ${certType === 'success' ? 'text-amber-500/60' : 'text-gray-400'}`}>
+                      {certType === 'success' ? 'AŞAĞIDAKİ KİŞİYE ONURLA VERİLMİŞTİR' : 'AŞAĞIDAKİ KİŞİYE VERİLMİŞTİR'}
+                    </p>
+
+                    {/* Recipient Name */}
+                    <h1 className={`font-extrabold leading-none mt-3.5 pb-2 border-b-2 max-w-xl text-[44px] tracking-tight ${
+                      certType === 'success' ? 'text-white border-amber-400/20' : 'text-gray-900 border-magenta/20'
+                    }`}>
+                      {selectedCube.user.name}
+                    </h1>
+
+                    {/* Description Text */}
+                    <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${certType === 'success' ? 'text-gray-300' : 'text-gray-650'}`}>
+                      {certType === 'success' ? (
+                        <>
+                          Iceberg Digital teknoloji fellowship programını üstün bir performansla tamamladığını ve<br />
+                          <span className="font-bold text-white">Cube #{selectedCube.cube_number}</span> olarak kalıcı yerini aldığını belgeler.
+                        </>
+                      ) : (
+                        <>
+                          Iceberg Digital teknoloji staj programına <span className="font-bold text-gray-900">Cube #{selectedCube.cube_number}</span> olarak katılım gösterdiğini ve<br />
+                          programı başarıyla tamamladığını belgeler.
+                        </>
+                      )}
+                    </p>
+
+                    {/* Tagline / Sub-slogan */}
+                    {certType === 'success' && (
+                      <p className="text-[10px] text-amber-400 font-extrabold tracking-widest uppercase mt-4">
+                        Once a Cube, Always a Cube
+                      </p>
+                    )}
+
+                    {/* Cube Identifier Badges */}
+                    <div className="flex gap-4 mt-8">
+                      <div className={`px-4 py-2 border rounded-xl flex flex-col justify-center items-center min-w-[90px] ${
+                        certType === 'success' ? 'bg-amber-400/5 border-amber-400/20 text-amber-400' : 'bg-magenta/5 border-magenta/15 text-magenta'
+                      }`}>
+                        <span className="text-[7px] text-gray-400 uppercase font-semibold">CUBE ID</span>
+                        <span className={`text-[12px] font-bold mt-0.5 ${certType === 'success' ? 'text-amber-400' : 'text-magenta'}`}>#{selectedCube.cube_number}</span>
+                      </div>
+                      <div className={`px-4 py-2 border rounded-xl flex flex-col justify-center items-center min-w-[140px] ${
+                        certType === 'success' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-gray-200 text-gray-800'
+                      }`}>
+                        <span className="text-[7px] text-gray-400 uppercase font-semibold">PROGRAM MENTORU</span>
+                        <span className={`text-[12px] font-bold mt-0.5 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>{mentorName}</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Footer Rows (Signatures & Verification Info) */}
+                  <div className="absolute bottom-12 left-14 right-14 flex justify-between items-end">
+                    
+                    {/* Signatures */}
+                    <div className="flex gap-6">
+                      <div className="flex flex-col text-left">
+                        <div className="h-6 w-24 border-b border-gray-400/20"></div>
+                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Mark Burgess</p>
+                        <p className="text-[6px] text-gray-400 uppercase font-semibold">KURUCU & CEO</p>
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <div className="h-6 w-24 border-b border-gray-400/20"></div>
+                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yusuf Tokgöz</p>
+                        <p className="text-[6px] text-gray-400 uppercase font-semibold">CTO</p>
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <div className="h-6 w-24 border-b border-gray-400/20"></div>
+                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yunus Emre Altanay</p>
+                        <p className="text-[6px] text-gray-400 uppercase font-semibold">PROGRAM DİREKTÖRÜ</p>
+                      </div>
+                    </div>
+
+                    <p className="text-[6px] text-gray-400 font-extrabold tracking-widest uppercase absolute left-1/2 -translate-x-1/2 bottom-0">
+                      BUILDING THE NEXT GENERATION OF INNOVATORS
+                    </p>
+
+                    {/* Certificate Metadata and Verification Code QR */}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right text-[8px] text-gray-400 leading-tight font-semibold">
+                        <p>Sertifika No: <span className={`font-bold ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>ICE-2026-000{selectedCube.cube_number}</span></p>
+                        <p>Veriş Tarihi: <span className={`font-bold ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>{new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</span></p>
+                      </div>
+                      <div className="bg-white p-1 rounded-lg border border-gray-200 flex flex-col items-center justify-center shadow-sm">
+                        <div className="w-12 h-12 bg-gray-100 flex items-center justify-center text-[5px] text-gray-400 border border-dashed rounded">QR Code</div>
+                        <span className="text-[4px] font-bold tracking-wider text-gray-500 uppercase mt-0.5">DOĞRULA</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowLargePreview(false)}
+                className="px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition"
+              >
+                Close Preview
               </button>
             </div>
           </div>
