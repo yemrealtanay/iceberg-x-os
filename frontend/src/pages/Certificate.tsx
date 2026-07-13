@@ -95,8 +95,8 @@ export const Certificate: React.FC = () => {
       {/* Styled Printable A4 Landscape Container */}
       <div className={`print-container relative shadow-2xl border aspect-[1.414] overflow-hidden select-text transition-all ${
         isSuccess 
-          ? 'bg-gradient-to-br from-[#100D0B] via-[#1B1410] to-[#251C15] border-amber-950/20 text-white' 
-          : 'bg-[#F9F8F6] border-gray-200/50 text-gray-800'
+          ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-955/20 text-white' 
+          : 'bg-[#F8F6F2] border-gray-200/50 text-gray-800'
         }`}
         style={{
           width: '297mm',
@@ -104,11 +104,10 @@ export const Certificate: React.FC = () => {
         }}
       >
         
-        {/* Decorative corner borders */}
-        <div className={`absolute top-2.5 left-2.5 w-4 h-4 border-t border-l ${isSuccess ? 'border-amber-500/30' : 'border-magenta/30'}`}></div>
-        <div className={`absolute top-2.5 right-2.5 w-4 h-4 border-t border-r ${isSuccess ? 'border-amber-500/30' : 'border-magenta/30'}`}></div>
-        <div className={`absolute bottom-2.5 left-2.5 w-4 h-4 border-b border-l ${isSuccess ? 'border-amber-500/30' : 'border-magenta/30'}`}></div>
-        <div className={`absolute bottom-2.5 right-2.5 w-4 h-4 border-b border-r ${isSuccess ? 'border-amber-500/30' : 'border-magenta/30'}`}></div>
+        {/* Inner Border Frame matching template spacing */}
+        <div className={`absolute inset-8 border-2 pointer-events-none rounded-xl ${
+          isSuccess ? 'border-amber-400/20' : 'border-magenta/20'
+        }`} />
 
         {/* Large stylized watermarked background logo */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
@@ -116,13 +115,9 @@ export const Certificate: React.FC = () => {
         </div>
 
         {/* Header Row */}
-        <div className="absolute top-10 left-12 right-12 flex justify-between items-center">
+        <div className="absolute top-12 left-14 right-14 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            {isSuccess ? (
-              <span className="font-black text-[13px] tracking-widest text-amber-400 bg-amber-400/5 border border-amber-400/10 px-2 py-0.5 rounded uppercase">ICEBERG PORTAL</span>
-            ) : (
-              <span className="font-black text-[13px] tracking-widest text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded uppercase">ICEBERG DIGITAL</span>
-            )}
+            <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg Logo" className="h-8 rounded-lg object-contain shadow-sm" />
           </div>
           <span className={`text-[9px] font-extrabold tracking-widest uppercase ${isSuccess ? 'text-amber-500/70' : 'text-gray-400'}`}>
             {isSuccess ? "ELİT TEKNOLOJİ FELLOWSHIP'İ" : "STAJ PROGRAMI • TEKNOLOJİ FELLOWSHIP'İ"}
@@ -133,7 +128,7 @@ export const Certificate: React.FC = () => {
         <div className="h-full flex flex-col justify-center items-center px-16 text-center pt-8">
           
           {/* Pill Category Label */}
-          <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+          <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
             isSuccess 
               ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' 
               : 'bg-magenta/5 text-magenta border border-magenta/15'
@@ -147,19 +142,19 @@ export const Certificate: React.FC = () => {
           </h2>
 
           {/* Subtitle */}
-          <p className={`text-[10px] font-extrabold tracking-widest uppercase mt-4 ${isSuccess ? 'text-amber-500/60' : 'text-gray-400'}`}>
+          <p className={`text-[9px] font-extrabold tracking-widest uppercase mt-4 ${isSuccess ? 'text-amber-500/60' : 'text-gray-400'}`}>
             {isSuccess ? 'AŞAĞIDAKİ KİŞİYE ONURLA VERİLMİŞTİR' : 'AŞAĞIDAKİ KİŞİYE VERİLMİŞTİR'}
           </p>
 
           {/* Recipient Name */}
-          <h1 className={`font-extrabold leading-none mt-3.5 pb-2 border-b-2 max-w-xl text-[48px] ${
-            isSuccess ? 'text-white border-amber-400/30' : 'text-gray-900 border-magenta/30'
+          <h1 className={`font-extrabold leading-none mt-3.5 pb-2 border-b-2 max-w-xl text-[44px] tracking-tight ${
+            isSuccess ? 'text-white border-amber-400/20' : 'text-gray-900 border-magenta/20'
           }`}>
             {profile.user.name}
           </h1>
 
           {/* Description Text */}
-          <p className={`text-[14px] leading-relaxed max-w-[650px] mt-6 font-medium ${isSuccess ? 'text-gray-300' : 'text-gray-650'}`}>
+          <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${isSuccess ? 'text-gray-300' : 'text-gray-650'}`}>
             {isSuccess ? (
               <>
                 Iceberg Digital teknoloji fellowship programını üstün bir performansla tamamladığını ve<br />
@@ -183,34 +178,39 @@ export const Certificate: React.FC = () => {
           {/* Cube Identifier Badges */}
           <div className="flex gap-4 mt-8">
             <div className={`px-4 py-2 border rounded-xl flex flex-col justify-center items-center min-w-[90px] ${
-              isSuccess ? 'bg-amber-450/5 border-amber-400/20' : 'bg-slate-50 border-gray-200'
+              isSuccess ? 'bg-amber-400/5 border-amber-400/20 text-amber-400' : 'bg-magenta/5 border-magenta/15 text-magenta'
             }`}>
               <span className="text-[7px] text-gray-400 uppercase font-semibold">CUBE ID</span>
               <span className={`text-[12px] font-bold mt-0.5 ${isSuccess ? 'text-amber-400' : 'text-magenta'}`}>#{profile.cube_number}</span>
             </div>
             <div className={`px-4 py-2 border rounded-xl flex flex-col justify-center items-center min-w-[140px] ${
-              isSuccess ? 'bg-amber-450/5 border-amber-400/20' : 'bg-slate-50 border-gray-200'
+              isSuccess ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-gray-200 text-gray-800'
             }`}>
               <span className="text-[7px] text-gray-400 uppercase font-semibold">PROGRAM MENTORU</span>
-              <span className="text-[12px] font-bold mt-0.5 text-gray-800 dark:text-white">{record.mentor_name}</span>
+              <span className={`text-[12px] font-bold mt-0.5 ${isSuccess ? 'text-white' : 'text-gray-800'}`}>{record.mentor_name}</span>
             </div>
           </div>
 
         </div>
 
         {/* Footer Rows (Signatures & Verification Info) */}
-        <div className="absolute bottom-10 left-12 right-12 flex justify-between items-end">
+        <div className="absolute bottom-12 left-14 right-14 flex justify-between items-end">
           
           {/* Signatures */}
-          <div className="flex gap-10">
+          <div className="flex gap-6">
             <div className="flex flex-col text-left">
-              <div className="h-6 w-28 border-b border-gray-400/30"></div>
-              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Ad Soyad</p>
+              <div className="h-6 w-24 border-b border-gray-400/20"></div>
+              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Mark Burgess</p>
               <p className="text-[6px] text-gray-400 uppercase font-semibold">KURUCU & CEO</p>
             </div>
             <div className="flex flex-col text-left">
-              <div className="h-6 w-28 border-b border-gray-400/30"></div>
-              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Ad Soyad</p>
+              <div className="h-6 w-24 border-b border-gray-400/20"></div>
+              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yusuf Tokgöz</p>
+              <p className="text-[6px] text-gray-400 uppercase font-semibold">CTO</p>
+            </div>
+            <div className="flex flex-col text-left">
+              <div className="h-6 w-24 border-b border-gray-400/20"></div>
+              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yunus Emre Altanay</p>
               <p className="text-[6px] text-gray-400 uppercase font-semibold">PROGRAM DİREKTÖRÜ</p>
             </div>
           </div>
@@ -222,11 +222,11 @@ export const Certificate: React.FC = () => {
           {/* Certificate Metadata and Verification Code QR */}
           <div className="flex items-center gap-4">
             <div className="text-right text-[8px] text-gray-400 leading-tight font-semibold">
-              <p>Sertifika No: <span className="font-bold text-gray-800 dark:text-white">{record.certificate_no}</span></p>
-              <p>Veriş Tarihi: <span className="font-bold text-gray-800 dark:text-white">{formattedDateTr}</span></p>
+              <p>Sertifika No: <span className={`font-bold ${isSuccess ? 'text-white' : 'text-gray-800'}`}>{record.certificate_no}</span></p>
+              <p>Veriş Tarihi: <span className={`font-bold ${isSuccess ? 'text-white' : 'text-gray-800'}`}>{formattedDateTr}</span></p>
             </div>
-            <div className="bg-white p-1 rounded border border-gray-200 flex flex-col items-center justify-center shadow-sm">
-              <img src={qrCodeImgSrc} alt="Verification QR" className="w-11 h-11 object-contain" />
+            <div className="bg-white p-1 rounded-lg border border-gray-200 flex flex-col items-center justify-center shadow-sm">
+              <img src={qrCodeImgSrc} alt="Verification QR" className="w-12 h-12 object-contain" />
               <span className="text-[4px] font-bold tracking-wider text-gray-500 uppercase mt-0.5">DOĞRULA</span>
             </div>
           </div>

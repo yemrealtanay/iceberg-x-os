@@ -50,6 +50,17 @@ export const Offboarding: React.FC = () => {
     fetchData();
   }, []);
 
+  // Prefill mentor name when a Cube is selected
+  useEffect(() => {
+    if (selectedCube) {
+      if (selectedCube.assigned_mentor?.name) {
+        setMentorName(selectedCube.assigned_mentor.name);
+      } else {
+        setMentorName(user?.name || '');
+      }
+    }
+  }, [selectedCube, user]);
+
   // Calculate stats and generate drafts when Cube or Cert Type changes
   useEffect(() => {
     if (!selectedCube) {
