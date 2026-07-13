@@ -16,6 +16,7 @@ export const Offboarding: React.FC = () => {
   const [selectedCube, setSelectedCube] = useState<any | null>(null);
   const [certType, setCertType] = useState<'success' | 'participation'>('success');
   const [mentorName, setMentorName] = useState(user?.name || '');
+  const [targetLevel, setTargetLevel] = useState<string>('Alumni');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [stats, setStats] = useState<{ completedMissions: number; badgesEarned: number; attendanceRate: number } | null>(null);
 
@@ -177,9 +178,10 @@ Iceberg Digital Team`
         type: certType,
         mentorName,
         emailTextTr: emailTr,
-        emailTextEn: emailEn
+        emailTextEn: emailEn,
+        targetLevel
       });
-      alert('Cube offboarded successfully and transitioned to Alumni!');
+      alert(`Cube offboarded successfully and transitioned to ${targetLevel}!`);
       setSelectedCube(null);
       fetchData();
     } catch (err: any) {
@@ -288,7 +290,7 @@ Iceberg Digital Team`
               </div>
 
               {/* Step 1: Configuration Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Certificate Type *</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -327,8 +329,23 @@ Iceberg Digital Team`
                     value={mentorName}
                     onChange={(e) => setMentorName(e.target.value)}
                     placeholder="Mentor Adı Soyadı"
-                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none"
+                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px]"
                   />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Yeni Statü (Target Level) *</label>
+                  <select
+                    value={targetLevel}
+                    onChange={(e) => setTargetLevel(e.target.value)}
+                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px] cursor-pointer"
+                  >
+                    <option value="Alumni">Alumni</option>
+                    <option value="Former_Cube">Former Cube</option>
+                    <option value="Senior_Cube">Senior Cube</option>
+                    <option value="Cube">Cube</option>
+                    <option value="Iceberger">Iceberger</option>
+                  </select>
                 </div>
               </div>
 
@@ -393,8 +410,8 @@ Iceberg Digital Team`
                                   <p className="text-[2.5px] text-gray-500">CTO</p>
                                 </div>
                                 <div>
-                                  <p className="font-bold text-white text-[4px]">Y. E. Altanay</p>
-                                  <p className="text-[2.5px] text-gray-500">DIR</p>
+                                  <p className="font-bold text-white text-[4px]">A. O. Solmaz</p>
+                                  <p className="text-[2.5px] text-gray-500">ENG</p>
                                 </div>
                               </div>
                               <div className="text-right">
@@ -431,8 +448,8 @@ Iceberg Digital Team`
                                   <p className="text-[2.5px] text-gray-400">CTO</p>
                                 </div>
                                 <div>
-                                  <p className="font-bold text-gray-900 text-[4px]">Y. E. Altanay</p>
-                                  <p className="text-[2.5px] text-gray-400">DIR</p>
+                                  <p className="font-bold text-gray-900 text-[4px]">A. O. Solmaz</p>
+                                  <p className="text-[2.5px] text-gray-400">ENG</p>
                                 </div>
                               </div>
                               <div className="text-right">
@@ -808,8 +825,8 @@ Iceberg Digital Team`
                       </div>
                       <div className="flex flex-col text-left">
                         <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yunus Emre Altanay</p>
-                        <p className="text-[6px] text-gray-400 uppercase font-semibold">PROGRAM DİREKTÖRÜ</p>
+                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Ahmet Onur Solmaz</p>
+                        <p className="text-[6px] text-gray-400 uppercase font-semibold">HEAD OF ENGINEERING</p>
                       </div>
                     </div>
 

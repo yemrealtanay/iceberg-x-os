@@ -210,8 +210,8 @@ export const Certificate: React.FC = () => {
             </div>
             <div className="flex flex-col text-left">
               <div className="h-6 w-24 border-b border-gray-400/20"></div>
-              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yunus Emre Altanay</p>
-              <p className="text-[6px] text-gray-400 uppercase font-semibold">PROGRAM DİREKTÖRÜ</p>
+              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Ahmet Onur Solmaz</p>
+              <p className="text-[6px] text-gray-400 uppercase font-semibold">HEAD OF ENGINEERING</p>
             </div>
           </div>
 

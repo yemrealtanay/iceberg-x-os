@@ -1544,7 +1544,7 @@ router.get('/offboarding/alumni', requireAuth, isMentorOrAdmin, async (req, res)
 // Perform offboarding
 router.post('/offboarding', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
-    const { cubeProfileId, type, mentorName, emailTextTr, emailTextEn } = req.body;
+    const { cubeProfileId, type, mentorName, emailTextTr, emailTextEn, targetLevel } = req.body;
     if (!cubeProfileId || !type || !mentorName || !emailTextTr || !emailTextEn) {
       return res.status(400).json({ error: 'cubeProfileId, type, mentorName, emailTextTr, and emailTextEn are required' });
     }
@@ -1557,16 +1557,26 @@ router.post('/offboarding', requireAuth, isMentorOrAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Cube profile not found' });
     }
 
+    // Validate targetLevel or fallback to Alumni
+    let levelToSet: CubeLevel = CubeLevel.Alumni;
+    if (targetLevel) {
+      if (Object.values(CubeLevel).includes(targetLevel as any)) {
+        levelToSet = targetLevel as CubeLevel;
+      } else {
+        return res.status(400).json({ error: `Invalid targetLevel. Must be one of: ${Object.values(CubeLevel).join(', ')}` });
+      }
+    }
+
     // Generate unique Certificate No: ICE-YYYY-0000XX
     const currentYear = new Date().getFullYear();
     const cubeNumStr = profile.cube_number.padStart(6, '0');
     const certificateNo = `ICE-${currentYear}-${cubeNumStr}`;
 
     const result = await prisma.$transaction(async (tx) => {
-      // Update Cube Level to Alumni
+      // Update Cube Level to selected target level
       await tx.cubeProfile.update({
         where: { id: cubeProfileId },
-        data: { current_level: CubeLevel.Alumni }
+        data: { current_level: levelToSet }
       });
 
       // Create OffboardingRecord
