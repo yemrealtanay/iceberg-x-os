@@ -200,17 +200,17 @@ export const Certificate: React.FC = () => {
           <div className="flex gap-6">
             <div className="flex flex-col text-left">
               <div className="h-6 w-24 border-b border-gray-400/20"></div>
-              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Mark Burgess</p>
+              <p className={`text-[9px] font-bold mt-1 ${isSuccess ? 'text-white' : 'text-gray-800'}`}>Mark Burgess</p>
               <p className="text-[6px] text-gray-400 uppercase font-semibold">KURUCU & CEO</p>
             </div>
             <div className="flex flex-col text-left">
               <div className="h-6 w-24 border-b border-gray-400/20"></div>
-              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yusuf Tokgöz</p>
+              <p className={`text-[9px] font-bold mt-1 ${isSuccess ? 'text-white' : 'text-gray-800'}`}>Yusuf Tokgöz</p>
               <p className="text-[6px] text-gray-400 uppercase font-semibold">CTO</p>
             </div>
             <div className="flex flex-col text-left">
               <div className="h-6 w-24 border-b border-gray-400/20"></div>
-              <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Ahmet Onur Solmaz</p>
+              <p className={`text-[9px] font-bold mt-1 ${isSuccess ? 'text-white' : 'text-gray-800'}`}>Ahmet Onur Solmaz</p>
               <p className="text-[6px] text-gray-400 uppercase font-semibold">HEAD OF ENGINEERING</p>
             </div>
           </div>

@@ -290,10 +290,10 @@ Iceberg Digital Team`
               </div>
 
               {/* Step 1: Configuration Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Certificate Type *</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setCertType('success')}
@@ -303,8 +303,8 @@ Iceberg Digital Team`
                           : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                       }`}
                     >
-                      <Award className="w-3.5 h-3.5" />
-                      <span>Başarı Sertifikası</span>
+                      <Award className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Başarı Sertifikası</span>
                     </button>
                     <button
                       type="button"
@@ -315,8 +315,8 @@ Iceberg Digital Team`
                           : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                       }`}
                     >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Katılım Sertifikası</span>
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Katılım Sertifikası</span>
                     </button>
                   </div>
                 </div>
@@ -815,17 +815,17 @@ Iceberg Digital Team`
                     <div className="flex gap-6">
                       <div className="flex flex-col text-left">
                         <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Mark Burgess</p>
+                        <p className={`text-[9px] font-bold mt-1 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>Mark Burgess</p>
                         <p className="text-[6px] text-gray-400 uppercase font-semibold">KURUCU & CEO</p>
                       </div>
                       <div className="flex flex-col text-left">
                         <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Yusuf Tokgöz</p>
+                        <p className={`text-[9px] font-bold mt-1 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>Yusuf Tokgöz</p>
                         <p className="text-[6px] text-gray-400 uppercase font-semibold">CTO</p>
                       </div>
                       <div className="flex flex-col text-left">
                         <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className="text-[9px] font-bold text-gray-800 dark:text-white mt-1">Ahmet Onur Solmaz</p>
+                        <p className={`text-[9px] font-bold mt-1 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>Ahmet Onur Solmaz</p>
                         <p className="text-[6px] text-gray-400 uppercase font-semibold">HEAD OF ENGINEERING</p>
                       </div>
                     </div>
