@@ -693,19 +693,14 @@ Iceberg Digital Team`
               </button>
             </div>
 
-            <div className="p-6 bg-slate-100 flex items-center justify-center overflow-x-auto min-h-[460px]">
-              {/* Scale down the container to fit nicely on screen while keeping high res */}
-              <div className="transform scale-[0.65] md:scale-[0.8] origin-center shadow-lg rounded-2xl overflow-hidden border">
-                
-                <div className={`relative aspect-[1.414] select-text transition-all ${
+            <div className="p-6 bg-slate-100 flex items-center justify-center overflow-auto min-h-[460px]">
+              {/* Scale down the container to fit nicely on screen while keeping aspect ratio and high res */}
+              <div className="relative overflow-hidden rounded-2xl border shadow-lg bg-white w-[561px] h-[397px] md:w-[842px] md:h-[596px] shrink-0">
+                <div className={`w-[1122px] h-[794px] transform scale-[0.5] md:scale-[0.75] origin-top-left select-text relative transition-all ${
                   certType === 'success' 
                     ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-955/20 text-white' 
                     : 'bg-[#F8F6F2] border-gray-200/50 text-gray-800'
                   }`}
-                  style={{
-                    width: '297mm',
-                    height: '210mm',
-                  }}
                 >
                   {/* Inner Border Frame */}
                   <div className={`absolute inset-8 border-2 pointer-events-none rounded-xl ${
