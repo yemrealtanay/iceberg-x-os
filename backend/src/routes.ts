@@ -1600,6 +1600,50 @@ router.post('/offboarding', requireAuth, isMentorOrAdmin, async (req, res) => {
   }
 });
 
+// Revert offboarding for a Cube
+router.post('/offboarding/revert', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { cubeProfileId, targetLevel } = req.body;
+    if (!cubeProfileId || !targetLevel) {
+      return res.status(400).json({ error: 'cubeProfileId and targetLevel are required' });
+    }
+
+    if (!Object.values(CubeLevel).includes(targetLevel as any)) {
+      return res.status(400).json({ error: `Invalid targetLevel. Must be one of: ${Object.values(CubeLevel).join(', ')}` });
+    }
+
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId },
+      include: { offboarding_record: true }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Cube profile not found' });
+    }
+
+    if (!profile.offboarding_record) {
+      return res.status(400).json({ error: 'This Cube is not currently offboarded' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete OffboardingRecord
+      await tx.offboardingRecord.delete({
+        where: { cube_id: cubeProfileId }
+      });
+
+      // 2. Revert level back to selected targetLevel
+      await tx.cubeProfile.update({
+        where: { id: cubeProfileId },
+        data: { current_level: targetLevel as CubeLevel }
+      });
+    });
+
+    return res.status(200).json({ message: 'Offboarding successfully reverted' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // Public verify certificate endpoint
 router.get('/offboarding/verify/:certNo', async (req, res) => {
   try {

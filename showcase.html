@@ -1,0 +1,2691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iceberg X — Internal Development Showcase</title>
+  <meta name="description" content="A scroll-driven interactive showcase of Iceberg X development milestones, performance upgrades, and upcoming integrations.">
+  
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- GSAP & ScrollTrigger from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  
+  <style>
+    /* ---------- DESIGN SYSTEM ---------- */
+    :root {
+      --magenta: #e6007e;
+      --magenta-hover: #ff1a8c;
+      --magenta-light: #ff4da6;
+      --magenta-bg: rgba(230, 0, 126, 0.05);
+      --magenta-glow: rgba(230, 0, 126, 0.4);
+      --dark-bg: #05070f;
+      --dark-card: #0e111f;
+      --dark-border: rgba(255, 255, 255, 0.06);
+      --light-bg: #f8fafc;
+      --light-card: #ffffff;
+      --light-border: rgba(15, 23, 42, 0.06);
+      --text-dark: #0f172a;
+      --text-light: #f8fafc;
+      --text-gray: #64748b;
+      --text-gray-light: #94a3b8;
+      
+      --r-sm: 10px;
+      --r-md: 16px;
+      --r-lg: 24px;
+      --r-xl: 32px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+      background: var(--dark-bg);
+      color: var(--text-light);
+      line-height: 1.6;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scroll Progress bar */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--magenta) 0%, var(--magenta-light) 100%);
+      z-index: 1000;
+      width: 0%;
+      box-shadow: 0 0 10px var(--magenta-glow);
+    }
+
+    /* Typography helpers */
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    p {
+      color: var(--text-gray-light);
+    }
+
+    .scroller {
+      width: 100%;
+    }
+
+    /* Base Section styling */
+    .section-container {
+      position: relative;
+      min-height: 100vh;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 4%;
+      overflow: hidden;
+    }
+
+    /* Pinned container */
+    .pinned-section {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .wrap {
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      z-index: 2;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        text-align: center;
+      }
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      background: var(--magenta-bg);
+      border: 1px solid rgba(230, 0, 126, 0.2);
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--magenta-light);
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(230, 0, 126, 0.08);
+    }
+
+    .badge-dark {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-gray-light);
+    }
+
+    .glow-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(230, 0, 126, 0.15) 0%, rgba(5, 7, 15, 0) 70%);
+      filter: blur(40px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ---------------------------------------------------- */
+    /* SECTION 1: HERO & TALENT SHOWCASE (DARK THEME)       */
+    /* ---------------------------------------------------- */
+    #sec-talent {
+      background: radial-gradient(circle at 50% 30%, #0c0b1a 0%, var(--dark-bg) 70%);
+      padding-top: 100px;
+      padding-bottom: 100px;
+    }
+
+    .talent-header {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 60px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 30%, #f68acb 70%, var(--magenta) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .talent-header h1 {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      margin-bottom: 20px;
+      letter-spacing: -0.04em;
+    }
+
+    .talent-header p {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      color: var(--text-gray-light);
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    .cube-grid-container {
+      position: relative;
+      width: 100%;
+      height: 60vh;
+      perspective: 1200px;
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cube-grid-3d {
+      display: grid;
+      grid-template-columns: repeat(4, 150px);
+      grid-template-rows: repeat(2, 150px);
+      gap: 30px;
+      transform-style: preserve-3d;
+      transform: translateZ(-200px);
+      width: max-content;
+    }
+
+    @media (max-width: 768px) {
+      .cube-grid-3d {
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 15px;
+      }
+    }
+
+    .cube-student-card {
+      background: var(--dark-card);
+      border: 1px solid var(--dark-border);
+      border-radius: var(--r-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.3s, transform 0.3s;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      cursor: pointer;
+    }
+
+    .cube-student-card:hover {
+      border-color: var(--magenta);
+      box-shadow: 0 0 25px var(--magenta-glow);
+    }
+
+    .cube-student-card .cube-id {
+      font-size: 0.8rem;
+      color: var(--magenta-light);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .cube-student-card .cube-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--dark-border) 0%, rgba(230, 0, 126, 0.3) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin: 10px 0;
+      color: #fff;
+    }
+
+    .cube-student-card .cube-status {
+      font-size: 0.65rem;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* 7 real project cards layout */
+    .projects-container {
+      margin-top: 100px;
+      width: 100%;
+    }
+
+    .projects-title {
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 25px;
+    }
+
+    @media (max-width: 480px) {
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .project-card {
+      background: var(--dark-card);
+      border: 1px solid var(--dark-border);
+      border-radius: var(--r-lg);
+      padding: 32px;
+      transition: all 0.4s var(--ease-out);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 240px;
+    }
+
+    .project-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 10% 10%, rgba(230, 0, 126, 0.08) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .project-card:hover {
+      border-color: rgba(230, 0, 126, 0.4);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(230, 0, 126, 0.1);
+    }
+
+    .project-card:hover::before {
+      opacity: 1;
+    }
+
+    .project-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--dark-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .project-card:hover .project-icon {
+      border-color: var(--magenta);
+      background: var(--magenta-bg);
+    }
+
+    .project-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: var(--text-gray-light);
+      stroke-width: 1.5;
+      transition: stroke 0.3s;
+    }
+
+    .project-card:hover .project-icon svg {
+      stroke: var(--magenta-light);
+    }
+
+    .project-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text-light);
+      position: relative;
+      z-index: 2;
+    }
+
+    .project-card p {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--text-gray-light);
+      position: relative;
+      z-index: 2;
+      flex-grow: 1;
+    }
+
+    .project-number {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--magenta-light);
+      opacity: 0.4;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .showcase-footer-callout {
+      text-align: center;
+      margin-top: 80px;
+      padding: 40px;
+      border-radius: var(--r-xl);
+      background: radial-gradient(circle at center, rgba(230, 0, 126, 0.08) 0%, transparent 80%);
+      border: 1px dashed rgba(230, 0, 126, 0.2);
+    }
+
+    .showcase-footer-callout h3 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+    }
+
+    /* ---------------------------------------------------- */
+    /* SECTION 2: WHATSAPP CALL FORWARDING (RESTORED PHONE) */
+    /* ---------------------------------------------------- */
+    #sec-whatsapp {
+      background: var(--light-bg);
+      color: var(--text-dark);
+      border-top: 1px solid var(--light-border);
+      border-bottom: 1px solid var(--light-border);
+    }
+
+    #sec-whatsapp p {
+      color: var(--text-gray);
+    }
+
+    .left-content {
+      padding-right: 40px;
+    }
+
+    .left-content h2 {
+      font-size: clamp(2.2rem, 4vw, 3.2rem);
+      margin-bottom: 24px;
+      color: var(--text-dark);
+    }
+
+    .left-content .subheading {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--magenta);
+      margin-bottom: 16px;
+    }
+
+    .left-content .desc {
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    /* Phone Mockup Layout */
+    .phone-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .iphone-mockup {
+      width: 290px;
+      height: 580px;
+      background: #000;
+      border: 12px solid #1e1e1e;
+      border-radius: 40px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(255,255,255,0.1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .iphone-notch {
+      width: 140px;
+      height: 24px;
+      background: #000;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    /* Ringing Screen */
+    .screen-ringing {
+      position: absolute;
+      inset: 0;
+      background: #111827;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px 20px 80px;
+      color: #fff;
+      text-align: center;
+      z-index: 5;
+    }
+
+    .caller-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .caller-status {
+      font-size: 0.8rem;
+      color: var(--magenta-light);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .ringing-buttons {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+    }
+
+    .r-btn {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    .r-btn.decline { background: #ef4444; }
+    .r-btn.accept { background: #22c55e; }
+
+    /* WhatsApp Screen */
+    .screen-whatsapp {
+      position: absolute;
+      inset: 0;
+      background: #efeae2;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      z-index: 4;
+    }
+
+    .wa-header {
+      height: 60px;
+      background: #075e54;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 20px 12px 10px;
+      gap: 8px;
+    }
+
+    .wa-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #075e54;
+    }
+
+    .wa-body {
+      flex-grow: 1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .wa-bubble {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .wa-bubble.incoming {
+      align-self: flex-start;
+      background: #fff;
+      color: #334155;
+    }
+
+    .wa-bubble.outgoing {
+      align-self: flex-end;
+      background: #d9fdd3;
+      color: #334155;
+    }
+
+    /* ---------------------------------------------------- */
+    /* SECTION 3: COMMUNICATION HUB (RESTORED ORIGINAL UI)  */
+    /* ---------------------------------------------------- */
+    #sec-commhub {
+      background: #080911;
+      border-bottom: 1px solid var(--dark-border);
+    }
+
+    .dashboard-mockup-wrapper {
+      width: 100%;
+      height: auto;
+    }
+
+    .dashboard-mockup {
+      width: 100%;
+      height: 480px;
+      background: var(--dark-card);
+      border: 1px solid var(--dark-border);
+      border-radius: var(--r-xl);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(230, 0, 126, 0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .db-header {
+      height: 56px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--dark-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .db-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .db-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .db-dot.red { background: #ff5f56; }
+    .db-dot.yellow { background: #ffbd2e; }
+    .db-dot.green { background: #27c93f; }
+
+    .db-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-gray-light);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .db-stat {
+      font-size: 0.8rem;
+      color: var(--magenta-light);
+      font-weight: 700;
+      background: rgba(230, 0, 126, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(230, 0, 126, 0.2);
+    }
+
+    .db-body {
+      flex-grow: 1;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      height: calc(100% - 56px);
+    }
+
+    @media (max-width: 640px) {
+      .db-body {
+        grid-template-columns: 1fr;
+      }
+      .db-sidebar {
+        display: none;
+      }
+    }
+
+    .db-sidebar {
+      background: rgba(255, 255, 255, 0.01);
+      border-right: 1px solid var(--dark-border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sb-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-gray-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sb-item.active {
+      background: var(--magenta-bg);
+      color: #fff;
+      border: 1px solid rgba(230, 0, 126, 0.15);
+    }
+
+    .sb-badge {
+      font-size: 0.72rem;
+      background: var(--magenta);
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 99px;
+    }
+
+    .db-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      overflow-y: auto;
+    }
+
+    .socket-notification-card {
+      background: rgba(230, 0, 126, 0.06);
+      border: 1px solid rgba(230, 0, 126, 0.3);
+      padding: 16px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(230, 0, 126, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .socket-pulse {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--magenta);
+      position: relative;
+    }
+
+    .socket-pulse::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid var(--magenta-light);
+      opacity: 0.8;
+      animation: zoom-pulse 1.4s infinite;
+    }
+
+    @keyframes zoom-pulse {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .socket-info h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .socket-info p {
+      font-size: 0.8rem;
+    }
+
+    .error-alert-box {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.5s;
+    }
+
+    .error-alert-box.success {
+      background: rgba(34, 197, 94, 0.08);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .error-alert-box.success .alert-icon {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .alert-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ef4444;
+      font-weight: 800;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .alert-text h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .alert-text p {
+      font-size: 0.8rem;
+    }
+
+    .quick-assign-container {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--dark-border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.4s;
+    }
+
+    .unknown-contact-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .contact-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .contact-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .contact-avatar.assigned {
+      background: var(--magenta);
+    }
+
+    .contact-meta h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .contact-meta p {
+      font-size: 0.75rem;
+    }
+
+    .quick-assign-btn {
+      background: var(--magenta);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: background 0.3s;
+    }
+
+    .quick-assign-btn:hover {
+      background: var(--magenta-hover);
+    }
+
+    .assign-popover {
+      position: absolute;
+      top: 60px;
+      right: 32px;
+      width: 230px;
+      background: var(--dark-card);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .popover-search {
+      height: 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      border: 1px solid var(--dark-border);
+      font-size: 0.75rem;
+      color: var(--text-gray-light);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+    }
+
+    .popover-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .popover-item:hover {
+      background: var(--magenta-bg);
+      color: #fff;
+    }
+
+    .popover-item.selected {
+      background: rgba(230, 0, 126, 0.15);
+      border: 1px solid rgba(230, 0, 126, 0.3);
+    }
+
+    /* ---------------------------------------------------- */
+    /* SECTION 4: EMAIL CHAT (NARRATIVE PINNED SCROLL DECK) */
+    /* ---------------------------------------------------- */
+    #sec-emailchat {
+      background: #020105;
+      min-height: 100vh;
+      width: 100%;
+      position: relative;
+    }
+
+    .ec-slides-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .ec-slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 6%;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      background: radial-gradient(circle at center, #0a0618 0%, #020105 100%);
+      transition: background 0.5s;
+    }
+
+    #ec-slide-1 {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .giants-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      width: 100%;
+      margin-top: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .giants-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+
+    .giant-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--dark-border);
+      border-radius: var(--r-lg);
+      padding: 40px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+
+    .giant-card.outlook {
+      border-left: 4px solid #0078d4;
+    }
+
+    .giant-card.gmail {
+      border-left: 4px solid #ea4335;
+    }
+
+    .giant-logo-container {
+      width: 90px;
+      height: 90px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--dark-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .giant-logo-container svg {
+      width: 50px;
+      height: 50px;
+    }
+
+    .giant-stat-item {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .giant-stat-sub {
+      font-size: 0.85rem;
+      color: var(--text-gray-light);
+    }
+
+    .complex-email-mockup {
+      width: 100%;
+      max-width: 960px;
+      height: 480px;
+      background: #0b0c16;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--r-xl);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+      display: grid;
+      grid-template-columns: 200px 260px 1fr;
+      overflow: hidden;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .complex-email-mockup {
+        grid-template-columns: 1fr;
+        height: 350px;
+      }
+      .em-folders, .em-list { display: none; }
+    }
+
+    .em-folders {
+      background: #0f101e;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .em-folder-item {
+      height: 14px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      width: 80%;
+    }
+
+    .em-folder-item:first-child {
+      background: var(--magenta);
+      width: 90%;
+    }
+
+    .em-list {
+      background: #0c0d18;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .em-list-item {
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .em-list-item-title {
+      height: 10px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+      width: 70%;
+    }
+
+    .em-list-item-sub {
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      width: 95%;
+    }
+
+    .em-body {
+      background: #07080f;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .em-body-header {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .em-body-subject {
+      height: 16px;
+      background: #fff;
+      border-radius: 4px;
+      width: 60%;
+    }
+
+    .em-body-meta {
+      height: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      width: 30%;
+    }
+
+    .em-body-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .em-body-line {
+      height: 12px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      width: 100%;
+    }
+
+    .em-body-line:last-child {
+      width: 45%;
+    }
+
+    .needs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      width: 100%;
+      margin-top: 40px;
+    }
+
+    @media (max-width: 1024px) {
+      .needs-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .needs-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .need-card {
+      background: var(--dark-card);
+      border: 1px solid var(--dark-border);
+      border-radius: var(--r-lg);
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+      transform: translateY(40px);
+      opacity: 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.3s;
+    }
+
+    .need-card:hover {
+      border-color: var(--magenta);
+    }
+
+    .need-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--magenta);
+      opacity: 0.6;
+    }
+
+    .need-card-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: rgba(230, 0, 126, 0.15);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .need-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .need-card p {
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .email-chat-timeline-mockup {
+      width: 100%;
+      max-width: 520px;
+      height: 520px;
+      background: #090a12;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--r-xl);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(230, 0, 126, 0.05);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ec-header {
+      height: 60px;
+      background: #101222;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .ec-header-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ec-header-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .ec-header-sub {
+      font-size: 0.75rem;
+      color: var(--text-gray-light);
+    }
+
+    .ec-chat-body {
+      flex-grow: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+
+    .ec-bubble-card {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    .ec-bubble-card.incoming {
+      align-self: flex-start;
+      background: #16182d;
+      color: #f1f5f9;
+      border-top-left-radius: 0;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .ec-bubble-card.outgoing {
+      align-self: flex-end;
+      background: var(--magenta-bg);
+      color: #f1f5f9;
+      border-top-right-radius: 0;
+      border: 1px solid rgba(230, 0, 126, 0.2);
+    }
+
+    .ec-toggle-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: rgba(230, 0, 126, 0.15);
+      border: 1px solid var(--magenta);
+      border-radius: 99px;
+      font-size: 0.65rem;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: background 0.3s;
+    }
+
+    .ec-toggle-badge:hover {
+      background: var(--magenta);
+    }
+
+    .ec-bubble-time {
+      font-size: 0.68rem;
+      color: var(--text-gray);
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    .ec-footer-bar {
+      background: #101222;
+      padding: 12px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ec-extra-fields {
+      display: flex;
+      gap: 12px;
+    }
+
+    .ec-extra-pill {
+      font-size: 0.7rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-gray-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .ec-input-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ec-input-box {
+      flex-grow: 1;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 0.85rem;
+      color: var(--text-gray-light);
+    }
+
+    .ec-send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--magenta);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ec-send-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: #fff;
+    }
+
+    .html-view-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 7, 15, 0.95);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .html-view-card {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      color: #334155;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .hv-header {
+      background: #f1f5f9;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hv-close {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    .hv-body {
+      flex-grow: 1;
+      padding: 24px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    /* Vertical stacked Inbound Engine list */
+    .engine-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 800px;
+      margin: 40px auto 0;
+    }
+
+    .engine-row {
+      background: var(--dark-card);
+      border: 1px solid var(--dark-border);
+      border-radius: var(--r-md);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      width: 100%;
+      opacity: 0;
+      transform: translateY(25px);
+    }
+
+    .engine-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--magenta-bg);
+      border: 1px solid var(--magenta);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--magenta-light);
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .engine-info {
+      text-align: left;
+    }
+
+    .engine-info h4 {
+      font-size: 1.05rem;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .engine-info p {
+      font-size: 0.85rem;
+    }
+
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      width: 100%;
+      margin-top: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .insights-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+
+    .insight-card {
+      background: linear-gradient(150deg, rgba(230, 0, 126, 0.02) 0%, rgba(230, 0, 126, 0.08) 100%);
+      border: 1px solid rgba(230, 0, 126, 0.2);
+      border-radius: var(--r-lg);
+      padding: 34px;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    }
+
+    .insight-stat {
+      font-size: 3rem;
+      font-weight: 900;
+      color: var(--magenta-light);
+      line-height: 1;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px var(--magenta-glow);
+    }
+
+    .insight-card h3 {
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .insight-card p {
+      font-size: 0.85rem;
+    }
+
+    .uzair-card {
+      background: var(--dark-card);
+      border: 2px solid var(--magenta);
+      border-radius: var(--r-xl);
+      padding: 40px;
+      text-align: center;
+      max-width: 650px;
+      width: 100%;
+      box-shadow: 0 0 50px rgba(230, 0, 126, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    /* SVG uzair logo glow styles */
+    .uzair-logo-svg {
+      width: 120px;
+      height: 120px;
+      filter: drop-shadow(0 0 25px rgba(230, 0, 126, 0.6));
+      animation: logo-vibe 3s infinite alternate;
+    }
+
+    @keyframes logo-vibe {
+      0% { transform: scale(0.96); filter: drop-shadow(0 0 15px rgba(230, 0, 126, 0.4)); }
+      100% { transform: scale(1.04); filter: drop-shadow(0 0 35px rgba(230, 0, 126, 0.8)); }
+    }
+
+    .uzair-email-badge {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px dashed var(--magenta-light);
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+
+    .demo-outro {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .demo-outro h2 {
+      font-size: clamp(3rem, 8vw, 6rem);
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #ff4da6 50%, var(--magenta) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 80px rgba(230,0,126,0.5);
+    }
+
+    /* ---------------------------------------------------- */
+    /* UTILITY & PRESENTATION CONTROLS                      */
+    /* ---------------------------------------------------- */
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--magenta);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 10px 25px rgba(230, 0, 126, 0.4);
+      transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), background 0.3s;
+    }
+
+    .btn-action:hover {
+      background: var(--magenta-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(230, 0, 126, 0.55);
+    }
+
+    .present-controls {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(14, 17, 31, 0.85);
+      border: 1px solid var(--dark-border);
+      backdrop-filter: blur(12px);
+      padding: 10px 18px;
+      border-radius: 99px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .p-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: #fff;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .p-btn:hover {
+      background: var(--magenta);
+      transform: scale(1.1);
+    }
+
+    .p-btn:active {
+      transform: scale(0.95);
+    }
+
+    .p-info {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-gray-light);
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Scroll Progress -->
+  <div class="progress-bar" id="progress"></div>
+
+  <!-- Showcase scroller wrapper -->
+  <div class="scroller">
+
+    <!-- ---------------------------------------------------- -->
+    <!-- SECTION 1: HERO & ICEBERG X TALENT                   -->
+    <!-- ---------------------------------------------------- -->
+    <section class="section-container" id="sec-talent">
+      <div class="glow-bg" style="top: 0; left: 10%;"></div>
+      <div class="wrap">
+        
+        <div class="talent-header">
+          <div class="badge badge-dark">Live Platform Showcase</div>
+          <h1><span class="gradient-text">Iceberg X: Growing Our Next Generation of Talent</span></h1>
+          <p>Nearly 100 applications came in — through referrals, LinkedIn, and the Iceberg X portal itself. 20 students are now hands-on, working on real projects across the company.</p>
+        </div>
+
+        <!-- Interactive zooming grid of student profiles -->
+        <div class="cube-grid-container">
+          <div class="cube-grid-3d" id="cubes">
+            
+            <div class="cube-student-card">
+              <div class="cube-id">#001</div>
+              <div class="cube-avatar">AI</div>
+              <div class="cube-status">Active</div>
+            </div>
+            
+            <div class="cube-student-card">
+              <div class="cube-id">#014</div>
+              <div class="cube-avatar">QA</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+            <div class="cube-student-card">
+              <div class="cube-id">#072</div>
+              <div class="cube-avatar">UX</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+            <div class="cube-student-card">
+              <div class="cube-id">#023</div>
+              <div class="cube-avatar">FE</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+            <div class="cube-student-card">
+              <div class="cube-id">#047</div>
+              <div class="cube-avatar">BE</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+            <div class="cube-student-card">
+              <div class="cube-id">#009</div>
+              <div class="cube-avatar">FS</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+            <div class="cube-student-card">
+              <div class="cube-id">#011</div>
+              <div class="cube-avatar">ML</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+            <div class="cube-student-card">
+              <div class="cube-id">#088</div>
+              <div class="cube-avatar">PM</div>
+              <div class="cube-status">Active</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 7 Main Projects Grid -->
+        <div class="projects-container">
+          <h2 class="projects-title">Deep-Dive Project Milestones</h2>
+          
+          <div class="projects-grid">
+            
+            <!-- Project 1 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 01</div>
+                <h3>Plaud Transcript Retrieval</h3>
+                <p>Developing seamless voice transcription extraction and semantic search integration to log conversation context effortlessly.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+              </div>
+            </div>
+
+            <!-- Project 2 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 02</div>
+                <h3>Lifesycle CRM — Socket Systems</h3>
+                <p>Architecting low-latency, real-time push notification pipelines and web-socket system performance optimizations.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+            </div>
+
+            <!-- Project 3 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 03</div>
+                <h3>Zoom Video Meetings CRM Integration</h3>
+                <p>Embedding video conferencing and scheduling tools directly inside the client timeline for seamless CRM workflows.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </div>
+            </div>
+
+            <!-- Project 4 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 04</div>
+                <h3>Automated Testing for Neuron Websites</h3>
+                <p>Designing robust End-to-End testing suites and CI/CD pipelines to ensure regression-free deployment cycles.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              </div>
+            </div>
+
+            <!-- Project 5 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 05</div>
+                <h3>Zoom SDK & Phone POC Research</h3>
+                <p>Building high-fidelity Proof-of-Concept features for cloud telephony integration and SDK call controls.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+            </div>
+
+            <!-- Project 6 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 06</div>
+                <h3>Meta Business Platform Specialist</h3>
+                <p>Attaining Meta Specialist certification and developing direct webhook ingestion systems for Business Pages.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </div>
+            </div>
+
+            <!-- Project 7 -->
+            <div class="project-card">
+              <div>
+                <div class="project-number">Project 07</div>
+                <h3>Property Portal Data Retrieval</h3>
+                <p>Engineering smart scrapers and API integration nodes to fetch real estate listings automatically.</p>
+              </div>
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="showcase-footer-callout">
+            <h3>Their Demo Showcase Lands at the End of the Month</h3>
+            <p>Come see what they've built and experience the next generation of Iceberg X talent in action.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- SECTION 2: WHATSAPP CALL FORWARDING (RESTORED MOCKUP) -->
+    <!-- ---------------------------------------------------- -->
+    <section class="section-container pinned-section" id="sec-whatsapp">
+      <div class="wrap">
+        <div class="grid-2">
+          
+          <div class="left-content" id="wa-text-trigger">
+            <div class="badge">Twilio Receptionist</div>
+            <h2>WhatsApp Call Forwarding</h2>
+            <div class="subheading">Never Miss a Lead: Calls Meet WhatsApp</div>
+            <p class="desc">Clients wanted missed calls to become WhatsApp conversations — so we built it with Twilio. Calls to their own receptionist lines can now be forwarded straight to WhatsApp, so leads keep coming in even after hours.</p>
+            
+            <!-- Twilio flow flowchart diagram layout -->
+            <div class="flow-schematic-card" style="margin-top: 24px;">
+              <div class="flow-node active-glow" id="node-call">
+                <div class="flow-node-badge">📞</div>
+                <div class="flow-node-info">
+                  <h4>1. Incoming Receptionist Call</h4>
+                  <p>Client dial-in received on office lines.</p>
+                </div>
+              </div>
+              <div class="flow-node" id="node-twilio">
+                <div class="flow-node-badge">⚙</div>
+                <div class="flow-node-info">
+                  <h4>2. Twilio Intercept & Routing</h4>
+                  <p>Gateway queries status & hours.</p>
+                </div>
+              </div>
+              <div class="flow-node" id="node-whatsapp">
+                <div class="flow-node-badge">💬</div>
+                <div class="flow-node-info">
+                  <h4>3. WhatsApp Conversion</h4>
+                  <p>Missed call initiates WhatsApp chat bubble.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Restored Interactive iPhone Mockup -->
+          <div class="phone-container">
+            <div class="iphone-mockup">
+              <div class="iphone-notch"></div>
+              
+              <!-- Ringing Screen overlay -->
+              <div class="screen-ringing">
+                <div style="margin-top:40px">
+                  <div class="caller-name">Twilio Gateway</div>
+                  <div class="caller-status">Receptionist Forwarding...</div>
+                </div>
+                <div class="ringing-buttons">
+                  <div class="r-btn decline">✖</div>
+                  <div class="r-btn accept" id="ring-accept">✔</div>
+                </div>
+              </div>
+
+              <!-- WhatsApp Chat logs screen -->
+              <div class="screen-whatsapp">
+                <div class="wa-header">
+                  <div class="wa-avatar">ID</div>
+                  <div>
+                    <div style="font-size:0.85rem; font-weight:700">Iceberg Digital</div>
+                    <div style="font-size:0.65rem; opacity:0.8">Verified Business</div>
+                  </div>
+                </div>
+                <div class="wa-body">
+                  <div class="wa-bubble incoming" id="wa-bubble-1">
+                    Graham just tried calling your office number. Click here to chat with him directly.
+                  </div>
+                  <div class="wa-bubble outgoing" id="wa-bubble-2">
+                    Hi Graham, how can I help you today?
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- SECTION 3: COMMUNICATION HUB (RESTORED ORIGINAL UI)  -->
+    <!-- ---------------------------------------------------- -->
+    <section class="section-container pinned-section" id="sec-commhub">
+      <div class="glow-bg" style="bottom: 0; right: 10%;"></div>
+      <div class="wrap">
+        <div class="grid-2">
+          
+          <!-- Dashboard UI Mockup -->
+          <div class="dashboard-mockup-wrapper">
+            <div class="dashboard-mockup">
+              <div class="db-header">
+                <div class="db-dots">
+                  <div class="db-dot red"></div>
+                  <div class="db-dot yellow"></div>
+                  <div class="db-dot green"></div>
+                </div>
+                <div class="db-title">Communication Hub v2.5</div>
+                <div class="db-stat" id="db-latency">RTT: 12ms</div>
+              </div>
+              
+              <div class="db-body">
+                <!-- Sidebar -->
+                <div class="db-sidebar">
+                  <div class="sb-item active">Me Inbox <span class="sb-badge" id="me-badge">2</span></div>
+                  <div class="sb-item">Team Inbox <span class="sb-badge">5</span></div>
+                  <div class="sb-item">Customers <span class="sb-badge">12</span></div>
+                </div>
+                
+                <!-- Content Area -->
+                <div class="db-content">
+                  
+                  <!-- Real-Time Socket card -->
+                  <div class="socket-notification-card" id="socket-card">
+                    <div class="socket-pulse"></div>
+                    <div class="socket-info">
+                      <h4>Real-Time Sync Activated</h4>
+                      <p>WebSocket pipeline running at 120 msg/sec.</p>
+                    </div>
+                  </div>
+
+                  <!-- Error Banner -->
+                  <div class="error-alert-box" id="error-card">
+                    <div class="alert-icon" id="alert-icon-sym">⚠</div>
+                    <div class="alert-text">
+                      <h4 id="error-title">Onboarding System Sync</h4>
+                      <p id="error-desc">Sync error: Twilio Auth Credentials missing or invalid.</p>
+                    </div>
+                  </div>
+
+                  <!-- Quick Assign Interactive Panel -->
+                  <div class="quick-assign-container" id="qa-card">
+                    <div class="unknown-contact-row">
+                      <div class="contact-badge">
+                        <div class="contact-avatar" id="qa-avatar">?</div>
+                        <div class="contact-meta">
+                          <h4 id="qa-name">+44 7911 123456</h4>
+                          <p id="qa-sub">Unknown Contact</p>
+                        </div>
+                      </div>
+                      <button class="quick-assign-btn" id="qa-btn">Quick Assign</button>
+                    </div>
+                  </div>
+
+                  <!-- Simulated Popover list -->
+                  <div class="assign-popover" id="qa-popover">
+                    <div class="popover-search">Search contact...</div>
+                    <div class="popover-item">Alice Smith</div>
+                    <div class="popover-item selected" id="pop-select">Sarah Jenkins</div>
+                    <div class="popover-item">John Doe</div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description Right Column -->
+          <div class="left-content" id="commhub-text-trigger" style="padding-left: 40px; padding-right: 0;">
+            <div class="badge">Performance & UX</div>
+            <h2>Communication Hub</h2>
+            <div class="subheading" style="color: var(--magenta-light);">Faster, Clearer, Smarter</div>
+            <p class="desc" style="margin-bottom: 20px;">A round of performance upgrades made Communication Hub faster across the board. Notifications are now clearer across Me, Team, and Customer inboxes, and onboarding errors surface more efficiently — so issues get caught sooner.</p>
+            
+            <p class="desc" style="font-weight: 700; color: #fff; margin-bottom: 20px;">⚡ New: Quick Assign lets you link an unknown number to a known contact in seconds.</p>
+            
+            <p class="desc" style="font-size: 0.95rem; opacity: 0.85;">We're still listening — client feedback keeps shaping the roadmap. Coming soon: add any WhatsApp conversation to a contact's timeline, on demand.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- SECTION 4: EMAIL CHAT (NARRATIVE PINNED SCROLL DECK) -->
+    <!-- ---------------------------------------------------- -->
+    <section id="sec-emailchat">
+      <div class="ec-slides-container">
+
+        <!-- Slide 4.1: Outlook vs Gmail Giants -->
+        <div class="ec-slide" id="ec-slide-1">
+          <div class="wrap">
+            <div class="talent-header">
+              <div class="badge badge-dark">The Paradigm Shift</div>
+              <h2 style="font-size: clamp(2.2rem, 4vw, 3.2rem); margin-bottom: 12px;">The Giants of Email Systems</h2>
+              <p>If we want to build a traditional email inbox system, we are up against some of the largest software projects in history.</p>
+            </div>
+            
+            <div class="giants-grid">
+              <!-- Outlook Card -->
+              <div class="giant-card outlook">
+                <div class="giant-logo-container">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="2" y="4" width="20" height="16" rx="3" fill="#0078d4"/>
+                    <path d="M2 6l10 6.5L22 6" fill="none" stroke="#fff" stroke-width="2"/>
+                  </svg>
+                </div>
+                <h3 style="color:#0078d4">Microsoft Outlook</h3>
+                <div class="giant-stat-item">5,000+ Developer Teams</div>
+                <div class="giant-stat-sub">Multi-Million Dollar Global Infrastructures</div>
+              </div>
+              
+              <!-- Gmail Card -->
+              <div class="giant-card gmail">
+                <div class="giant-logo-container">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" fill="#f1f5f9"/>
+                    <path d="M2 6l10 7L22 6" fill="none" stroke="#ea4335" stroke-width="2.5"/>
+                  </svg>
+                </div>
+                <h3 style="color:#ea4335">Google Gmail</h3>
+                <div class="giant-stat-item">10,000+ Engineers & Researchers</div>
+                <div class="giant-stat-sub">Billion-Dollar Data Operations</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4.2: Initial Traditional Email Design Concept (RESTORED BEAUTIFUL MOCKUP) -->
+        <div class="ec-slide" id="ec-slide-2">
+          <div class="wrap" style="display:flex; flex-direction:column; align-items:center">
+            <div class="talent-header">
+              <h2 style="font-size: clamp(2rem, 3.5vw, 3rem); margin-bottom: 12px;">Our Initial Draft Approach</h2>
+              <p>Initially, we designed a traditional, complex email client interface layout inside Lifesycle CRM.</p>
+              <p style="margin-top:16px; font-size:1.15rem; color:var(--text-gray-light)">But it was slow, complex, and did not fit the modern workflow.</p>
+            </div>
+            
+            <div class="complex-email-mockup" style="transform:translateY(30px); opacity:0" id="ec-slide-2-mockup">
+              <div class="em-folders">
+                <div class="em-folder-item"></div>
+                <div class="em-folder-item"></div>
+                <div class="em-folder-item"></div>
+                <div class="em-folder-item"></div>
+              </div>
+              <div class="em-list">
+                <div class="em-list-item">
+                  <div class="em-list-item-title"></div>
+                  <div class="em-list-item-sub"></div>
+                </div>
+                <div class="em-list-item">
+                  <div class="em-list-item-title"></div>
+                  <div class="em-list-item-sub"></div>
+                </div>
+                <div class="em-list-item">
+                  <div class="em-list-item-title"></div>
+                  <div class="em-list-item-sub"></div>
+                </div>
+              </div>
+              <div class="em-body">
+                <div class="em-body-header">
+                  <div class="em-body-subject"></div>
+                  <div class="em-body-meta"></div>
+                </div>
+                <div class="em-body-content">
+                  <div class="em-body-line"></div>
+                  <div class="em-body-line"></div>
+                  <div class="em-body-line"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4.3: The 4 Core Needs -->
+        <div class="ec-slide" id="ec-slide-3">
+          <div class="wrap">
+            <div class="talent-header">
+              <h2 style="font-size: clamp(2rem, 3.5vw, 3rem); margin-bottom: 12px;">What We Actually Needed</h2>
+              <p>We took a step back and asked ourselves: what are the core business needs for email inside our CRM?</p>
+            </div>
+            
+            <div class="needs-grid">
+              <!-- Need 1 -->
+              <div class="need-card">
+                <div class="need-card-num">01</div>
+                <h3>Track Replies</h3>
+                <p>We must know when contacts respond to system-sent emails. This is critical to building a rich contact intelligence context.</p>
+              </div>
+              <!-- Need 2 -->
+              <div class="need-card">
+                <div class="need-card-num">02</div>
+                <h3>Minimal Friction</h3>
+                <p>Our current email modal is detailed but slow. We need an extremely fast, zero-effort way to fire off quick updates.</p>
+              </div>
+              <!-- Need 3 -->
+              <div class="need-card">
+                <div class="need-card-num">03</div>
+                <h3>Centralized Hub</h3>
+                <p>All client communication threads must be readable in one single, unified timeline.</p>
+              </div>
+              <!-- Need 4 -->
+              <div class="need-card">
+                <div class="need-card-num">04</div>
+                <h3>Uzair Integration</h3>
+                <p>Our intelligent assistant Uzair must be able to join, read, and process these incoming email exchanges.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4.4: Email Chat Reveal (ALL ENGLISH) -->
+        <div class="ec-slide" id="ec-slide-4">
+          <div class="wrap">
+            <div class="grid-2">
+              
+              <div class="left-content">
+                <div class="badge" style="background:var(--magenta-bg); color:var(--magenta-light);">The Solution</div>
+                <h2 style="font-size: clamp(2.4rem, 5vw, 4rem); font-weight:900; line-height:1;"><span style="color:#fff">This is why we built</span> <br><span class="gradient-text">Email Chat</span></h2>
+                <p style="margin-top:20px; font-size:1.1rem; line-height:1.6">Email Chat provides fast, effortless email communication. We can still view the fully rendered HTML versions of emails, but we display the exact parts we need as clean chat text.</p>
+                <p style="margin-top:14px; font-weight:700; color:#fff">⚡ Quick action bar supports instant CC, BCC, and Attachments naturally.</p>
+              </div>
+
+              <!-- Interactive Email Chat Timeline Mockup -->
+              <div class="phone-container" style="height:auto">
+                <div class="email-chat-timeline-mockup">
+                  <div class="ec-header">
+                    <div class="ec-header-info">
+                      <div class="ec-header-title">John Doe (Client)</div>
+                      <div class="ec-header-sub">john.doe@gmail.com</div>
+                    </div>
+                    <div class="badge" style="margin:0; font-size:0.65rem; padding:4px 10px;">Email Chat</div>
+                  </div>
+                  
+                  <div class="ec-chat-body">
+                    <!-- Bubble 1: Parsed Email -->
+                    <div class="ec-bubble-card incoming" style="transform:translateY(30px); opacity:0" id="ec-bubble-1">
+                      <div>Can we move the viewing to 4:00 PM today? We are running late due to heavy traffic on the M25. Thanks.</div>
+                      <div class="ec-toggle-badge" id="toggle-html-view">📄 View HTML Email</div>
+                      <div class="ec-bubble-time">15:02</div>
+                    </div>
+
+                    <!-- Bubble 2: Response -->
+                    <div class="ec-bubble-card outgoing" style="transform:translateY(30px); opacity:0" id="ec-bubble-2">
+                      <div>No problem at all, John! I've shifted the calendar slot. See you at 4:00 PM.</div>
+                      <div class="ec-bubble-time">15:03</div>
+                    </div>
+                  </div>
+
+                  <div class="ec-footer-bar">
+                    <div class="ec-extra-fields">
+                      <div class="ec-extra-pill">CC: office@lifesycle.co.uk</div>
+                      <div class="ec-extra-pill">BCC: archive@crm.com</div>
+                      <div class="ec-extra-pill">📎 Attachments (0)</div>
+                    </div>
+                    <div class="ec-input-row">
+                      <div class="ec-input-box">Type an email reply...</div>
+                      <div class="ec-send-btn">
+                        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- HTML email viewer overlay -->
+                  <div class="html-view-overlay" id="html-email-overlay">
+                    <div class="html-view-card">
+                      <div class="hv-header">
+                        <div style="font-weight:700; font-size:0.78rem">Original HTML Email View</div>
+                        <div class="hv-close" id="close-html-view">✖</div>
+                      </div>
+                      <div class="hv-body">
+                        <strong>From:</strong> john.doe@gmail.com<br>
+                        <strong>To:</strong> office@lifesycle.co.uk<br>
+                        <strong>Subject:</strong> RE: Appointment Viewing Reschedule Request<br>
+                        <hr style="margin:12px 0; border:none; border-top:1px solid #e2e8f0;">
+                        <p>Dear Lifesycle Team,</p><br>
+                        <p>Unfortunately, we have run into unexpected traffic on our way to the viewing at 12 High Street. Would it be possible to push our slot to 4:00 PM today?</p><br>
+                        <p>Thank you for understanding.</p><br>
+                        <p>Best regards,<br><strong>John Doe</strong></p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4.5: Under the Hood - Reply Tokens (VERTICAL STACK & WIDER) -->
+        <div class="ec-slide" id="ec-slide-5">
+          <div class="wrap">
+            <div class="talent-header" style="margin-bottom: 24px;">
+              <div class="badge badge-dark">How It Works</div>
+              <h2 style="font-size: clamp(2rem, 3.5vw, 3rem); margin-bottom: 8px;">The Inbound Token Engine</h2>
+              <p>Every outgoing system communication carries an encrypted reply token to seamlessly map incoming replies back to the contact timeline.</p>
+            </div>
+            
+            <div class="engine-list">
+              <!-- Step 1 -->
+              <div class="engine-row">
+                <div class="engine-icon">01</div>
+                <div class="engine-info">
+                  <h4>Outbound Tagging</h4>
+                  <p>System automatically appends unique reply token headers and outbound hashes to the sender metadata.</p>
+                </div>
+              </div>
+              <!-- Step 2 -->
+              <div class="engine-row">
+                <div class="engine-icon">02</div>
+                <div class="engine-info">
+                  <h4>Unique Token Envelope Address</h4>
+                  <p style="font-family:monospace; font-size:0.8rem; color:var(--magenta-light); font-weight:700">reply+AAABTwAq3jkAAAAAFFwZxg.QOcN569i8wal2A@inbound.lifesycle.co.uk</p>
+                </div>
+              </div>
+              <!-- Step 3 -->
+              <div class="engine-row">
+                <div class="engine-icon">03</div>
+                <div class="engine-info">
+                  <h4>Natural Reply Parsing</h4>
+                  <p>Client replies naturally from their native mail client. System captures the webhooks, matches hashes, and processes the mail body.</p>
+                </div>
+              </div>
+              <!-- Step 4 -->
+              <div class="engine-row">
+                <div class="engine-icon">04</div>
+                <div class="engine-info">
+                  <h4>Timeline Integration & Conversation Creation</h4>
+                  <p>Inserts clean chat bubble on CRM timeline. Initiate new email chats from scratch directly with any contact.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4.6: Data Insights -->
+        <div class="ec-slide" id="ec-slide-6">
+          <div class="wrap">
+            <div class="talent-header">
+              <div class="badge badge-dark">Customer Reply Data Insights</div>
+              <h2 style="font-size: clamp(2rem, 3.5vw, 3rem); margin-bottom: 12px;">Real-World Conversation Context</h2>
+              <p>We tracked weeks of client reply feeds. Standard interactions require rapid resolution and instant integration into CRM intelligence.</p>
+            </div>
+            
+            <div class="insights-grid">
+              <!-- Card 1 -->
+              <div class="insight-card" style="transform:scale(0.85); opacity:0">
+                <div class="insight-stat">68%</div>
+                <h3>Appointment Delays</h3>
+                <p>Quick alerts indicating clients are late for viewings due to delays.</p>
+              </div>
+              <!-- Card 2 -->
+              <div class="insight-card" style="transform:scale(0.85); opacity:0">
+                <div class="insight-stat">22%</div>
+                <h3>Reschedule Requests</h3>
+                <p>Shifting dates and time slots for viewings or appraisals.</p>
+              </div>
+              <!-- Card 3 -->
+              <div class="insight-card" style="transform:scale(0.85); opacity:0">
+                <div class="insight-stat">10%</div>
+                <h3>Property Specifics</h3>
+                <p>Quick queries regarding structural details or property listings.</p>
+              </div>
+            </div>
+            
+            <p style="text-align:center; font-weight:700; color:#fff; font-size:1.15rem; margin-top:40px;">
+              ⚡ WhatsApp features (templates, instant sync, attachments) mapped directly to Email infrastructures.
+            </p>
+          </div>
+        </div>
+
+        <!-- Slide 4.7: Uzair Forwarding & Custom Logo -->
+        <div class="ec-slide" id="ec-slide-7">
+          <div class="wrap" style="display:flex; flex-direction:column; align-items:center">
+            <div class="talent-header">
+              <div class="badge badge-dark">Email Forwarding Integration</div>
+              <h2 style="font-size: clamp(2rem, 3.5vw, 3rem); margin-bottom: 12px;">Connect Threads via Inbound Forwarding</h2>
+              <p>Uzair now has email! Forward any client dialogue to his inbox to process it automatically.</p>
+            </div>
+            
+            <div class="uzair-card" style="transform:scale(0.85); opacity:0">
+              
+              <!-- Recreated Vector Uzair Logo Orb -->
+              <svg class="uzair-logo-svg" viewBox="0 0 100 100">
+                <defs>
+                  <radialGradient id="uz-glow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ff00a0" stop-opacity="0.8"/>
+                    <stop offset="50%" stop-color="#7b00ff" stop-opacity="0.5"/>
+                    <stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/>
+                  </radialGradient>
+                  <linearGradient id="uz-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00f0ff"/>
+                    <stop offset="30%" stop-color="#7b00ff"/>
+                    <stop offset="70%" stop-color="#ff00a0"/>
+                    <stop offset="100%" stop-color="#ff0055"/>
+                  </linearGradient>
+                  <radialGradient id="uz-ball" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+                    <stop offset="0%" stop-color="#ffffff"/>
+                    <stop offset="25%" stop-color="#a5f3fc"/>
+                    <stop offset="60%" stop-color="#6366f1"/>
+                    <stop offset="90%" stop-color="#312e81"/>
+                    <stop offset="100%" stop-color="#030712"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="50%" cy="50%" r="48" fill="url(#uz-glow)"/>
+                <circle cx="50%" cy="50%" r="42" fill="none" stroke="url(#uz-ring)" stroke-width="4.5"/>
+                <circle cx="50%" cy="50%" r="35" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.7"/>
+                <circle cx="50%" cy="50%" r="30" fill="url(#uz-ball)"/>
+                <circle cx="50%" cy="50%" r="18" fill="none" stroke="#22d3ee" stroke-width="1" stroke-opacity="0.4"/>
+              </svg>
+
+              <div class="uzair-email-badge">uzair@inbound.lifesycle.co.uk</div>
+              <h3 style="color:#fff; font-size:1.4rem;">Forward Uzair Inbound Routing</h3>
+              <p style="font-size:0.95rem; line-height:1.5; color:var(--text-gray-light)">Uzair now has a dedicated email inbox! Simply forward any client email thread to this address. Incoming forwards are automatically processed by Uzair, who detects which contact timeline the thread belongs to, pushes it into the CRM interface, and allows you to continue the conversation seamlessly via Email Chat.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4.8: Live Demo Outro -->
+        <div class="ec-slide" id="ec-slide-8">
+          <div class="wrap">
+            <div class="demo-outro">
+              <div class="badge" style="background:var(--magenta-bg); color:var(--magenta-light);">Live Presentation</div>
+              <h2>Live Demo</h2>
+              <p style="font-size:1.8rem; max-width:700px; color:var(--text-gray-light)">Let's switch to the platform to see the live system in action.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Bottom Presentation Nav HUD -->
+  <div class="present-controls">
+    <button class="p-btn" id="p-prev" title="Scroll Up">▲</button>
+    <div class="p-info" id="p-label">Talent</div>
+    <button class="p-btn" id="p-next" title="Scroll Down">▼</button>
+  </div>
+
+  <!-- ---------------------------------------------------- -->
+  <!-- GSAP ANIMATION LOGIC SCRIPT                          -->
+  <!-- ---------------------------------------------------- -->
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      
+      // Update global scroll progress bar
+      gsap.to("#progress", {
+        width: "100%",
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".scroller",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true
+        }
+      });
+
+      // SECTION 1: Iceberg X 3D Grid Animation
+      const talentTL = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#sec-talent",
+          start: "top top",
+          end: "bottom center",
+          scrub: 1,
+        }
+      });
+
+      talentTL.to("#cubes", {
+        transform: "translateZ(300px) rotateX(15deg) rotateY(-10deg)",
+        opacity: 0.1,
+        ease: "none"
+      });
+
+      // SECTION 2: WhatsApp Call Forwarding (Ringing to WhatsApp thread)
+      const waTL = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#sec-whatsapp",
+          start: "top top",
+          end: "+=1200",
+          pin: true,
+          scrub: 1,
+          onUpdate: (self) => {
+            document.getElementById("p-label").innerText = "Call Fwd";
+          }
+        }
+      });
+
+      waTL.to("#node-twilio", {
+        backgroundColor: "rgba(230,0,126,0.05)",
+        borderColor: "var(--magenta)",
+        boxShadow: "0 0 20px rgba(230,0,126,0.1)",
+        duration: 2
+      })
+      .to("#node-whatsapp", {
+        backgroundColor: "rgba(230,0,126,0.05)",
+        borderColor: "var(--magenta)",
+        boxShadow: "0 0 20px rgba(230,0,126,0.1)",
+        duration: 2
+      }, "+=0.5")
+      .to("#ring-accept", { scale: 0.9, yoyo: true, repeat: 1, duration: 1 })
+      .to(".screen-ringing", { opacity: 0, autoAlpha: 0, y: -50, duration: 1.5 })
+      .to(".screen-whatsapp", { opacity: 1, autoAlpha: 1, duration: 1.5 }, "<")
+      .to("#wa-bubble-1", { opacity: 1, y: 0, duration: 2 })
+      .to("#wa-bubble-2", { opacity: 1, y: 0, duration: 2 }, "+=0.5");
+
+      // SECTION 3: Communication Hub Animation (Restored Original micro-interaction)
+      const chTL = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#sec-commhub",
+          start: "top top",
+          end: "+=1500",
+          pin: true,
+          scrub: 1,
+          onUpdate: (self) => {
+            document.getElementById("p-label").innerText = "Comm Hub";
+          }
+        }
+      });
+
+      // Simulate low latency sync update
+      chTL.to("#db-latency", {
+        text: "RTT: 4ms",
+        color: "#ffffff",
+        backgroundColor: "var(--magenta)",
+        duration: 1.5
+      })
+      .to("#me-badge", {
+        scale: 1.4,
+        yoyo: true,
+        repeat: 1,
+        duration: 0.8
+      }, "<")
+      // Animate Error Banner resolved state
+      .to("#error-card", {
+        backgroundColor: "rgba(34, 197, 94, 0.08)",
+        borderColor: "rgba(34, 197, 94, 0.3)",
+        duration: 2
+      }, "+=0.5")
+      .to("#alert-icon-sym", {
+        textContent: "✔",
+        color: "#22c55e",
+        backgroundColor: "rgba(34, 197, 94, 0.15)",
+        duration: 0.5
+      }, "<")
+      .to("#error-title", {
+        textContent: "Onboarding System Synced",
+        duration: 0.5
+      }, "<")
+      .to("#error-desc", {
+        textContent: "Sync successful: Credentials matched. 248 records updated.",
+        duration: 0.5
+      }, "<")
+      // Animate Quick Assign Popover open
+      .to("#qa-btn", {
+        scale: 0.95,
+        backgroundColor: "#6d28d9", // click effect
+        duration: 1
+      }, "+=0.5")
+      .to("#qa-popover", {
+        display: "flex",
+        opacity: 1,
+        y: -10,
+        duration: 1.5,
+        ease: "power2.out"
+      })
+      .to("#pop-select", {
+        backgroundColor: "var(--magenta)",
+        color: "#fff",
+        duration: 1
+      }, "+=0.5")
+      .to("#qa-popover", {
+        opacity: 0,
+        display: "none",
+        duration: 1
+      })
+      // Update contact details
+      .to("#qa-avatar", {
+        textContent: "SJ",
+        backgroundColor: "#e6007e",
+        duration: 1
+      })
+      .to("#qa-name", {
+        textContent: "Sarah Jenkins",
+        color: "#e6007e",
+        duration: 1
+      }, "<")
+      .to("#qa-sub", {
+        textContent: "Sarah Jenkins (Assignee)",
+        duration: 1
+      }, "<");
+
+      // SECTION 4: Email Chat Pinned Slideshow Timeline
+      const ecTL = gsap.timeline({
+        scrollTrigger: {
+          id: "sec4-trigger",
+          trigger: "#sec-emailchat",
+          start: "top top",
+          end: "+=7000",
+          pin: true,
+          scrub: 1,
+          onUpdate: (self) => {
+            const progress = self.progress;
+            const labels = ["Giants", "Initial UI", "4 Needs", "Email Chat", "Tokens", "Insights", "Uzair AI", "Live Demo"];
+            const slideIndex = Math.min(Math.floor(progress * 8), 7);
+            document.getElementById("p-label").innerText = "EC: " + labels[slideIndex];
+          }
+        }
+      });
+
+      // Slide 1 starts visible (hold it, then fade it out)
+      ecTL.to("#ec-slide-1", { duration: 3 })
+          .to("#ec-slide-1", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 2: Initial Draft Approach (Restored CSS mockup slide animation!)
+          .to("#ec-slide-2", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to("#ec-slide-2-mockup", { y: 0, opacity: 1, duration: 3, ease: "power2.out" })
+          .to("#ec-slide-2", { duration: 3 })
+          .to("#ec-slide-2", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 3: 4 Needs Checklist
+          .to("#ec-slide-3", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to(".need-card", { y: 0, opacity: 1, stagger: 1.5, duration: 4 })
+          .to("#ec-slide-3", { duration: 2 })
+          .to("#ec-slide-3", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 4: Email Chat Reveal + Mockup bubbles
+          .to("#ec-slide-4", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to("#ec-bubble-1", { y: 0, opacity: 1, duration: 3, ease: "power2.out" })
+          .to("#ec-bubble-2", { y: 0, opacity: 1, duration: 3, ease: "power2.out" }, "+=0.5")
+          .to("#ec-slide-4", { duration: 3 })
+          .to("#ec-slide-4", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 5: Inbound Token Engine Steps (Stacked vertically)
+          .to("#ec-slide-5", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to(".engine-row", { y: 0, opacity: 1, stagger: 1.5, duration: 5, ease: "power2.out" })
+          .to("#ec-slide-5", { duration: 2 })
+          .to("#ec-slide-5", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 6: Reply Data Insights Categories
+          .to("#ec-slide-6", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to(".insight-card", { scale: 1, opacity: 1, stagger: 1.5, duration: 4, ease: "power3.out" })
+          .to("#ec-slide-6", { duration: 2 })
+          .to("#ec-slide-6", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 7: Uzair AI Card Spotlight & custom SVG Logo
+          .to("#ec-slide-7", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to(".uzair-card", { scale: 1, opacity: 1, duration: 3, ease: "back.out(1.2)" })
+          .to("#ec-slide-7", { duration: 2 })
+          .to("#ec-slide-7", { opacity: 0, autoAlpha: 0, duration: 2 })
+
+      // Slide 8: Live Demo Outro
+          .to("#ec-slide-8", { opacity: 1, autoAlpha: 1, duration: 2 })
+          .to("#ec-slide-8", { duration: 4 });
+
+      // Interactive HTML View toggle
+      const toggleBtn = document.getElementById("toggle-html-view");
+      const closeBtn = document.getElementById("close-html-view");
+      const overlay = document.getElementById("html-email-overlay");
+
+      toggleBtn.addEventListener("click", () => {
+        overlay.style.display = "flex";
+      });
+
+      closeBtn.addEventListener("click", () => {
+        overlay.style.display = "none";
+      });
+
+      // HUD Button & Keyboard Navigation
+      const scrollSections = [
+        { selector: "#sec-talent", isSlide: false },
+        { selector: "#sec-whatsapp", isSlide: false },
+        { selector: "#sec-commhub", isSlide: false },
+        { selector: "#ec-slide-1", isSlide: true, index: 0 },
+        { selector: "#ec-slide-2", isSlide: true, index: 1 },
+        { selector: "#ec-slide-3", isSlide: true, index: 2 },
+        { selector: "#ec-slide-4", isSlide: true, index: 3 },
+        { selector: "#ec-slide-5", isSlide: true, index: 4 },
+        { selector: "#ec-slide-6", isSlide: true, index: 5 },
+        { selector: "#ec-slide-7", isSlide: true, index: 6 },
+        { selector: "#ec-slide-8", isSlide: true, index: 7 }
+      ];
+      
+      let currentSectionIdx = 0;
+
+      const navigateToSection = (idx) => {
+        if (idx < 0 || idx >= scrollSections.length) return;
+        currentSectionIdx = idx;
+        const target = scrollSections[currentSectionIdx];
+        
+        if (!target.isSlide) {
+          gsap.to(window, {
+            scrollTo: {
+              y: target.selector,
+              autoKill: false
+            },
+            duration: 1.2,
+            ease: "power3.inOut"
+          });
+        } else {
+          const trigger = ScrollTrigger.getById("sec4-trigger");
+          if (trigger) {
+            const start = trigger.start;
+            const range = trigger.end - start;
+            const slideOffset = target.index * (range / 7);
+            
+            gsap.to(window, {
+              scrollTo: {
+                y: start + slideOffset + 10,
+                autoKill: false
+              },
+              duration: 1.2,
+              ease: "power3.inOut"
+            });
+          }
+        }
+      };
+
+      document.getElementById("p-next").addEventListener("click", () => {
+        if (currentSectionIdx < scrollSections.length - 1) {
+          navigateToSection(currentSectionIdx + 1);
+        }
+      });
+
+      document.getElementById("p-prev").addEventListener("click", () => {
+        if (currentSectionIdx > 0) {
+          navigateToSection(currentSectionIdx - 1);
+        }
+      });
+
+      // Keyboard shortcuts
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown" || e.key === "PageDown") {
+          e.preventDefault();
+          document.getElementById("p-next").click();
+        } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+          e.preventDefault();
+          document.getElementById("p-prev").click();
+        }
+      });
+
+    });
+  </script>
+
+  <!-- Add GSAP ScrollToPlugin for HUD buttons navigation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+
+</body>
+</html>

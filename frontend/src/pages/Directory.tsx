@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Filter, ShieldAlert, Award, Sparkles } from 'lucide-react';
+import { Search, Filter, ShieldAlert, Award, Sparkles, Trash } from 'lucide-react';
 
 export const Directory: React.FC = () => {
   const { user } = useAuth();
@@ -14,20 +14,40 @@ export const Directory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
 
-  useEffect(() => {
-    const fetchCubes = async () => {
-      try {
-        const res = await api.get('/cubes');
-        setCubes(res);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch Cube directory');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchCubes = async () => {
+    try {
+      const res = await api.get('/cubes');
+      setCubes(res);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch Cube directory');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCubes();
   }, []);
+
+  const handleDeleteClick = async (e: React.MouseEvent, cube: any) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const confirmName = prompt(
+      `Bu öğrenciyi tamamen silmek için lütfen öğrencinin adını tam olarak yazın: "${cube.user.name}"`
+    );
+    if (confirmName !== cube.user.name) {
+      alert("İsim eşleşmedi. Silme işlemi iptal edildi.");
+      return;
+    }
+
+    try {
+      await api.delete(`/admin/users/${cube.user_id}`);
+      alert("Öğrenci başarıyla silindi.");
+      fetchCubes();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete student");
+    }
+  };
 
   if (loading) {
     return (
@@ -182,6 +202,20 @@ export const Directory: React.FC = () => {
                       }`}>
                         #{cube.cube_number}
                       </span>
+                      {user?.role === 'ADMIN' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteClick(e, cube)}
+                          className={`p-1.5 rounded-lg border text-red-650 transition z-20 ${
+                            isIceberger
+                              ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20 text-red-300'
+                              : 'bg-red-50 border-red-100 hover:bg-red-100'
+                          }`}
+                          title="Delete Student"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

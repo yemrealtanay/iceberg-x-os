@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap } from 'lucide-react';
@@ -28,6 +28,7 @@ const getAssetUrl = (path: string | null | undefined): string | null => {
 export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // CubeProfile ID
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -180,6 +181,25 @@ export const Profile: React.FC = () => {
       alert(err.message || 'Failed to update profile');
     } finally {
       setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!data?.profile?.user?.name) return;
+    const confirmName = prompt(
+      `Bu öğrenciyi tamamen silmek için lütfen öğrencinin adını tam olarak yazın: "${data.profile.user.name}"`
+    );
+    if (confirmName !== data.profile.user.name) {
+      alert("İsim eşleşmedi. Silme işlemi iptal edildi.");
+      return;
+    }
+
+    try {
+      await api.delete(`/admin/users/${data.profile.user_id}`);
+      alert("Öğrenci başarıyla silindi.");
+      navigate("/directory");
+    } catch (err: any) {
+      alert(err.message || "Failed to delete student");
     }
   };
 
@@ -601,7 +621,8 @@ export const Profile: React.FC = () => {
 
         {/* Admin progression controls panel */}
         {user?.role === 'ADMIN' && (
-          <form onSubmit={handleAdminSubmit} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+          <>
+            <form onSubmit={handleAdminSubmit} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
             <h3 className="font-extrabold text-sm border-b border-gray-50 pb-2">Program Administration</h3>
 
             {adminSuccess && (
@@ -651,7 +672,23 @@ export const Profile: React.FC = () => {
               {adminSubmitting ? 'Updating...' : 'Update Progression'}
             </button>
           </form>
-        )}
+
+          {/* Danger Zone */}
+          <div className="bg-red-50/40 border border-red-100 rounded-2xl p-6 flex flex-col gap-4">
+            <h3 className="font-extrabold text-sm text-red-750 border-b border-red-100 pb-2">Danger Zone</h3>
+            <p className="text-xs text-red-650 leading-relaxed font-semibold">
+              Bu öğrenciyi tamamen silmek istediğinizden emin misiniz? Öğrencinin hesabı, profil verileri, rozetleri, demo yüklemeleri ve diğer tüm kayıtları kalıcı olarak silinecektir. Bu işlem geri alınamaz!
+            </p>
+            <button 
+              type="button" 
+              onClick={handleDeleteStudent}
+              className="w-full py-2 bg-red-650 text-white font-bold text-xs rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-1.5 shadow-md shadow-red-600/10"
+            >
+              <span>Öğrenciyi Tamamen Sil (Uçur)</span>
+            </button>
+          </div>
+        </>
+      )}
 
         {/* AI Progress Summary helper */}
         {isMentorOrAdmin && (

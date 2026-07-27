@@ -32,6 +32,11 @@ export const Offboarding: React.FC = () => {
   // Enlarge Preview Modal state
   const [showLargePreview, setShowLargePreview] = useState(false);
 
+  // Revert Offboarding Modal state
+  const [revertingAlumni, setRevertingAlumni] = useState<any | null>(null);
+  const [revertLevel, setRevertLevel] = useState<string>('Cube');
+  const [revertSubmitting, setRevertSubmitting] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -168,6 +173,24 @@ Iceberg Digital Team`
 
     loadStatsAndDrafts();
   }, [selectedCube, certType]);
+
+  const handleConfirmRevert = async () => {
+    if (!revertingAlumni) return;
+    setRevertSubmitting(true);
+    try {
+      await api.post('/offboarding/revert', {
+        cubeProfileId: revertingAlumni.id,
+        targetLevel: revertLevel
+      });
+      alert(`Offboarding successfully reverted. Student restored as ${revertLevel}.`);
+      setRevertingAlumni(null);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to revert offboarding');
+    } finally {
+      setRevertSubmitting(false);
+    }
+  };
 
   const handleConfirmOffboarding = async () => {
     if (!selectedCube || !mentorName || !emailTr || !emailEn) return;
@@ -625,6 +648,15 @@ Iceberg Digital Team`
                       >
                         Print Cert
                       </Link>
+                      <button
+                        onClick={() => {
+                          setRevertLevel('Cube');
+                          setRevertingAlumni(a);
+                        }}
+                        className="px-2.5 py-1.5 text-[10px] font-extrabold text-red-650 bg-red-50 hover:bg-red-100 border border-red-150 rounded-lg transition"
+                      >
+                        Geri Al
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -693,6 +725,68 @@ Iceberg Digital Team`
         </div>
       )}
 
+      {/* Modal: Revert Offboarding */}
+      {revertingAlumni && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-sm">Geri Al (Revert Offboarding)</h3>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Alumni: {revertingAlumni.user.name}</p>
+              </div>
+              <button 
+                onClick={() => setRevertingAlumni(null)} 
+                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4">
+              <p className="text-xs text-gray-650 leading-relaxed font-semibold">
+                Bu öğrencinin offboarding sertifika kaydını silmek ve onu aktif listeye geri almak istediğinizden emin misiniz? Lütfen geri döndürülecek statüsünü seçin:
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Restored Status *</label>
+                <select
+                  value={revertLevel}
+                  onChange={(e) => setRevertLevel(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 bg-white outline-none focus:border-magenta cursor-pointer"
+                >
+                  <option value="Cube">Cube</option>
+                  <option value="Senior_Cube">Senior Cube</option>
+                  <option value="Iceberger">Iceberger</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setRevertingAlumni(null)}
+                disabled={revertSubmitting}
+                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-100 transition"
+              >
+                İptal (Cancel)
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRevert}
+                disabled={revertSubmitting}
+                className="px-4 py-2 bg-red-650 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md"
+              >
+                {revertSubmitting ? (
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <span>Geri Almayı Onayla</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Modal: Large Certificate Preview */}
       {showLargePreview && selectedCube && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
