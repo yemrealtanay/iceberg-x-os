@@ -162,8 +162,7 @@ export const Certificate: React.FC = () => {
               </>
             ) : (
               <>
-                Iceberg Digital teknoloji staj programına <span className="font-bold text-gray-900">Cube #{profile.cube_number}</span> olarak katılım gösterdiğini ve<br />
-                programı başarıyla tamamladığını belgeler.
+                Iceberg Digital teknoloji staj programına <span className="font-bold text-gray-900">Cube #{profile.cube_number}</span> olarak katılım gösterdiğini belgeler.
               </>
             )}
           </p>

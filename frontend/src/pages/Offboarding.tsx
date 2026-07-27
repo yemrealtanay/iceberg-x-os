@@ -141,9 +141,9 @@ Iceberg Digital Team`
           setEmailTr(
 `Sayın ${studentName},
 
-Iceberg Digital Teknoloji Fellowship programındaki Cube #${cubeNo} staj programınızı tamamlamış ve Alumni statüsüne geçmiş bulunuyorsunuz.
+Iceberg Digital Teknoloji Fellowship programımıza Cube #${cubeNo} olarak katılım gösterdiğiniz için teşekkür ederiz.
 
-Katılımınız ve programımıza sağladığınız katkılar için teşekkür ederiz. Katılım sertifikanız sisteminize eklenmiştir.
+Programımıza katılımınız ve sağladığınız katkılar için teşekkür ederiz. Katılım sertifikanız sisteminize eklenmiştir.
 
 Kariyerinizde başarılar dileriz.
 
@@ -154,9 +154,9 @@ Iceberg Digital Ekibi`
           setEmailEn(
 `Dear ${studentName},
 
-You have completed your internship as Cube #${cubeNo} in the Iceberg Digital Technology Fellowship program and transitioned to Alumni status.
+Thank you for participating in the Iceberg Digital Technology Fellowship program as Cube #${cubeNo}.
 
-Thank you for your participation and contributions to our program. Your Certificate of Participation has been added to your profile.
+We appreciate your participation and contributions to our program. Your Certificate of Participation has been added to your profile.
 
 We wish you success in your future career.
 
@@ -457,7 +457,7 @@ Iceberg Digital Team`
                               <span className="bg-magenta/5 text-magenta text-[4px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Katılım Sertifikası</span>
                               <h5 className="font-black text-[10px] text-gray-900 mt-0.5">{selectedCube.user.name}</h5>
                               <p className="text-[4.5px] text-gray-505 leading-normal max-w-[260px] mx-auto mt-0.5">
-                                Teknoloji staj programına Cube #{selectedCube.cube_number} olarak katılım gösterdiğini ve programı başarıyla tamamladığını belgeler.
+                                Teknoloji staj programına Cube #{selectedCube.cube_number} olarak katılım gösterdiğini belgeler.
                               </p>
                             </div>
                             <div className="flex justify-between items-end border-t border-gray-100 pt-1 text-[4px] text-gray-500 font-semibold z-10">
@@ -871,8 +871,7 @@ Iceberg Digital Team`
                         </>
                       ) : (
                         <>
-                          Iceberg Digital teknoloji staj programına <span className="font-bold text-gray-900">Cube #{selectedCube.cube_number}</span> olarak katılım gösterdiğini ve<br />
-                          programı başarıyla tamamladığını belgeler.
+                          Iceberg Digital teknoloji staj programına <span className="font-bold text-gray-900">Cube #{selectedCube.cube_number}</span> olarak katılım gösterdiğini belgeler.
                         </>
                       )}
                     </p>
