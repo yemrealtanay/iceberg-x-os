@@ -461,6 +461,46 @@ export const Profile: React.FC = () => {
     );
   }
 
+  // 1. Calculate Scorecard (Evaluations) Average
+  let feedbackScoresSum = 0;
+  let feedbackScoresCount = 0;
+  if (mentorFeedback && mentorFeedback.length > 0) {
+    mentorFeedback.forEach((fb: any) => {
+      skillKeys.forEach(k => {
+        if (fb[k] !== undefined && fb[k] !== null) {
+          feedbackScoresSum += fb[k];
+          feedbackScoresCount++;
+        }
+      });
+    });
+  }
+  const feedbackAverage = feedbackScoresCount > 0 ? (feedbackScoresSum / feedbackScoresCount) : 0;
+  const feedbackPercentage = (feedbackAverage / 5) * 100;
+
+  // 2. Calculate Private Notes Average
+  let privateScoresSum = 0;
+  let privateScoresCount = 0;
+  privateNotes.forEach((n: any) => {
+    if (n.score !== undefined && n.score !== null) {
+      privateScoresSum += n.score;
+      privateScoresCount++;
+    }
+  });
+  const privateAverage = privateScoresCount > 0 ? (privateScoresSum / privateScoresCount) : 0;
+  const privatePercentage = (privateAverage / 10) * 100;
+
+  // 3. Combined Overall Score
+  let combinedPercentage = 0;
+  if (feedbackScoresCount > 0 && privateScoresCount > 0) {
+    combinedPercentage = (feedbackPercentage + privatePercentage) / 2;
+  } else if (feedbackScoresCount > 0) {
+    combinedPercentage = feedbackPercentage;
+  } else if (privateScoresCount > 0) {
+    combinedPercentage = privatePercentage;
+  } else {
+    combinedPercentage = 0;
+  }
+
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -647,6 +687,46 @@ export const Profile: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Performance Overview (visible ONLY to Mentors/Admins) */}
+        {isMentorOrAdmin && (
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+            <h3 className="font-extrabold text-xs text-gray-700 uppercase tracking-wider">Overall Performance Score</h3>
+            
+            {/* Combined Circular/Progress Score */}
+            <div className="flex items-center gap-4 py-2 border-b border-gray-50 pb-4">
+              <div className="relative flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full border-4 border-slate-100 flex items-center justify-center bg-slate-50/50">
+                  <span className="text-sm font-black text-slate-800">
+                    {combinedPercentage > 0 ? `${combinedPercentage.toFixed(1)}%` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Performance Index</span>
+                <p className="text-xs text-gray-650 font-semibold leading-relaxed">
+                  Calculated from scorecard reviews and internal private scores.
+                </p>
+              </div>
+            </div>
+
+            {/* Sub Averages */}
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-550 font-semibold">Scorecard Avg (5 max):</span>
+                <span className="font-bold text-gray-805">
+                  {feedbackScoresCount > 0 ? `${feedbackAverage.toFixed(2)} / 5 (${feedbackPercentage.toFixed(1)}%)` : 'No reviews'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-550 font-semibold">Private Notes Avg (10 max):</span>
+                <span className="font-bold text-gray-805">
+                  {privateScoresCount > 0 ? `${privateAverage.toFixed(2)} / 10 (${privatePercentage.toFixed(1)}%)` : 'No scores'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Edit Form Drawer */}
         {isEditing && (
