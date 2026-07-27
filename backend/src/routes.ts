@@ -298,6 +298,8 @@ router.post('/cubes/:id/progression', requireAuth, isAdmin, async (req, res) => 
       include: { user: true }
     });
 
+    await createSingleNotification(updatedProfile.user_id, "A mentor updated your profile status.");
+
     return res.json(updatedProfile);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -407,6 +409,10 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
 
       return p;
     });
+
+    if (req.user?.role === 'ADMIN' || req.user?.role === 'MENTOR') {
+      await createSingleNotification(profile.user_id, "A mentor updated your profile status.");
+    }
 
     return res.json(updated);
   } catch (error: any) {
@@ -538,6 +544,13 @@ router.post('/cubes/:id/notes', requireAuth, isMentorOrAdmin, async (req: Authen
         }
       }
     });
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id },
+      select: { user_id: true }
+    });
+    if (profile) {
+      await createSingleNotification(profile.user_id, "A mentor recorded a new evaluation score.");
+    }
 
     return res.status(201).json(createdNote);
   } catch (error: any) {
@@ -548,7 +561,7 @@ router.post('/cubes/:id/notes', requireAuth, isMentorOrAdmin, async (req: Authen
 // PUT (update) an existing private note (restricted to creator or Admin)
 router.put('/cubes/:id/notes/:noteId', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { noteId } = req.params;
+    const { id, noteId } = req.params;
     const { subject, note, score } = req.body;
 
     if (!subject || !note) {
@@ -589,6 +602,13 @@ router.put('/cubes/:id/notes/:noteId', requireAuth, isMentorOrAdmin, async (req:
         }
       }
     });
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id },
+      select: { user_id: true }
+    });
+    if (profile) {
+      await createSingleNotification(profile.user_id, "A mentor recorded a new evaluation score.");
+    }
 
     return res.json(updatedNote);
   } catch (error: any) {
@@ -816,7 +836,8 @@ router.post('/missions', requireAuth, isMentorOrAdmin, async (req: Authenticated
       mentor_id,
       slack_channel_url,
       repository_url,
-      demo_url
+      demo_url,
+      notify
     } = req.body;
 
     if (!title || !description || !context || !problem_statement || !expected_output || !difficulty_level) {
@@ -842,6 +863,10 @@ router.post('/missions', requireAuth, isMentorOrAdmin, async (req: Authenticated
         demo_url,
       }
     });
+
+    if (notify) {
+      await createBulkNotification(`A new mission has been added: ${title}`);
+    }
 
     return res.status(201).json(newMission);
   } catch (error: any) {
@@ -1352,6 +1377,8 @@ router.post('/feedback', requireAuth, isMentorOrAdmin, async (req: Authenticated
       });
     }
 
+    await createSingleNotification(cube_id, "A mentor graded your scorecard.");
+
     return res.status(201).json(feedback);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -1453,7 +1480,7 @@ router.get('/demodays', requireAuth, async (req, res) => {
 // Create Demo Day
 router.post('/demodays', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
-    const { title, date, description } = req.body;
+    const { title, date, description, notify } = req.body;
     if (!title || !date) {
       return res.status(400).json({ error: 'Title and Date are required' });
     }
@@ -1465,6 +1492,11 @@ router.post('/demodays', requireAuth, isMentorOrAdmin, async (req, res) => {
         description
       }
     });
+
+    if (notify) {
+      await createBulkNotification(`A new demo day has been scheduled: ${title}`);
+    }
+
     return res.status(201).json(day);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -1557,7 +1589,7 @@ router.get('/meetings/:id', requireAuth, async (req, res) => {
 // Create meeting (Admin/Mentor only)
 router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
-    const { title, description, date } = req.body;
+    const { title, description, date, notify } = req.body;
     if (!title || !date) {
       return res.status(400).json({ error: 'title and date are required' });
     }
@@ -1569,6 +1601,11 @@ router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
         date: new Date(date)
       }
     });
+
+    if (notify) {
+      await createBulkNotification(`A new meeting has been scheduled: ${title}`);
+    }
+
     return res.status(201).json(meeting);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -2800,6 +2837,112 @@ router.delete('/admin/applications/:id', requireAuth, isAdmin, async (req, res) 
       where: { id }
     });
     return res.json({ success: true, message: 'Application deleted successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper functions for notifications
+async function createBulkNotification(message: string) {
+  try {
+    const cubes = await prisma.user.findMany({
+      where: { role: Role.CUBE },
+      select: { id: true }
+    });
+    if (cubes.length > 0) {
+      await prisma.notification.createMany({
+        data: cubes.map(c => ({
+          user_id: c.id,
+          message
+        }))
+      });
+    }
+  } catch (err) {
+    console.error('Failed to create bulk notification:', err);
+  }
+}
+
+async function createSingleNotification(userId: string, message: string) {
+  try {
+    await prisma.notification.create({
+      data: {
+        user_id: userId,
+        message
+      }
+    });
+  } catch (err) {
+    console.error('Failed to create single notification:', err);
+  }
+}
+
+// Notification Routes
+router.get('/notifications', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const notifications = await prisma.notification.findMany({
+      where: { user_id: req.user.id },
+      orderBy: { created_at: 'desc' }
+    });
+    return res.json(notifications);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/notifications/clear', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    await prisma.notification.deleteMany({
+      where: { user_id: req.user.id }
+    });
+    return res.json({ success: true, message: 'Notifications cleared successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/notifications/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { id } = req.params;
+    await prisma.notification.delete({
+      where: { id, user_id: req.user.id }
+    });
+    return res.json({ success: true, message: 'Notification deleted successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/notifications/custom', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { userIds, message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    let targetUserIds: string[] = [];
+
+    if (userIds && Array.isArray(userIds) && userIds.length > 0) {
+      targetUserIds = userIds;
+    } else {
+      const cubes = await prisma.user.findMany({
+        where: { role: Role.CUBE },
+        select: { id: true }
+      });
+      targetUserIds = cubes.map(c => c.id);
+    }
+
+    if (targetUserIds.length > 0) {
+      await prisma.notification.createMany({
+        data: targetUserIds.map(uid => ({
+          user_id: uid,
+          message: message.trim()
+        }))
+      });
+    }
+
+    return res.json({ success: true, count: targetUserIds.length });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

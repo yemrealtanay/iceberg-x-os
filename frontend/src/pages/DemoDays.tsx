@@ -17,6 +17,7 @@ export const DemoDays: React.FC = () => {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleDesc, setScheduleDesc] = useState('');
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+  const [scheduleNotify, setScheduleNotify] = useState(false);
 
   // Log Presentation Form
   const [showPresForm, setShowPresForm] = useState(false);
@@ -60,11 +61,13 @@ export const DemoDays: React.FC = () => {
       await api.post('/demodays', {
         title: scheduleTitle,
         date: scheduleDate,
-        description: scheduleDesc || undefined
+        description: scheduleDesc || undefined,
+        notify: scheduleNotify
       });
       setScheduleTitle('');
       setScheduleDate('');
       setScheduleDesc('');
+      setScheduleNotify(false);
       setShowScheduleForm(false);
       fetchData();
     } catch (err: any) {
@@ -160,6 +163,18 @@ export const DemoDays: React.FC = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-500 uppercase">Description (Optional)</label>
               <textarea rows={2} placeholder="Write brief notes about goals or focus of the day..." value={scheduleDesc} onChange={e => setScheduleDesc(e.target.value)} className="p-2.5 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta resize-none font-semibold" />
+            </div>
+            <div className="flex items-center gap-2 pl-1 select-none">
+              <input
+                type="checkbox"
+                id="notify-demoday"
+                checked={scheduleNotify}
+                onChange={(e) => setScheduleNotify(e.target.checked)}
+                className="w-4 h-4 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
+              />
+              <label htmlFor="notify-demoday" className="text-xs text-gray-650 font-bold cursor-pointer">
+                Send notification to Cubes (Cube'lara bildirim gönder)
+              </label>
             </div>
 
             <button type="submit" disabled={scheduleSubmitting} className="w-full py-2 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors">

@@ -30,6 +30,7 @@ export const MissionCreateEdit: React.FC = () => {
   const [demoUrl, setDemoUrl] = useState('');
   const [category, setCategory] = useState('General');
   const [submitting, setSubmitting] = useState(false);
+  const [notify, setNotify] = useState(false);
 
   useEffect(() => {
     if (isEditMode) {
@@ -93,7 +94,8 @@ export const MissionCreateEdit: React.FC = () => {
       mentor_id: mentorId || null,
       slack_channel_url: slackChannelUrl || null,
       repository_url: repositoryUrl || null,
-      demo_url: demoUrl || null
+      demo_url: demoUrl || null,
+      notify: !isEditMode ? notify : undefined
     };
 
     try {
@@ -341,6 +343,22 @@ export const MissionCreateEdit: React.FC = () => {
             />
           </div>
         </div>
+
+        {!isEditMode && (
+          <div className="flex items-center gap-2 pl-1 select-none">
+            <input
+              type="checkbox"
+              id="notify-cubes"
+              checked={notify}
+              onChange={(e) => setNotify(e.target.checked)}
+              disabled={submitting}
+              className="w-4 h-4 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
+            />
+            <label htmlFor="notify-cubes" className="text-xs text-gray-650 font-bold cursor-pointer">
+              Send notification to Cubes (Cube'lara bildirim gönder)
+            </label>
+          </div>
+        )}
 
         <button
           type="submit"

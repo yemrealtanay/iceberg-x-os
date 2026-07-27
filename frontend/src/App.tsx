@@ -26,6 +26,7 @@ import { Meetings } from './pages/Meetings';
 import { Offboarding } from './pages/Offboarding';
 import { Certificate } from './pages/Certificate';
 import { VerifyCertificate } from './pages/VerifyCertificate';
+import { Notifications } from './pages/Notifications';
 
 function App() {
   return (
@@ -123,6 +124,16 @@ function App() {
 
             {/* Meetings Management */}
             <Route path="meetings" element={<Meetings />} />
+
+            {/* Notifications Broadcast (Admins & Mentors) */}
+            <Route
+              path="notifications"
+              element={
+                <RouteGuard allowedRoles={['ADMIN', 'MENTOR']}>
+                  <Notifications />
+                </RouteGuard>
+              }
+            />
 
             {/* Offboarding & Certificate Management */}
             <Route
