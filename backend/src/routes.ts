@@ -319,7 +319,9 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
       skills,
       interests,
       name, // Allow changing name on User table
-      internship_status
+      internship_status,
+      cube_number,
+      email
     } = req.body;
 
     const profile = await prisma.cubeProfile.findUnique({
@@ -336,6 +338,50 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
     }
 
     const updated = await prisma.$transaction(async (tx) => {
+      // 1. Only allow ADMIN to update cube_number and email
+      if (req.user?.role === 'ADMIN') {
+        if (cube_number !== undefined) {
+          const parsedNum = cube_number.toString().trim();
+          if (parsedNum) {
+            // Verify if cube_number is unique
+            const existingNumber = await tx.cubeProfile.findFirst({
+              where: {
+                cube_number: parsedNum,
+                NOT: { id }
+              }
+            });
+            if (existingNumber) {
+              throw new Error(`Cube number #${parsedNum} is already in use`);
+            }
+            await tx.cubeProfile.update({
+              where: { id },
+              data: { cube_number: parsedNum }
+            });
+          }
+        }
+
+        if (email !== undefined) {
+          const parsedEmail = email.trim().toLowerCase();
+          if (parsedEmail) {
+            // Verify if email is unique
+            const existingEmail = await tx.user.findFirst({
+              where: {
+                email: parsedEmail,
+                NOT: { id: profile.user_id }
+              }
+            });
+            if (existingEmail) {
+              throw new Error(`Email ${parsedEmail} is already in use`);
+            }
+            await tx.user.update({
+              where: { id: profile.user_id },
+              data: { email: parsedEmail }
+            });
+          }
+        }
+      }
+
+      // 2. Update CubeProfile
       const p = await tx.cubeProfile.update({
         where: { id },
         data: {
@@ -433,6 +479,151 @@ router.post('/cubes/:id/avatar', requireAuth, async (req: AuthenticatedRequest, 
     return res.json({ avatar_url: updatedProfile.avatar_url });
   } catch (error: any) {
     console.error('Error uploading avatar:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// GET private notes for a Cube (Mentor/Admin only)
+router.get('/cubes/:id/notes', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params; // CubeProfile ID
+    const notes = await prisma.privateNote.findMany({
+      where: { cube_id: id },
+      include: {
+        created_by: {
+          select: {
+            id: true,
+            name: true,
+            role: true
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+    return res.json(notes);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// POST a new private note for a Cube (Mentor/Admin only)
+router.post('/cubes/:id/notes', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params; // CubeProfile ID
+    const { subject, note, score } = req.body;
+
+    if (!subject || !note) {
+      return res.status(400).json({ error: 'subject and note are required' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const createdNote = await prisma.privateNote.create({
+      data: {
+        cube_id: id,
+        created_by_id: req.user.id,
+        subject: subject.trim(),
+        note: note.trim(),
+        score: score !== undefined && score !== null && score !== "" ? parseInt(score) : null
+      },
+      include: {
+        created_by: {
+          select: {
+            id: true,
+            name: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    return res.status(201).json(createdNote);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT (update) an existing private note (restricted to creator or Admin)
+router.put('/cubes/:id/notes/:noteId', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { noteId } = req.params;
+    const { subject, note, score } = req.body;
+
+    if (!subject || !note) {
+      return res.status(400).json({ error: 'subject and note are required' });
+    }
+
+    const existingNote = await prisma.privateNote.findUnique({
+      where: { id: noteId }
+    });
+
+    if (!existingNote) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Authorize: Only creator or Admin can edit
+    if (req.user.role !== 'ADMIN' && existingNote.created_by_id !== req.user.id) {
+      return res.status(403).json({ error: 'You are not authorized to edit this note' });
+    }
+
+    const updatedNote = await prisma.privateNote.update({
+      where: { id: noteId },
+      data: {
+        subject: subject.trim(),
+        note: note.trim(),
+        score: score !== undefined && score !== null && score !== "" ? parseInt(score) : null
+      },
+      include: {
+        created_by: {
+          select: {
+            id: true,
+            name: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    return res.json(updatedNote);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE a private note (restricted to creator or Admin)
+router.delete('/cubes/:id/notes/:noteId', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { noteId } = req.params;
+
+    const existingNote = await prisma.privateNote.findUnique({
+      where: { id: noteId }
+    });
+
+    if (!existingNote) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Authorize: Only creator or Admin can delete
+    if (req.user.role !== 'ADMIN' && existingNote.created_by_id !== req.user.id) {
+      return res.status(403).json({ error: 'You are not authorized to delete this note' });
+    }
+
+    await prisma.privateNote.delete({
+      where: { id: noteId }
+    });
+
+    return res.json({ message: 'Note deleted successfully' });
+  } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
 });

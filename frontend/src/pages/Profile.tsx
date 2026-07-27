@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap } from 'lucide-react';
+import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X } from 'lucide-react';
 import { getBadgeConfig } from '../utils/badgeHelper';
 import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
@@ -80,6 +80,8 @@ export const Profile: React.FC = () => {
   // Edit profile states
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editCubeNumber, setEditCubeNumber] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [editUni, setEditUni] = useState('');
   const [editDept, setEditDept] = useState('');
   const [editGithub, setEditGithub] = useState('');
@@ -105,6 +107,15 @@ export const Profile: React.FC = () => {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Private notes states
+  const [privateNotes, setPrivateNotes] = useState<any[]>([]);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteSubject, setNoteSubject] = useState('');
+  const [noteText, setNoteText] = useState('');
+  const [noteScore, setNoteScore] = useState<string>('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteSubmitting, setNoteSubmitting] = useState(false);
+
   const fetchProfileData = async () => {
     try {
       const res = await api.get(`/cubes/${id}`);
@@ -113,6 +124,8 @@ export const Profile: React.FC = () => {
       
       // Seed edit fields
       setEditName(res.profile.user.name);
+      setEditCubeNumber(res.profile.cube_number);
+      setEditEmail(res.profile.user.email);
       setEditUni(res.profile.university || '');
       setEditDept(res.profile.department || '');
       setEditGithub(res.profile.github_url || '');
@@ -143,10 +156,22 @@ export const Profile: React.FC = () => {
     }
   };
 
+  const fetchNotes = async () => {
+    try {
+      const res = await api.get(`/cubes/${id}/notes`);
+      setPrivateNotes(res);
+    } catch (err) {
+      console.error('Failed to fetch private notes:', err);
+    }
+  };
+
   useEffect(() => {
     fetchProfileData();
     if (user?.role === 'ADMIN') {
       fetchMentors();
+    }
+    if (user?.role === 'ADMIN' || user?.role === 'MENTOR') {
+      fetchNotes();
     }
   }, [id, user]);
 
@@ -155,7 +180,7 @@ export const Profile: React.FC = () => {
     setEditSubmitting(true);
 
     try {
-      const updated = await api.put(`/cubes/${id}`, {
+      const payload: any = {
         name: editName,
         university: editUni,
         department: editDept,
@@ -167,13 +192,25 @@ export const Profile: React.FC = () => {
         skills: editSkills.split(',').map(s => s.trim()).filter(Boolean),
         interests: editInterests.split(',').map(s => s.trim()).filter(Boolean),
         internship_status: editInternshipStatus
-      });
+      };
+
+      if (user?.role === 'ADMIN') {
+        payload.cube_number = editCubeNumber;
+        payload.email = editEmail;
+      }
+
+      const updated = await api.put(`/cubes/${id}`, payload);
       setData((prev: any) => ({
         ...prev,
         profile: {
           ...prev.profile,
           ...updated,
-          user: { ...prev.profile.user, name: editName }
+          cube_number: user?.role === 'ADMIN' ? editCubeNumber : prev.profile.cube_number,
+          user: { 
+            ...prev.profile.user, 
+            name: editName,
+            email: user?.role === 'ADMIN' ? editEmail : prev.profile.user.email
+          }
         }
       }));
       setIsEditing(false);
@@ -200,6 +237,62 @@ export const Profile: React.FC = () => {
       navigate("/directory");
     } catch (err: any) {
       alert(err.message || "Failed to delete student");
+    }
+  };
+
+  const handleAddNoteClick = () => {
+    setNoteSubject('');
+    setNoteText('');
+    setNoteScore('');
+    setEditingNoteId(null);
+    setShowNoteModal(true);
+  };
+
+  const handleEditNoteClick = (noteObj: any) => {
+    setNoteSubject(noteObj.subject);
+    setNoteText(noteObj.note);
+    setNoteScore(noteObj.score !== null ? noteObj.score.toString() : '');
+    setEditingNoteId(noteObj.id);
+    setShowNoteModal(true);
+  };
+
+  const handleNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteSubject.trim() || !noteText.trim()) return;
+    setNoteSubmitting(true);
+    try {
+      const payload = {
+        subject: noteSubject.trim(),
+        note: noteText.trim(),
+        score: noteScore ? parseInt(noteScore) : null
+      };
+
+      if (editingNoteId) {
+        // Edit existing note
+        const updated = await api.put(`/cubes/${id}/notes/${editingNoteId}`, payload);
+        setPrivateNotes((prev) =>
+          prev.map((n) => (n.id === editingNoteId ? updated : n))
+        );
+      } else {
+        // Create new note
+        const created = await api.post(`/cubes/${id}/notes`, payload);
+        setPrivateNotes((prev) => [created, ...prev]);
+      }
+      setShowNoteModal(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to save note');
+    } finally {
+      setNoteSubmitting(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    try {
+      await api.delete(`/cubes/${id}/notes/${noteId}`);
+      setPrivateNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete note');
     }
   };
 
@@ -274,6 +367,7 @@ export const Profile: React.FC = () => {
   const { profile, updates, demoSubmissions, mentorFeedback } = data;
   const isOwner = user?.cubeProfileId === id;
   const isMentorOrAdmin = user?.role === 'ADMIN' || user?.role === 'MENTOR';
+  const canEditProfile = isOwner || user?.role === 'ADMIN';
 
   // Compute meeting attendance stats
   const attendanceList = profile.meeting_attendance || [];
@@ -368,7 +462,8 @@ export const Profile: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
       {/* Left Column: Core Info & Admin Controls */}
       <div className="flex flex-col gap-6">
@@ -395,7 +490,7 @@ export const Profile: React.FC = () => {
                 Cube #{profile.cube_number}
               </span>
             </div>
-            {isOwner && (
+            {canEditProfile && (
               <button
                 onClick={() => setIsEditing(!isEditing)}
                 className="p-1.5 hover:bg-gray-50 border border-gray-100 rounded-lg text-gray-500 hover:text-magenta transition-colors"
@@ -562,6 +657,19 @@ export const Profile: React.FC = () => {
               <label className="text-[10px] font-bold text-gray-500 uppercase">Name</label>
               <input type="text" value={editName} onChange={e => setEditName(e.target.value)} required className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
             </div>
+
+            {user?.role === 'ADMIN' && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Cube Number</label>
+                  <input type="text" value={editCubeNumber} onChange={e => setEditCubeNumber(e.target.value)} required className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Login Email Address</label>
+                  <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} required className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
+                </div>
+              </>
+            )}
 
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-500 uppercase">University</label>
@@ -803,6 +911,78 @@ export const Profile: React.FC = () => {
 
       {/* Right 2 Columns: Tabs, Timelines, Badges & Feedback */}
       <div className="lg:col-span-2 flex flex-col gap-8">
+        
+        {/* Internal Private Notes Section (visible ONLY to Mentors/Admins) */}
+        {isMentorOrAdmin && (
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-slate-700" />
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-sm">Internal Private Notes & Scores</h3>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Strictly Confidential (Hidden from student)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAddNoteClick()}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center gap-1"
+              >
+                <span>+ Add Note</span>
+              </button>
+            </div>
+
+            {/* Notes List */}
+            {privateNotes.length === 0 ? (
+              <p className="text-xs text-gray-405 font-semibold py-2">No internal notes recorded yet for this Cube.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {privateNotes.map((n) => (
+                  <div key={n.id} className="bg-white border border-slate-150 rounded-xl p-4 flex flex-col gap-2 relative shadow-sm group">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">{n.subject}</span>
+                        {n.score !== null && (
+                          <span className="ml-2 bg-slate-100 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded border border-slate-200">
+                            Score: {n.score}/10
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-400 font-semibold">
+                          By {n.created_by.name} • {new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        {(user?.role === 'ADMIN' || n.created_by_id === user?.id) && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => handleEditNoteClick(n)}
+                              className="text-gray-400 hover:text-slate-700 p-0.5"
+                              title="Edit note"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteNote(n.id)}
+                              className="text-gray-400 hover:text-red-650 p-0.5"
+                              title="Delete note"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-650 font-medium whitespace-pre-wrap leading-relaxed">
+                      {n.note}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Badges Earned Section */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
@@ -1059,7 +1239,92 @@ export const Profile: React.FC = () => {
         </div>
 
       </div>
-
     </div>
+
+      {/* Modal: Add/Edit Private Note */}
+      {showNoteModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <form onSubmit={handleNoteSubmit} className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-sm">
+                  {editingNoteId ? 'Edit Private Note' : 'Add Private Note'}
+                </h3>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Strictly Confidential</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowNoteModal(false)} 
+                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Subject *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Communication, Technical Skill, Initiative..."
+                  value={noteSubject}
+                  onChange={(e) => setNoteSubject(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 bg-white outline-none focus:border-magenta"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Note Text *</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Enter private observations here..."
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-gray-700 bg-white outline-none focus:border-magenta resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Score (Optional, 1-10)</label>
+                <select
+                  value={noteScore}
+                  onChange={(e) => setNoteScore(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 bg-white outline-none focus:border-magenta cursor-pointer"
+                >
+                  <option value="">No Score</option>
+                  {[1,2,3,4,5,6,7,8,9,10].map(s => (
+                    <option key={s} value={s}>{s} / 10</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowNoteModal(false)}
+                disabled={noteSubmitting}
+                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={noteSubmitting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md"
+              >
+                {noteSubmitting ? (
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <span>Save Note</span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
   );
 };

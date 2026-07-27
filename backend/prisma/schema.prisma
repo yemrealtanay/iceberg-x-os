@@ -96,6 +96,7 @@ model User {
   cube_feedback        MentorFeedback[]      @relation("FeedbackCube")
   awarded_badges       CubeBadge[]           @relation("BadgeAwarder")
   presentations        DemoDayPresentation[]
+  private_notes_created PrivateNote[]        @relation("NotesCreated")
 }
 
 model CubeProfile {
@@ -127,6 +128,7 @@ model CubeProfile {
   cube_badges        CubeBadge[]
   meeting_attendance MeetingAttendance[]
   offboarding_record OffboardingRecord?
+  private_notes      PrivateNote[]
 }
 
 model Mission {
@@ -372,3 +374,17 @@ model OffboardingRecord {
   created_at     DateTime    @default(now())
   updated_at     DateTime    @updatedAt
 }
+
+model PrivateNote {
+  id             String      @id @default(uuid())
+  cube_id        String
+  cube           CubeProfile @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  created_by_id  String
+  created_by     User        @relation("NotesCreated", fields: [created_by_id], references: [id], onDelete: Cascade)
+  subject        String
+  note           String      @db.Text
+  score          Int?
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+}
+
