@@ -653,9 +653,9 @@ Iceberg Digital Team`
                           setRevertLevel('Cube');
                           setRevertingAlumni(a);
                         }}
-                        className="px-2.5 py-1.5 text-[10px] font-extrabold text-red-650 bg-red-50 hover:bg-red-100 border border-red-150 rounded-lg transition"
+                        className="px-2.5 py-1.5 text-[10px] font-extrabold text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 border border-red-100 rounded-lg transition"
                       >
-                        Geri Al
+                        Revert
                       </button>
                     </td>
                   </tr>
@@ -731,7 +731,7 @@ Iceberg Digital Team`
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-gray-100 overflow-hidden">
             <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
               <div>
-                <h3 className="font-extrabold text-gray-900 text-sm">Geri Al (Revert Offboarding)</h3>
+                <h3 className="font-extrabold text-gray-900 text-sm">Revert Offboarding</h3>
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Alumni: {revertingAlumni.user.name}</p>
               </div>
               <button 
@@ -744,7 +744,7 @@ Iceberg Digital Team`
 
             <div className="p-6 flex flex-col gap-4">
               <p className="text-xs text-gray-650 leading-relaxed font-semibold">
-                Bu öğrencinin offboarding sertifika kaydını silmek ve onu aktif listeye geri almak istediğinizden emin misiniz? Lütfen geri döndürülecek statüsünü seçin:
+                Are you sure you want to delete this student's offboarding record and restore them to the active directory? Please select their restored status:
               </p>
 
               <div className="flex flex-col gap-1.5">
@@ -766,20 +766,20 @@ Iceberg Digital Team`
                 type="button"
                 onClick={() => setRevertingAlumni(null)}
                 disabled={revertSubmitting}
-                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-100 transition"
+                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-100 hover:text-gray-900 transition"
               >
-                İptal (Cancel)
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmRevert}
                 disabled={revertSubmitting}
-                className="px-4 py-2 bg-red-650 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md shadow-red-600/10"
               >
                 {revertSubmitting ? (
                   <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                 ) : (
-                  <span>Geri Almayı Onayla</span>
+                  <span>Confirm Revert</span>
                 )}
               </button>
             </div>

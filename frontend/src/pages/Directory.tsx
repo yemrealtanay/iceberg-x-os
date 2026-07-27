@@ -33,16 +33,16 @@ export const Directory: React.FC = () => {
     e.stopPropagation();
     e.preventDefault();
     const confirmName = prompt(
-      `Bu öğrenciyi tamamen silmek için lütfen öğrencinin adını tam olarak yazın: "${cube.user.name}"`
+      `To permanently delete this student, please type their exact name: "${cube.user.name}"`
     );
     if (confirmName !== cube.user.name) {
-      alert("İsim eşleşmedi. Silme işlemi iptal edildi.");
+      alert("Name mismatch. Deletion cancelled.");
       return;
     }
 
     try {
       await api.delete(`/admin/users/${cube.user_id}`);
-      alert("Öğrenci başarıyla silindi.");
+      alert("Student deleted successfully.");
       fetchCubes();
     } catch (err: any) {
       alert(err.message || "Failed to delete student");
