@@ -595,7 +595,7 @@ export const Meetings: React.FC = () => {
                   className="w-4 h-4 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
                 />
                 <label htmlFor="notify-meeting" className="text-xs text-gray-650 font-bold cursor-pointer">
-                  Send notification to Cubes (Cube'lara bildirim gönder)
+                  Send notification to Cubes
                 </label>
               </div>
 

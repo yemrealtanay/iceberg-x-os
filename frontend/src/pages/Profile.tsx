@@ -224,7 +224,7 @@ export const Profile: React.FC = () => {
   const handleDeleteStudent = async () => {
     if (!data?.profile?.user?.name) return;
     const confirmName = prompt(
-      `To permanently delete this student, please type their exact name: "${data.profile.user.name}"`
+      `To permanently delete this Cube, please type their exact name: "${data.profile.user.name}"`
     );
     if (confirmName !== data.profile.user.name) {
       alert("Name mismatch. Deletion cancelled.");
@@ -233,10 +233,10 @@ export const Profile: React.FC = () => {
 
     try {
       await api.delete(`/admin/users/${data.profile.user_id}`);
-      alert("Student deleted successfully.");
+      alert("Cube deleted successfully.");
       navigate("/directory");
     } catch (err: any) {
-      alert(err.message || "Failed to delete student");
+      alert(err.message || "Failed to delete Cube");
     }
   };
 
@@ -864,14 +864,14 @@ export const Profile: React.FC = () => {
           <div className="bg-red-50/40 border border-red-100 rounded-2xl p-6 flex flex-col gap-4">
             <h3 className="font-extrabold text-sm text-red-750 border-b border-red-100 pb-2">Danger Zone</h3>
             <p className="text-xs text-red-650 leading-relaxed font-semibold">
-              Are you sure you want to delete this student completely? The student's account, profile data, badges, demo submissions, and all other records will be permanently deleted. This action cannot be undone!
+              Are you sure you want to delete this Cube completely? The Cube's account, profile data, badges, demo submissions, and all other records will be permanently deleted. This action cannot be undone!
             </p>
             <button 
               type="button" 
               onClick={handleDeleteStudent}
               className="w-full py-2 bg-red-600 text-white font-bold text-xs rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-1.5 shadow-md shadow-red-600/10"
             >
-              <span>Permanently Delete Student</span>
+              <span>Permanently Delete Cube</span>
             </button>
           </div>
         </>
@@ -1000,7 +1000,7 @@ export const Profile: React.FC = () => {
                 <ShieldAlert className="w-5 h-5 text-slate-700" />
                 <div>
                   <h3 className="font-extrabold text-slate-800 text-sm">Internal Private Notes & Scores</h3>
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Strictly Confidential (Hidden from student)</p>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Strictly Confidential (Hidden from Cube)</p>
                 </div>
               </div>
               <button

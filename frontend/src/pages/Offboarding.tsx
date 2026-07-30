@@ -182,7 +182,7 @@ Iceberg Digital Team`
         cubeProfileId: revertingAlumni.id,
         targetLevel: revertLevel
       });
-      alert(`Offboarding successfully reverted. Student restored as ${revertLevel}.`);
+      alert(`Offboarding successfully reverted. Cube restored as ${revertLevel}.`);
       setRevertingAlumni(null);
       fetchData();
     } catch (err: any) {
@@ -241,7 +241,7 @@ Iceberg Digital Team`
           <span>Offboarding & Alumni Management</span>
         </h1>
         <p className="text-gray-500 mt-1.5 text-sm">
-          Transition Cubes to Alumni, preview and generate staj / fellowship certificates, and customize student outreach emails.
+          Transition Cubes to Alumni, preview and generate fellowship certificates, and customize Cube outreach emails.
         </p>
       </div>
 
@@ -744,7 +744,7 @@ Iceberg Digital Team`
 
             <div className="p-6 flex flex-col gap-4">
               <p className="text-xs text-gray-650 leading-relaxed font-semibold">
-                Are you sure you want to delete this student's offboarding record and restore them to the active directory? Please select their restored status:
+                Are you sure you want to delete this Cube's offboarding record and restore them to the active directory? Please select their restored status:
               </p>
 
               <div className="flex flex-col gap-1.5">

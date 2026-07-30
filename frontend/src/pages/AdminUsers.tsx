@@ -247,7 +247,7 @@ export const AdminUsers: React.FC = () => {
                   onChange={(e) => setRole(e.target.value as any)}
                   className="p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none focus:border-magenta"
                 >
-                  <option value="CUBE">Cube (Intern/Fellow)</option>
+                  <option value="CUBE">Cube</option>
                   <option value="MENTOR">Mentor (Advisor)</option>
                 </select>
               </div>

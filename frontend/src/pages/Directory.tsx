@@ -33,7 +33,7 @@ export const Directory: React.FC = () => {
     e.stopPropagation();
     e.preventDefault();
     const confirmName = prompt(
-      `To permanently delete this student, please type their exact name: "${cube.user.name}"`
+      `To permanently delete this Cube, please type their exact name: "${cube.user.name}"`
     );
     if (confirmName !== cube.user.name) {
       alert("Name mismatch. Deletion cancelled.");
@@ -42,10 +42,10 @@ export const Directory: React.FC = () => {
 
     try {
       await api.delete(`/admin/users/${cube.user_id}`);
-      alert("Student deleted successfully.");
+      alert("Cube deleted successfully.");
       fetchCubes();
     } catch (err: any) {
-      alert(err.message || "Failed to delete student");
+      alert(err.message || "Failed to delete Cube");
     }
   };
 
@@ -87,7 +87,7 @@ export const Directory: React.FC = () => {
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Cube Directory</h1>
-        <p className="text-gray-500 mt-1">Directory of all R&D internship participants and fellowship builders.</p>
+        <p className="text-gray-500 mt-1">Directory of all active and past fellowship builders.</p>
       </div>
 
       {/* Search & Filter Controls */}
@@ -211,7 +211,7 @@ export const Directory: React.FC = () => {
                               ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20 text-red-300'
                               : 'bg-red-50 border-red-100 hover:bg-red-100'
                           }`}
-                          title="Delete Student"
+                          title="Delete Cube"
                         >
                           <Trash className="w-3.5 h-3.5" />
                         </button>
