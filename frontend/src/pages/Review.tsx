@@ -108,10 +108,10 @@ export const Review: React.FC = () => {
         ]);
         setCubes(cubesRes);
         setMissions(missionsRes);
-        if (!cubeId && cubesRes.length > 0) {
+        if (!prefilledCubeId && cubesRes.length > 0) {
           setCubeId(cubesRes[0].user.id); // set user id
         }
-        if (!missionId && missionsRes.length > 0) {
+        if (!id && missionsRes.length > 0) {
           setMissionId(missionsRes[0].id);
         }
       } catch (err: any) {
@@ -122,7 +122,7 @@ export const Review: React.FC = () => {
     };
 
     initializePageData();
-  }, [cubeId, missionId]);
+  }, []);
 
   const handleFetchAIDraft = async () => {
     if (!cubeId) {
@@ -187,7 +187,7 @@ export const Review: React.FC = () => {
 
     const payload = {
       cube_id: cubeId,
-      mission_id: missionId,
+      mission_id: missionId || null,
       technical_ability_score: technical,
       research_ability_score: research,
       demo_output_score: demoOutput,
