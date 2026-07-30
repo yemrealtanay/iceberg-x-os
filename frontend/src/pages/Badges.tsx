@@ -32,7 +32,7 @@ export const Badges: React.FC = () => {
     try {
       const [badgesRes, cubesRes, missionsRes] = await Promise.all([
         api.get('/badges'),
-        api.get('/cubes'),
+        api.get('/cubes?active=true'),
         api.get('/missions')
       ]);
       setBadges(badgesRes);

@@ -14,7 +14,7 @@ export const Notifications: React.FC = () => {
   useEffect(() => {
     const fetchCubes = async () => {
       try {
-        const res = await api.get('/cubes');
+        const res = await api.get('/cubes?active=true');
         setCubes(res);
       } catch (err) {
         console.error('Failed to load cubes:', err);

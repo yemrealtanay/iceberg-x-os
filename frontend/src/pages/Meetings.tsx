@@ -26,6 +26,8 @@ export const Meetings: React.FC = () => {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [notify, setNotify] = useState(false);
+  const [selectedCubeIds, setSelectedCubeIds] = useState<string[]>([]);
+  const [cubeSearch, setCubeSearch] = useState('');
 
   // Complete meeting states
   const [decisions, setDecisions] = useState('');
@@ -40,7 +42,7 @@ export const Meetings: React.FC = () => {
       setLoading(true);
       const [meetingsRes, cubesRes] = await Promise.all([
         api.get('/meetings'),
-        isAdminOrMentor ? api.get('/cubes') : Promise.resolve([])
+        isAdminOrMentor ? api.get('/cubes?active=true') : Promise.resolve([])
       ]);
       setMeetings(meetingsRes);
       if (cubesRes) {
@@ -62,12 +64,20 @@ export const Meetings: React.FC = () => {
     if (!title || !date) return;
 
     try {
-      await api.post('/meetings', { title, description, date: date + '+03:00', notify });
+      await api.post('/meetings', {
+        title,
+        description,
+        date: date + '+03:00',
+        notify,
+        invited_cube_ids: selectedCubeIds
+      });
       setShowCreateModal(false);
       setTitle('');
       setDescription('');
       setDate('');
       setNotify(false);
+      setSelectedCubeIds([]);
+      setCubeSearch('');
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Failed to create meeting');
@@ -79,12 +89,19 @@ export const Meetings: React.FC = () => {
     if (!selectedMeeting || !title || !date) return;
 
     try {
-      await api.put(`/meetings/${selectedMeeting.id}`, { title, description, date: date + '+03:00' });
+      await api.put(`/meetings/${selectedMeeting.id}`, {
+        title,
+        description,
+        date: date + '+03:00',
+        invited_cube_ids: selectedCubeIds
+      });
       setShowEditModal(false);
       setSelectedMeeting(null);
       setTitle('');
       setDescription('');
       setDate('');
+      setSelectedCubeIds([]);
+      setCubeSearch('');
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Failed to update meeting');
@@ -109,7 +126,12 @@ export const Meetings: React.FC = () => {
     
     // Initialize attendance status: default all cubes to attended
     const initialAttendance: any = {};
-    cubes.forEach((c) => {
+    const hasInvitedCubes = Array.isArray(meeting.invited_cube_ids) && meeting.invited_cube_ids.length > 0;
+    const targetList = hasInvitedCubes
+      ? cubes.filter(c => meeting.invited_cube_ids.includes(c.id))
+      : cubes;
+
+    targetList.forEach((c) => {
       initialAttendance[c.id] = { attended: true, excuse: '' };
     });
     setAttendance(initialAttendance);
@@ -179,8 +201,26 @@ export const Meetings: React.FC = () => {
     }) + ' (TSİ)';
   };
 
-  const upcomingMeetings = meetings.filter(m => !m.is_completed);
-  const completedMeetings = meetings.filter(m => m.is_completed);
+  const upcomingMeetings = meetings.filter(m => {
+    if (m.is_completed) return false;
+    if (user?.role === 'CUBE') {
+      const isInvited = Array.isArray(m.invited_cube_ids) && m.invited_cube_ids.length > 0;
+      if (isInvited) {
+        return m.invited_cube_ids.includes(user.cubeProfileId);
+      }
+    }
+    return true;
+  });
+  const completedMeetings = meetings.filter(m => {
+    if (!m.is_completed) return false;
+    if (user?.role === 'CUBE') {
+      const isInvited = Array.isArray(m.invited_cube_ids) && m.invited_cube_ids.length > 0;
+      if (isInvited) {
+        return m.invited_cube_ids.includes(user.cubeProfileId);
+      }
+    }
+    return true;
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -248,6 +288,7 @@ export const Meetings: React.FC = () => {
                               setTitle(meeting.title);
                               setDescription(meeting.description || '');
                               setDate(toTurkeyDateTimeString(meeting.date));
+                              setSelectedCubeIds(meeting.invited_cube_ids || []);
                               setShowEditModal(true);
                             }}
                             className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition"
@@ -493,6 +534,58 @@ export const Meetings: React.FC = () => {
                 />
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-gray-700 uppercase">Target Cubes (Optional)</label>
+                  {selectedCubeIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCubeIds([])}
+                      className="text-[10px] text-magenta font-extrabold uppercase hover:underline"
+                    >
+                      Clear Selection ({selectedCubeIds.length})
+                    </button>
+                  )}
+                </div>
+                <div className="border border-gray-200 rounded-xl p-3 flex flex-col gap-2 bg-gray-50/50">
+                  <input
+                    type="text"
+                    placeholder="Filter cubes by name..."
+                    value={cubeSearch}
+                    onChange={(e) => setCubeSearch(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
+                  />
+                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
+                    {cubes
+                      .filter(c => c.user?.name.toLowerCase().includes(cubeSearch.toLowerCase()))
+                      .map((c) => {
+                        const isSelected = selectedCubeIds.includes(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedCubeIds(prev =>
+                                prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                              );
+                            }}
+                            className="flex items-center gap-2 py-1.5 px-1 cursor-pointer hover:bg-white rounded transition"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-gray-750">
+                              {c.user?.name} <span className="text-[9px] text-gray-400 font-bold uppercase">(#{c.cube_number})</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center gap-2 pl-1 select-none">
                 <input
                   type="checkbox"
@@ -569,6 +662,58 @@ export const Meetings: React.FC = () => {
                 />
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-gray-700 uppercase">Target Cubes (Optional)</label>
+                  {selectedCubeIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCubeIds([])}
+                      className="text-[10px] text-magenta font-extrabold uppercase hover:underline"
+                    >
+                      Clear Selection ({selectedCubeIds.length})
+                    </button>
+                  )}
+                </div>
+                <div className="border border-gray-200 rounded-xl p-3 flex flex-col gap-2 bg-gray-50/50">
+                  <input
+                    type="text"
+                    placeholder="Filter cubes by name..."
+                    value={cubeSearch}
+                    onChange={(e) => setCubeSearch(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
+                  />
+                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
+                    {cubes
+                      .filter(c => c.user?.name.toLowerCase().includes(cubeSearch.toLowerCase()))
+                      .map((c) => {
+                        const isSelected = selectedCubeIds.includes(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedCubeIds(prev =>
+                                prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                              );
+                            }}
+                            className="flex items-center gap-2 py-1.5 px-1 cursor-pointer hover:bg-white rounded transition"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-gray-750">
+                              {c.user?.name} <span className="text-[9px] text-gray-400 font-bold uppercase">(#{c.cube_number})</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-end gap-3 mt-4 border-t border-gray-50 pt-4">
                 <button
                   type="button"
@@ -631,11 +776,11 @@ export const Meetings: React.FC = () => {
               <div className="flex flex-col gap-3">
                 <label className="text-xs font-bold text-gray-700 uppercase">Cube Attendance Checklist</label>
                 <div className="border border-gray-100 rounded-xl overflow-hidden divide-y divide-gray-50 max-h-56 overflow-y-auto">
-                  {cubes.length === 0 ? (
-                    <p className="text-xs text-gray-500 italic p-4 text-center">No Cubes registered in the system.</p>
+                  {Object.keys(attendance).length === 0 ? (
+                    <p className="text-xs text-gray-500 italic p-4 text-center">No Cubes registered or assigned to this meeting.</p>
                   ) : (
-                    cubes.map((c) => {
-                      const cubeAtt = attendance[c.id] || { attended: true, excuse: '' };
+                    cubes.filter(c => attendance[c.id] !== undefined).map((c) => {
+                      const cubeAtt = attendance[c.id];
                       return (
                         <div key={c.id} className="p-3 bg-white hover:bg-slate-50/50 flex flex-col gap-2 transition">
                           <div className="flex items-center justify-between">

@@ -103,7 +103,7 @@ export const Review: React.FC = () => {
     const initializePageData = async () => {
       try {
         const [cubesRes, missionsRes] = await Promise.all([
-          api.get('/cubes'),
+          api.get('/cubes?active=true'),
           api.get('/missions')
         ]);
         setCubes(cubesRes);

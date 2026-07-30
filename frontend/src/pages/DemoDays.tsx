@@ -33,7 +33,7 @@ export const DemoDays: React.FC = () => {
       const [daysRes, missionsRes, cubesRes] = await Promise.all([
         api.get('/demodays'),
         api.get('/missions'),
-        api.get('/cubes')
+        api.get('/cubes?active=true')
       ]);
       setDemoDays(daysRes);
       setMissions(missionsRes);

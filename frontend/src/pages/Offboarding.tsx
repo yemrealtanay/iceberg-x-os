@@ -41,7 +41,7 @@ export const Offboarding: React.FC = () => {
     setLoading(true);
     try {
       const [allCubes, allAlumni] = await Promise.all([
-        api.get('/cubes'),
+        api.get('/cubes?active=true'),
         api.get('/offboarding/alumni')
       ]);
       // Filter out already offboarded (Alumni) from active list

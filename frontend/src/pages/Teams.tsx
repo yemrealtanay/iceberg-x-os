@@ -25,7 +25,7 @@ export const Teams: React.FC = () => {
       const [teamsRes, missionsRes, cubesRes] = await Promise.all([
         api.get('/teams'),
         api.get('/missions'),
-        api.get('/cubes')
+        api.get('/cubes?active=true')
       ]);
       setTeams(teamsRes);
       setMissions(missionsRes);

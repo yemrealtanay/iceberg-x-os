@@ -117,39 +117,70 @@ export const Missions: React.FC = () => {
       {/* Grid */}
       {filteredMissions.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMissions.map((m) => (
-            <Link
-              key={m.id}
-              to={`/missions/${m.id}`}
-              className="bg-white border border-gray-100 hover:border-magenta/20 hover:-translate-y-1 p-6 rounded-2xl shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 group"
-            >
-              <div>
-                <div className="flex flex-wrap gap-1.5 items-center">
-                  <span className="text-[10px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    {m.difficulty_level.replace(/_/g, ' ').replace('Level ', 'L')}
-                  </span>
-                  <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full uppercase">
-                    {m.category}
-                  </span>
-                  <span className="text-[10px] font-extrabold text-gray-500 bg-gray-100 border border-gray-200/50 px-2.5 py-0.5 rounded-full uppercase ml-auto">
-                    {m.status.replace(/_/g, ' ')}
-                  </span>
+          {filteredMissions.map((m) => {
+            const assignedCubes = m.teams?.flatMap((t: any) => t.members.map((mem: any) => mem.cube?.user?.name)).filter(Boolean) || [];
+            const hasAssignments = assignedCubes.length > 0;
+            const isActive = hasAssignments && !['completed', 'cancelled', 'archived'].includes(m.status);
+
+            return (
+              <Link
+                key={m.id}
+                to={`/missions/${m.id}`}
+                className={`bg-white border hover:-translate-y-1 p-6 rounded-2xl flex flex-col justify-between gap-5 group transition-all duration-300 ${
+                  isActive
+                    ? 'border-emerald-250 shadow-md shadow-emerald-500/5 hover:border-emerald-350 hover:shadow-lg hover:shadow-emerald-500/10'
+                    : 'border-gray-100 shadow-subtle hover:border-magenta/20 hover:shadow-premium'
+                }`}
+              >
+                <div>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-[10px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      {m.difficulty_level.replace(/_/g, ' ').replace('Level ', 'L')}
+                    </span>
+                    <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full uppercase">
+                      {m.category}
+                    </span>
+                    {isActive && (
+                      <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                        Active
+                      </span>
+                    )}
+                    <span className="text-[10px] font-extrabold text-gray-500 bg-gray-100 border border-gray-200/50 px-2.5 py-0.5 rounded-full uppercase ml-auto">
+                      {m.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  <h3 className="font-extrabold text-gray-900 group-hover:text-magenta transition-colors mt-4 text-base leading-snug">
+                    {m.title}
+                  </h3>
+                  <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-3 leading-relaxed">
+                    <CustomMarkdown>{m.description}</CustomMarkdown>
+                  </div>
                 </div>
 
-                <h3 className="font-extrabold text-gray-900 group-hover:text-magenta transition-colors mt-4 text-base leading-snug">
-                  {m.title}
-                </h3>
-                <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-3 leading-relaxed">
-                  <CustomMarkdown>{m.description}</CustomMarkdown>
+                <div className="flex flex-col gap-1 border-t border-gray-50 pt-3">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Assigned Cubes</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {hasAssignments ? (
+                      assignedCubes.map((name: string, idx: number) => (
+                        <span key={idx} className="bg-slate-100 text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                          {name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-gray-450 italic font-semibold">Unassigned</span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="border-t border-gray-50 pt-4 flex items-center justify-between text-xs text-gray-500 font-semibold">
-                <span>Mentor: {m.mentor ? m.mentor.name : 'Unassigned'}</span>
-                <span className="text-magenta group-hover:translate-x-1 transition-transform">Details →</span>
-              </div>
-            </Link>
-          ))}
+                <div className="border-t border-gray-50 pt-4 flex items-center justify-between text-xs text-gray-500 font-semibold">
+                  <span>Mentor: {m.mentor ? m.mentor.name : 'Unassigned'}</span>
+                  <span className="text-magenta group-hover:translate-x-1 transition-transform">Details →</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <p className="text-gray-400 text-sm py-12 text-center bg-white border border-gray-100 rounded-2xl shadow-subtle">

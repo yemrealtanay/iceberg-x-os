@@ -254,6 +254,8 @@ export const MissionCreateEdit: React.FC = () => {
               <option value="demo_ready">Demo Ready</option>
               <option value="reviewed">Reviewed</option>
               <option value="promoted_to_product_backlog">Promoted to Backlog</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
               <option value="archived">Archived</option>
             </select>
           </div>

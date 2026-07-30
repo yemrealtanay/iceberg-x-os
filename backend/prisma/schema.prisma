@@ -33,6 +33,7 @@ enum MissionStatus {
   reviewed
   promoted_to_product_backlog
   archived
+  cancelled
 }
 
 enum DifficultyLevel {
@@ -341,8 +342,9 @@ model Meeting {
   is_completed Boolean             @default(false)
   decisions    String?             @db.Text
   summary      String?             @db.Text
-  created_at   DateTime            @default(now())
-  updated_at   DateTime            @updatedAt
+  created_at       DateTime            @default(now())
+  updated_at       DateTime            @updatedAt
+  invited_cube_ids String[]
 
   // Relations
   attendance   MeetingAttendance[]

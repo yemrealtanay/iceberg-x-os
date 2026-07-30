@@ -165,7 +165,16 @@ router.get('/mentors', requireAuth, async (req, res) => {
 // Get list of all Cubes (Directory)
 router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
+    const { active, level } = req.query;
+    const whereClause: any = {};
+    if (active === 'true') {
+      whereClause.current_level = CubeLevel.Cube;
+    } else if (level) {
+      whereClause.current_level = level as CubeLevel;
+    }
+
     const cubes = await prisma.cubeProfile.findMany({
+      where: whereClause,
       include: {
         user: {
           select: {
@@ -1589,7 +1598,7 @@ router.get('/meetings/:id', requireAuth, async (req, res) => {
 // Create meeting (Admin/Mentor only)
 router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
-    const { title, description, date, notify } = req.body;
+    const { title, description, date, notify, invited_cube_ids } = req.body;
     if (!title || !date) {
       return res.status(400).json({ error: 'title and date are required' });
     }
@@ -1598,7 +1607,8 @@ router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
       data: {
         title,
         description,
-        date: new Date(date)
+        date: new Date(date),
+        invited_cube_ids: Array.isArray(invited_cube_ids) ? invited_cube_ids : []
       }
     });
 
@@ -1616,14 +1626,15 @@ router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
 router.put('/meetings/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, date } = req.body;
+    const { title, description, date, invited_cube_ids } = req.body;
 
     const meeting = await prisma.meeting.update({
       where: { id },
       data: {
         title,
         description,
-        date: date ? new Date(date) : undefined
+        date: date ? new Date(date) : undefined,
+        invited_cube_ids: Array.isArray(invited_cube_ids) ? invited_cube_ids : undefined
       }
     });
     return res.json(meeting);
