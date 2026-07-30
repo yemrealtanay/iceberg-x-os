@@ -60,7 +60,7 @@ export const DemoDays: React.FC = () => {
     try {
       await api.post('/demodays', {
         title: scheduleTitle,
-        date: scheduleDate,
+        date: scheduleDate + '+03:00',
         description: scheduleDesc || undefined,
         notify: scheduleNotify
       });
