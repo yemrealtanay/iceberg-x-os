@@ -1232,7 +1232,9 @@ export const Profile: React.FC = () => {
                 <div key={fb.id} className={`flex flex-col gap-4 ${idx > 0 ? 'pt-6' : ''}`}>
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-sm text-gray-900">{fb.mission.title}</h4>
+                      <h4 className="font-bold text-sm text-gray-900">
+                        {fb.mission ? fb.mission.title : 'General Evaluation'}
+                      </h4>
                       <p className="text-xs text-gray-400 mt-0.5">
                         Evaluated by <span className="font-semibold">{fb.mentor.name}</span> on {new Date(fb.created_at).toLocaleDateString()}
                       </p>
