@@ -316,7 +316,7 @@ export const MissionDetail: React.FC = () => {
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-gray-50 pb-3">
             <h3 className="font-extrabold text-lg">Demo Submissions</h3>
-            {user?.role === 'CUBE' && (
+            {user?.role === 'CUBE' && myMemberRecord && (
               <Link
                 to="/submit-demo"
                 className="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black transition-colors"

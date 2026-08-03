@@ -42,13 +42,23 @@ export const DemoSubmission: React.FC = () => {
           api.get('/missions'),
           api.get('/teams')
         ]);
-        setMissions(missionsRes);
-        setTeams(teamsRes);
-        if (missionsRes.length > 0) {
-          setMissionId(missionsRes[0].id);
+
+        // Filter teams where logged-in user is a member
+        const userTeams = teamsRes.filter((t: any) =>
+          t.members.some((m: any) => m.cube?.user?.id === user?.id)
+        );
+        // Extract missions from these teams
+        const userMissions = userTeams.map((t: any) => t.mission).filter(Boolean);
+        const uniqueMissions = Array.from(new Map(userMissions.map((m: any) => [m.id, m])).values());
+
+        setTeams(userTeams);
+        setMissions(uniqueMissions);
+
+        if (uniqueMissions.length > 0) {
+          setMissionId(uniqueMissions[0].id);
         }
-        if (teamsRes.length > 0) {
-          setTeamId(teamsRes[0].id);
+        if (userTeams.length > 0) {
+          setTeamId(userTeams[0].id);
         }
       } catch (err: any) {
         setError(err.message || 'Failed to initialize page data');
@@ -57,8 +67,10 @@ export const DemoSubmission: React.FC = () => {
       }
     };
 
-    fetchMissionsAndTeams();
-  }, []);
+    if (user) {
+      fetchMissionsAndTeams();
+    }
+  }, [user]);
 
   const handleFetchAIReflection = async () => {
     if (!title || !whatCouldWeHaveDoneBetter) {
@@ -144,7 +156,16 @@ export const DemoSubmission: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Main Form (Left 2 Columns) */}
-        <form onSubmit={handleSubmit} className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-subtle flex flex-col gap-5">
+        {missions.length === 0 ? (
+          <div className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-8 shadow-subtle text-center flex flex-col items-center justify-center gap-4 py-16">
+            <ShieldAlert className="w-12 h-12 text-magenta" />
+            <h3 className="font-extrabold text-gray-900 text-lg">No Active Mission Assignments</h3>
+            <p className="text-xs text-gray-500 max-w-sm leading-relaxed font-semibold">
+              You are not currently assigned to any active mission teams. Demo submissions are restricted to assigned Cubes.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-subtle flex flex-col gap-5">
           
           {error && (
             <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-2xl flex items-center gap-2 text-sm font-semibold">
@@ -299,7 +320,8 @@ export const DemoSubmission: React.FC = () => {
             <Send className="w-4 h-4" />
             <span>{submitting ? 'Submitting material...' : 'Submit Demo Material'}</span>
           </button>
-        </form>
+          </form>
+        )}
 
         {/* Sidebar: AI reflection assistant */}
         <div className="flex flex-col gap-6">

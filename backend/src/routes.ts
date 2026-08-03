@@ -1154,6 +1154,28 @@ router.post('/updates', requireAuth, async (req: AuthenticatedRequest, res) => {
 
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
+    if (req.user.role === 'CUBE') {
+      const profile = await prisma.cubeProfile.findUnique({
+        where: { user_id: req.user.id }
+      });
+      if (!profile) {
+        return res.status(403).json({ error: 'Cube profile not found' });
+      }
+
+      const isAssigned = await prisma.missionTeamMember.findFirst({
+        where: {
+          cube_id: profile.id,
+          team: {
+            mission_id: mission_id
+          }
+        }
+      });
+
+      if (!isAssigned) {
+        return res.status(403).json({ error: 'You are not assigned to this mission.' });
+      }
+    }
+
     const newUpdate = await prisma.update.create({
       data: {
         cube_id: req.user.id,
@@ -1216,6 +1238,28 @@ router.post('/demos', requireAuth, async (req: AuthenticatedRequest, res) => {
     }
 
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    if (req.user.role === 'CUBE') {
+      const profile = await prisma.cubeProfile.findUnique({
+        where: { user_id: req.user.id }
+      });
+      if (!profile) {
+        return res.status(403).json({ error: 'Cube profile not found' });
+      }
+
+      const isAssigned = await prisma.missionTeamMember.findFirst({
+        where: {
+          cube_id: profile.id,
+          team: {
+            mission_id: mission_id
+          }
+        }
+      });
+
+      if (!isAssigned) {
+        return res.status(403).json({ error: 'You are not assigned to this mission.' });
+      }
+    }
 
     const submission = await prisma.demoSubmission.create({
       data: {
@@ -1473,7 +1517,7 @@ router.get('/demodays', requireAuth, async (req, res) => {
           include: {
             mission: true,
             team: true,
-            presenter: { select: { name: true } },
+            presenter: { select: { name: true, cube_profile: { select: { id: true } } } },
             demo_submission: true
           }
         }

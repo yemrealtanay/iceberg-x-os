@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Plus, Calendar, Clock, Check } from 'lucide-react';
@@ -275,7 +276,16 @@ export const DemoDays: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-bold text-xs text-gray-900 leading-snug">{pres.mission.title}</h4>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Presenter: {pres.presenter.name}</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              Presenter:{' '}
+                              {pres.presenter.cube_profile?.id ? (
+                                <Link to={`/cubes/${pres.presenter.cube_profile.id}`} className="font-bold text-gray-600 hover:text-magenta transition-colors">
+                                  {pres.presenter.name}
+                                </Link>
+                              ) : (
+                                <span className="font-bold text-gray-600">{pres.presenter.name}</span>
+                              )}
+                            </p>
                           </div>
                           <span className="text-[9px] font-extrabold bg-green-50 border border-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase">
                             {pres.decision}

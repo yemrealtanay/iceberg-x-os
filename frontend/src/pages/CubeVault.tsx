@@ -46,9 +46,9 @@ export const CubeVault: React.FC = () => {
     );
   }
 
-  // Filter for Vault items: status reviewed, promoted_to_product_backlog, or archived
+  // Filter for Vault items: status completed, reviewed, promoted_to_product_backlog, or archived
   const vaultMissions = missions.filter((m) => {
-    const isVaultStatus = ['reviewed', 'promoted_to_product_backlog', 'archived'].includes(m.status);
+    const isVaultStatus = ['completed', 'reviewed', 'promoted_to_product_backlog', 'archived'].includes(m.status);
     const matchesDecision = decisionFilter ? m.decision === decisionFilter : true;
     const matchesStatus = statusFilter ? m.status === statusFilter : true;
 
@@ -73,6 +73,7 @@ export const CubeVault: React.FC = () => {
             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer"
           >
             <option value="">All statuses</option>
+            <option value="completed">Completed</option>
             <option value="reviewed">Reviewed</option>
             <option value="promoted_to_product_backlog">Promoted to Backlog</option>
             <option value="archived">Archived</option>

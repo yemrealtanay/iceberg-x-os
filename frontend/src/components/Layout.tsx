@@ -135,17 +135,31 @@ export const Layout: React.FC = () => {
 
             {/* Right-side User Actions */}
             <div className="hidden lg:flex items-center justify-end gap-2.5 min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="text-right min-w-0 max-w-[160px]">
-                  <p className="text-xs font-bold leading-tight text-gray-900 truncate">{user.name}</p>
-                  <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
-                </div>
-                {user.cubeNumber && (
-                  <div className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-[10px]">
-                    #{user.cubeNumber}
+              {user.role === 'CUBE' && user.cubeProfileId ? (
+                <Link to={`/cubes/${user.cubeProfileId}`} className="flex items-center gap-2 min-w-0 hover:opacity-80 group">
+                  <div className="text-right min-w-0 max-w-[160px]">
+                    <p className="text-xs font-bold leading-tight text-gray-900 truncate group-hover:text-magenta transition-colors">{user.name}</p>
+                    <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
                   </div>
-                )}
-              </div>
+                  {user.cubeNumber && (
+                    <div className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-[10px]">
+                      #{user.cubeNumber}
+                    </div>
+                  )}
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="text-right min-w-0 max-w-[160px]">
+                    <p className="text-xs font-bold leading-tight text-gray-900 truncate">{user.name}</p>
+                    <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
+                  </div>
+                  {user.cubeNumber && (
+                    <div className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-[10px]">
+                      #{user.cubeNumber}
+                    </div>
+                  )}
+                </div>
+              )}
               <NotificationBell />
               <Link
                 to="/change-password"
@@ -198,17 +212,35 @@ export const Layout: React.FC = () => {
               );
             })}
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div>
-                  <p className="text-sm font-bold">{user.name}</p>
-                  <p className="text-xs text-magenta font-semibold tracking-wider uppercase">{user.role}</p>
+              {user.role === 'CUBE' && user.cubeProfileId ? (
+                <Link
+                  to={`/cubes/${user.cubeProfileId}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 hover:opacity-80 group animate-fadeIn"
+                >
+                  <div>
+                    <p className="text-sm font-bold group-hover:text-magenta transition-colors">{user.name}</p>
+                    <p className="text-xs text-magenta font-semibold tracking-wider uppercase">{user.role}</p>
+                  </div>
+                  {user.cubeNumber && (
+                    <span className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-xs">
+                      #{user.cubeNumber}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div>
+                    <p className="text-sm font-bold">{user.name}</p>
+                    <p className="text-xs text-magenta font-semibold tracking-wider uppercase">{user.role}</p>
+                  </div>
+                  {user.cubeNumber && (
+                    <span className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-xs">
+                      #{user.cubeNumber}
+                    </span>
+                  )}
                 </div>
-                {user.cubeNumber && (
-                  <span className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-xs">
-                    #{user.cubeNumber}
-                  </span>
-                )}
-              </div>
+              )}
               <div className="flex items-center gap-2">
                 <Link
                   to="/change-password"

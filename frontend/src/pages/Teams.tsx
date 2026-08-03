@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Plus, Edit, Users, Trash } from 'lucide-react';
@@ -278,7 +279,9 @@ export const Teams: React.FC = () => {
                   <div className="flex flex-col divide-y divide-gray-50">
                     {team.members.map((m: any) => (
                       <div key={m.id} className="flex justify-between items-center py-2 text-xs">
-                        <span className="font-bold text-gray-700">{m.cube.user.name}</span>
+                        <Link to={`/cubes/${m.cube_id}`} className="font-bold text-gray-700 hover:text-magenta transition-colors">
+                          {m.cube.user.name}
+                        </Link>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-extrabold bg-magenta/5 border border-magenta/10 text-magenta px-2 py-0.5 rounded-full uppercase tracking-wider">
                             {m.role.replace(/_/g, ' ')}

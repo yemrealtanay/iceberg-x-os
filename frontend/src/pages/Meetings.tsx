@@ -449,8 +449,10 @@ export const Meetings: React.FC = () => {
                               ) : (
                                 <ul className="flex flex-wrap gap-1.5">
                                   {attendees.map((a: any) => (
-                                    <li key={a.id} className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-100/50">
-                                      {a.cube?.user?.name || 'Unknown'}
+                                    <li key={a.id} className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-100/50 transition">
+                                      <Link to={`/cubes/${a.cube?.id}`}>
+                                        {a.cube?.user?.name || 'Unknown'}
+                                      </Link>
                                     </li>
                                   ))}
                                 </ul>
@@ -468,7 +470,9 @@ export const Meetings: React.FC = () => {
                                 <div className="flex flex-col gap-2">
                                   {absentees.map((a: any) => (
                                     <div key={a.id} className="bg-red-50/50 border border-red-100 p-2 rounded-lg flex flex-col gap-0.5">
-                                      <span className="text-xs font-bold text-red-800">{a.cube?.user?.name || 'Unknown'}</span>
+                                      <Link to={`/cubes/${a.cube?.id}`} className="text-xs font-bold text-red-800 hover:text-magenta transition-colors">
+                                        {a.cube?.user?.name || 'Unknown'}
+                                      </Link>
                                       {a.excuse && (
                                         <span className="text-[11px] text-red-600 font-medium">Excuse: {a.excuse}</span>
                                       )}
