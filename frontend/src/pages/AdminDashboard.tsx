@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
-import { Users, Rocket, Calendar, Award, AlertCircle, ArrowUpRight, TrendingUp, FileText } from 'lucide-react';
+import { Users, Rocket, Calendar, Award, AlertCircle, ArrowUpRight, TrendingUp, FileText, MessageSquare } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
@@ -60,6 +60,13 @@ export const AdminDashboard: React.FC = () => {
                 {data.pendingApplicationsCount}
               </span>
             )}
+          </Link>
+          <Link
+            to="/admin/testimonials"
+            className="flex items-center gap-2 bg-white text-gray-800 border border-gray-200 px-4 py-2.5 font-bold text-xs rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <MessageSquare className="w-4 h-4 text-magenta" />
+            <span>Testimonials</span>
           </Link>
           <Link
             to="/admin/users"

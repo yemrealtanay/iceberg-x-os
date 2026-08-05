@@ -27,6 +27,14 @@ export const Welcome: React.FC = () => {
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/testimonials')
+      .then(res => setTestimonials(res))
+      .catch(err => console.error('Failed to load testimonials:', err));
+  }, []);
+
   useEffect(() => {
     // Loader timeout
     const loaderTimer = setTimeout(() => setLoading(false), 650);
@@ -727,6 +735,48 @@ export const Welcome: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* TESTIMONIALS SECTION */}
+      {testimonials.length > 0 && (
+        <section className="py-24 bg-[#f6f6f8] border-t border-black/5" id="testimonials">
+          <div className="max-w-[1200px] mx-auto px-7">
+            <div className="text-center max-w-[600px] mx-auto flex flex-col gap-3 mb-16">
+              <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Fellowship Success</span>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">What Our Cubes Say</h2>
+              <p className="text-slate-500 text-sm leading-relaxed">Hear from fellow developers who transformed their research prototypes into working products.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {testimonials.map((t: any) => (
+                <div key={t.id} className="bg-white border border-black/5 rounded-3xl p-8 shadow-subtle hover:shadow-premium hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
+                  
+                  <div className="flex flex-col gap-4">
+                    <Quote className="w-8 h-8 text-[#e6007e]/20" />
+                    <p className="text-slate-700 text-sm font-medium leading-relaxed italic relative z-10">
+                      "{t.content}"
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3.5 pt-4 border-t border-slate-50">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-sm flex items-center justify-center border border-[#e6007e]/20 shadow-sm">
+                      {t.cube?.user?.name ? t.cube.user.name[0] : 'C'}
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-900 leading-tight">
+                        {t.cube?.user?.name || 'Anonymous Cube'}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
+                        Cohort {t.cube?.cohort || 'Unknown'} · Cube #{t.cube?.cube_number || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 13. APPLICATION CTA */}
       <section className="py-24 bg-gradient-to-b from-white to-[#f6f6f8]" id="apply">

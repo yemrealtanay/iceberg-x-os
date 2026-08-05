@@ -27,6 +27,7 @@ import { Offboarding } from './pages/Offboarding';
 import { Certificate } from './pages/Certificate';
 import { VerifyCertificate } from './pages/VerifyCertificate';
 import { Notifications } from './pages/Notifications';
+import { AdminTestimonials } from './pages/AdminTestimonials';
 
 function App() {
   return (
@@ -95,7 +96,14 @@ function App() {
                 </RouteGuard>
               }
             />
-
+            <Route
+              path="admin/testimonials"
+              element={
+                <RouteGuard allowedRoles={['ADMIN', 'MENTOR']}>
+                  <AdminTestimonials />
+                </RouteGuard>
+              }
+            />
             {/* Teams Management (Admins & Mentors) */}
             <Route
               path="teams"

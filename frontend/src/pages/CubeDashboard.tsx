@@ -21,6 +21,12 @@ export const CubeDashboard: React.FC = () => {
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
 
+  // Testimonial States
+  const [testimonialContent, setTestimonialContent] = useState('');
+  const [testimonialSubmitting, setTestimonialSubmitting] = useState(false);
+  const [testimonialSuccess, setTestimonialSuccess] = useState(false);
+  const [testimonialError, setTestimonialError] = useState<string | null>(null);
+
   const fetchDashboardData = async () => {
     try {
       const res = await api.get('/cube/dashboard');
@@ -62,6 +68,28 @@ export const CubeDashboard: React.FC = () => {
       setUpdateError(err.message || 'Failed to submit update');
     } finally {
       setUpdateSubmitting(false);
+    }
+  };
+
+  const handleTestimonialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testimonialContent.trim()) return;
+
+    setTestimonialSubmitting(true);
+    setTestimonialSuccess(false);
+    setTestimonialError(null);
+
+    try {
+      await api.post('/testimonials', { content: testimonialContent });
+      setTestimonialSuccess(true);
+      setTestimonialContent('');
+      setTimeout(() => {
+        setTestimonialSuccess(false);
+      }, 3000);
+    } catch (err: any) {
+      setTestimonialError(err.message || 'Failed to submit testimonial');
+    } finally {
+      setTestimonialSubmitting(false);
     }
   };
 
@@ -408,6 +436,48 @@ export const CubeDashboard: React.FC = () => {
             ) : (
               <p className="text-gray-400 text-sm py-4 text-center">No visible feedback reports yet.</p>
             )}
+          </div>
+
+          {/* Share Testimonial */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+            <h3 className="font-extrabold text-lg border-b border-gray-50 pb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-magenta" />
+              <span>Share Fellowship Testimonial</span>
+            </h3>
+            
+            <p className="text-xs text-gray-500 leading-relaxed font-semibold">
+              Loved your journey with Iceberg X? Write a testimonial! Once approved by an Admin, it will be showcased on our main landing page.
+            </p>
+
+            <form onSubmit={handleTestimonialSubmit} className="flex flex-col gap-3">
+              {testimonialSuccess && (
+                <div className="bg-green-50 text-green-700 text-xs font-semibold p-2.5 rounded-lg border border-green-100">
+                  Testimonial submitted for approval!
+                </div>
+              )}
+              {testimonialError && (
+                <div className="bg-red-50 text-red-700 text-xs font-semibold p-2.5 rounded-lg border border-red-100">
+                  {testimonialError}
+                </div>
+              )}
+
+              <textarea
+                required
+                rows={3}
+                placeholder="Share your R&D projects experience, skills learned, and mentorship highlight..."
+                value={testimonialContent}
+                onChange={e => setTestimonialContent(e.target.value)}
+                className="w-full p-2.5 border border-gray-100 bg-gray-50 focus:bg-white focus:border-magenta rounded-lg text-xs outline-none resize-none font-semibold transition"
+              />
+
+              <button
+                type="submit"
+                disabled={testimonialSubmitting || !testimonialContent.trim()}
+                className="w-full py-2 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors disabled:opacity-50"
+              >
+                {testimonialSubmitting ? 'Submitting...' : 'Submit Testimonial'}
+              </button>
+            </form>
           </div>
 
         </div>

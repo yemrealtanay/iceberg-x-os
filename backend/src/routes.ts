@@ -1044,19 +1044,68 @@ router.post('/missions/:id/decision', requireAuth, isAdmin, async (req, res) => 
 // TEAMS ROUTES
 // ==========================================
 
-// Create team
-router.post('/missions/:id/teams', requireAuth, isMentorOrAdmin, async (req, res) => {
+// Create team (generic)
+router.post('/teams', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { name, mission_id, members } = req.body;
+    if (!name) return res.status(400).json({ error: 'Team name is required' });
+
+    const result = await prisma.$transaction(async (tx) => {
+      if (mission_id) {
+        await tx.missionTeam.updateMany({
+          where: { mission_id },
+          data: { mission_id: null }
+        });
+      }
+
+      const team = await tx.missionTeam.create({
+        data: {
+          name,
+          mission_id: mission_id || null
+        }
+      });
+
+      if (members && Array.isArray(members)) {
+        for (const m of members) {
+          await tx.missionTeamMember.create({
+            data: {
+              team_id: team.id,
+              cube_id: m.cubeProfileId,
+              role: (m.role as TeamMemberRole) || TeamMemberRole.Contributor
+            }
+          });
+        }
+      }
+
+      return team;
+    });
+
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Create team (legacy/mission-specific)
+router.post('/missions/:id/teams', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params; // Mission ID
-    const { name, members } = req.body; // members: array of { cubeProfileId, role }
+    const { name, members } = req.body;
 
     if (!name) return res.status(400).json({ error: 'Team name is required' });
 
     const result = await prisma.$transaction(async (tx) => {
+      if (id && id !== 'none') {
+        await tx.missionTeam.updateMany({
+          where: { mission_id: id },
+          data: { mission_id: null }
+        });
+      }
+
       const team = await tx.missionTeam.create({
         data: {
-          mission_id: id,
-          name
+          name,
+          mission_id: (id && id !== 'none') ? id : null
         }
       });
 
@@ -1102,35 +1151,58 @@ router.get('/teams', requireAuth, async (req, res) => {
   }
 });
 
-// Update team members
-router.put('/teams/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
+// Update team (including mission and members)
+router.put('/teams/:id', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params; // Team ID
-    const { members } = req.body; // array of { cubeProfileId, role }
-
-    if (!members || !Array.isArray(members)) {
-      return res.status(400).json({ error: 'members array is required' });
-    }
+    const { name, mission_id, members } = req.body;
 
     await prisma.$transaction(async (tx) => {
-      // Delete existing memberships
-      await tx.missionTeamMember.deleteMany({ where: { team_id: id } });
+      // 1. Update basic fields
+      const dataToUpdate: any = {};
+      if (name !== undefined) dataToUpdate.name = name;
+      
+      if (mission_id !== undefined) {
+        dataToUpdate.mission_id = mission_id || null;
+        if (mission_id) {
+          // Unassign mission from other teams first
+          await tx.missionTeam.updateMany({
+            where: { mission_id, id: { not: id } },
+            data: { mission_id: null }
+          });
+        }
+      }
 
-      // Create new ones
-      for (const m of members) {
-        await tx.missionTeamMember.create({
-          data: {
-            team_id: id,
-            cube_id: m.cubeProfileId,
-            role: (m.role as TeamMemberRole) || TeamMemberRole.Contributor
-          }
-        });
+      await tx.missionTeam.update({
+        where: { id },
+        data: dataToUpdate
+      });
+
+      // 2. Update members if provided
+      if (members && Array.isArray(members)) {
+        await tx.missionTeamMember.deleteMany({ where: { team_id: id } });
+        for (const m of members) {
+          await tx.missionTeamMember.create({
+            data: {
+              team_id: id,
+              cube_id: m.cubeProfileId,
+              role: (m.role as TeamMemberRole) || TeamMemberRole.Contributor
+            }
+          });
+        }
       }
     });
 
     const updatedTeam = await prisma.missionTeam.findUnique({
       where: { id },
-      include: { members: true }
+      include: {
+        mission: true,
+        members: {
+          include: {
+            cube: { include: { user: { select: { id: true, name: true } } } }
+          }
+        }
+      }
     });
 
     return res.json(updatedTeam);
@@ -1783,6 +1855,7 @@ router.get('/offboarding/stats/:cubeId', requireAuth, isMentorOrAdmin, async (re
 
     const completedMissionsCount = profile.team_memberships.filter((m: any) => 
       m.is_submitted && 
+      m.team.mission &&
       (m.team.mission.status === 'completed' || m.team.mission.status === 'reviewed')
     ).length;
 
@@ -2275,7 +2348,7 @@ router.get('/mentor/dashboard', requireAuth, isMentorOrAdmin, async (req: Authen
         where: { cube_id: cube.id },
         include: { team: true }
       });
-      const cubeMissions = memberships.map(m => m.team.mission_id);
+      const cubeMissions = memberships.map(m => m.team.mission_id).filter(Boolean) as string[];
 
       // Check if they have feedback on these missions from this mentor
       const cubeFeedbacks = await prisma.mentorFeedback.findMany({
@@ -2353,7 +2426,7 @@ router.get('/cube/dashboard', requireAuth, async (req: AuthenticatedRequest, res
     });
 
     const activeMemberships = memberships.filter(
-      m => !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(m.team.mission.status)
+      m => m.team.mission && !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(m.team.mission.status)
     );
     const activeMission = activeMemberships[0]?.team.mission || null;
     const activeTeam = activeMemberships[0]?.team || null;
@@ -2617,6 +2690,26 @@ router.delete('/demos/:id', requireAuth, isAdmin, async (req, res) => {
     const { id } = req.params;
     await prisma.demoSubmission.delete({ where: { id } });
     return res.json({ success: true, message: 'Demo submission deleted successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/teams/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Delete team members first
+    await prisma.missionTeamMember.deleteMany({
+      where: { team_id: id }
+    });
+    
+    // Delete the team itself
+    await prisma.missionTeam.delete({
+      where: { id }
+    });
+    
+    return res.json({ success: true, message: 'Team dissolved and deleted successfully.' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
@@ -3071,6 +3164,114 @@ router.post('/notifications/custom', requireAuth, isMentorOrAdmin, async (req, r
     }
 
     return res.json({ success: true, count: targetUserIds.length });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// TESTIMONIALS ROUTES
+// ==========================================
+
+// Create testimonial (Cubes only)
+router.post('/testimonials', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user || req.user.role !== 'CUBE') {
+      return res.status(403).json({ error: 'Only Cubes can write testimonials' });
+    }
+
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Testimonial content is required' });
+    }
+
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { user_id: req.user.id }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Cube profile not found' });
+    }
+
+    const testimonial = await prisma.testimonial.create({
+      data: {
+        cube_id: profile.id,
+        content: content.trim(),
+        is_approved: false
+      }
+    });
+
+    return res.status(201).json(testimonial);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// List approved testimonials (Public)
+router.get('/testimonials', async (req, res) => {
+  try {
+    const testimonials = await prisma.testimonial.findMany({
+      where: { is_approved: true },
+      include: {
+        cube: {
+          include: {
+            user: { select: { name: true } }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+    return res.json(testimonials);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// List all testimonials for moderation (Admin/Mentor only)
+router.get('/admin/testimonials', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const testimonials = await prisma.testimonial.findMany({
+      include: {
+        cube: {
+          include: {
+            user: { select: { name: true } }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+    return res.json(testimonials);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Approve a testimonial (Admin/Mentor only)
+router.put('/testimonials/:id/approve', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const testimonial = await prisma.testimonial.update({
+      where: { id },
+      data: { is_approved: true }
+    });
+
+    return res.json({ success: true, testimonial });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a testimonial (Admin/Mentor only)
+router.delete('/testimonials/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.testimonial.delete({
+      where: { id }
+    });
+
+    return res.json({ success: true, message: 'Testimonial deleted successfully' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

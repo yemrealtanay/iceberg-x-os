@@ -69,7 +69,7 @@ export const Teams: React.FC = () => {
     setIsEditing(true);
     setEditingTeamId(team.id);
     setTeamName(team.name);
-    setSelectedMissionId(team.mission_id);
+    setSelectedMissionId(team.mission_id || '');
     setMembers(team.members.map((m: any) => ({
       cubeProfileId: m.cube_id,
       role: m.role
@@ -90,11 +90,14 @@ export const Teams: React.FC = () => {
     try {
       if (isEditing && editingTeamId) {
         await api.put(`/teams/${editingTeamId}`, {
+          name: teamName,
+          mission_id: selectedMissionId || null,
           members: validMembers
         });
       } else {
-        await api.post(`/missions/${selectedMissionId}/teams`, {
+        await api.post(`/teams`, {
           name: teamName,
+          mission_id: selectedMissionId || null,
           members: validMembers
         });
       }
@@ -104,6 +107,17 @@ export const Teams: React.FC = () => {
       setError(err.message || 'Failed to save team');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!window.confirm("Are you sure you want to dissolve and delete this team? This will release all team members.")) return;
+    try {
+      await api.delete(`/teams/${teamId}`);
+      setTeams(prev => prev.filter(t => t.id !== teamId));
+      alert('Team dissolved and deleted successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete team');
     }
   };
 
@@ -147,37 +161,36 @@ export const Teams: React.FC = () => {
       {showForm && (
         <form onSubmit={handleFormSubmit} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-premium flex flex-col gap-5 max-w-2xl animate-fadeIn">
           <h3 className="font-extrabold text-sm border-b border-gray-50 pb-2">
-            {isEditing ? `Edit Members: ${teamName}` : 'Create New Mission Team'}
+            {isEditing ? `Configure Team: ${teamName}` : 'Create New Mission Team'}
           </h3>
 
-          {!isEditing && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Team Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Team Gamma"
-                  value={teamName}
-                  onChange={e => setTeamName(e.target.value)}
-                  className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Assigned Mission</label>
-                <select
-                  value={selectedMissionId}
-                  onChange={e => setSelectedMissionId(e.target.value)}
-                  className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none cursor-pointer"
-                >
-                  {missions.map(m => (
-                    <option key={m.id} value={m.id}>{m.title}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Team Name</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Team Gamma"
+                value={teamName}
+                onChange={e => setTeamName(e.target.value)}
+                className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
+              />
             </div>
-          )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Assigned Mission</label>
+              <select
+                value={selectedMissionId}
+                onChange={e => setSelectedMissionId(e.target.value)}
+                className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none cursor-pointer"
+              >
+                <option value="">No Mission Assigned (Taskless Team)</option>
+                {missions.map(m => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Members Table Editor */}
           <div className="flex flex-col gap-2">
@@ -256,15 +269,27 @@ export const Teams: React.FC = () => {
               <div className="flex justify-between items-start border-b border-gray-50 pb-3">
                 <div>
                   <h3 className="font-extrabold text-base text-gray-900">{team.name}</h3>
-                  <p className="text-xs text-magenta font-semibold mt-0.5">Mission: {team.mission.title}</p>
+                  <p className="text-xs text-magenta font-semibold mt-0.5">
+                    Mission: {team.mission ? team.mission.title : <span className="text-gray-400 italic">No Mission Assigned (Taskless)</span>}
+                  </p>
                 </div>
                 {isMentorOrAdmin && (
-                  <button
-                    onClick={() => handleOpenEdit(team)}
-                    className="p-1.5 hover:bg-gray-50 border border-gray-100 rounded-lg text-gray-500 hover:text-magenta transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenEdit(team)}
+                      className="p-1.5 hover:bg-gray-50 border border-gray-100 rounded-lg text-gray-500 hover:text-magenta transition-colors"
+                      title="Edit Team"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTeam(team.id)}
+                      className="p-1.5 hover:bg-red-50 border border-red-100 rounded-lg text-gray-400 hover:text-red-650 transition-colors"
+                      title="Dissolve & Delete Team"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
 

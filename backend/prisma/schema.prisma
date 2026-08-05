@@ -131,6 +131,7 @@ model CubeProfile {
   meeting_attendance MeetingAttendance[]
   offboarding_record OffboardingRecord?
   private_notes      PrivateNote[]
+  testimonials       Testimonial[]
 }
 
 model Mission {
@@ -165,8 +166,8 @@ model Mission {
 
 model MissionTeam {
   id         String      @id @default(uuid())
-  mission_id String
-  mission    Mission     @relation(fields: [mission_id], references: [id], onDelete: Cascade)
+  mission_id String?
+  mission    Mission?     @relation(fields: [mission_id], references: [id], onDelete: SetNull)
   name       String
   created_at DateTime    @default(now())
   updated_at DateTime    @updatedAt
@@ -397,5 +398,15 @@ model Notification {
   user       User     @relation("UserNotifications", fields: [user_id], references: [id], onDelete: Cascade)
   message    String   @db.Text
   created_at DateTime @default(now())
+}
+
+model Testimonial {
+  id          String      @id @default(uuid())
+  cube_id     String
+  cube        CubeProfile @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  content     String      @db.Text
+  is_approved Boolean     @default(false)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
 }
 
