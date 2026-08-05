@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Plus, Save, Trash2, Check } from 'lucide-react';
+import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Plus, Save, Trash2, Check, X } from 'lucide-react';
 import { CustomMarkdown } from '../components/CustomMarkdown';
 
 export const MissionDetail: React.FC = () => {
@@ -34,6 +34,14 @@ export const MissionDetail: React.FC = () => {
   const [reflectionSubmitting, setReflectionSubmitting] = useState(false);
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
+
+  // Mission Resolution States
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [resolutionAction, setResolutionAction] = useState<'complete_archive' | 'fail_reassign' | 'continue_phase'>('complete_archive');
+  const [resolutionTargetStatus, setResolutionTargetStatus] = useState('building_demo');
+  const [resolutionMemberIds, setResolutionMemberIds] = useState<string[]>([]);
+  const [activeCubes, setActiveCubes] = useState<any[]>([]);
+  const [resolveSubmitting, setResolveSubmitting] = useState(false);
 
   const fetchMissionDetails = async () => {
     try {
@@ -186,6 +194,41 @@ export const MissionDetail: React.FC = () => {
       alert(err.message || 'Failed to approve mission');
     } finally {
       setApprovalSubmitting(false);
+    }
+  };
+
+  // Initialize resolutionMemberIds when mission details are loaded
+  useEffect(() => {
+    if (data?.mission?.teams && data.mission.teams.length > 0) {
+      const currentIds = data.mission.teams[0].members?.map((m: any) => m.cube_id) || [];
+      setResolutionMemberIds(currentIds);
+    }
+  }, [data]);
+
+  // Fetch active Cubes when modal opens
+  useEffect(() => {
+    if (showResolveModal) {
+      api.get('/cubes?active=true')
+        .then(res => setActiveCubes(res))
+        .catch(err => console.error(err));
+    }
+  }, [showResolveModal]);
+
+  const handleResolveSubmit = async () => {
+    setResolveSubmitting(true);
+    try {
+      await api.post(`/missions/${id}/resolve`, {
+        action: resolutionAction,
+        targetStatus: resolutionTargetStatus,
+        newMemberIds: resolutionAction === 'continue_phase' ? resolutionMemberIds : undefined
+      });
+      alert('Mission resolved successfully!');
+      setShowResolveModal(false);
+      fetchMissionDetails();
+    } catch (err: any) {
+      alert(err.message || 'Failed to resolve mission');
+    } finally {
+      setResolveSubmitting(false);
     }
   };
 
@@ -717,6 +760,14 @@ export const MissionDetail: React.FC = () => {
                 {mission.decision && (
                   <p><span className="font-bold text-gray-700">Decision:</span> <span className="uppercase text-[10px] bg-gray-50 border border-gray-100 px-2 py-0.5 rounded text-gray-600 font-bold">{mission.decision.replace(/_/g, ' ')}</span></p>
                 )}
+                {!['completed', 'cancelled', 'archived'].includes(mission.status) && (
+                  <button
+                    onClick={() => setShowResolveModal(true)}
+                    className="w-full text-center py-2 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors mt-2 shadow-sm shadow-magenta/15"
+                  >
+                    Resolve / Complete Mission
+                  </button>
+                )}
                  <Link to={`/missions/${id}/edit`} className="w-full text-center py-2 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors mt-2">
                   Edit Full Mission Text
                 </Link>
@@ -848,6 +899,146 @@ export const MissionDetail: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Modal: Resolve Mission */}
+      {showResolveModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-base">Resolve & End Mission</h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">{mission.title}</p>
+              </div>
+              <button 
+                onClick={() => setShowResolveModal(false)} 
+                className="text-gray-450 hover:text-gray-700 p-1 hover:bg-gray-150 rounded-lg transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Resolution Outcome *</label>
+                <div className="grid grid-cols-1 gap-2.5">
+                  <label className={`flex items-start gap-3 p-3.5 border rounded-xl cursor-pointer hover:bg-gray-50 transition ${resolutionAction === 'complete_archive' ? 'border-magenta bg-magenta/5' : 'border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="resolutionAction"
+                      value="complete_archive"
+                      checked={resolutionAction === 'complete_archive'}
+                      onChange={() => setResolutionAction('complete_archive')}
+                      className="mt-1 text-magenta focus:ring-magenta cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">Success & Archive to Vault</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Mark mission as completed. Team history is saved in the Vault and Cubes are released.</p>
+                    </div>
+                  </label>
+
+                  <label className={`flex items-start gap-3 p-3.5 border rounded-xl cursor-pointer hover:bg-gray-50 transition ${resolutionAction === 'fail_reassign' ? 'border-magenta bg-magenta/5' : 'border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="resolutionAction"
+                      value="fail_reassign"
+                      checked={resolutionAction === 'fail_reassign'}
+                      onChange={() => setResolutionAction('fail_reassign')}
+                      className="mt-1 text-magenta focus:ring-magenta cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">Failed / Reassign Mission</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Dissolve current teams. Reset mission status to "Selected" to assign new teams.</p>
+                    </div>
+                  </label>
+
+                  <label className={`flex items-start gap-3 p-3.5 border rounded-xl cursor-pointer hover:bg-gray-50 transition ${resolutionAction === 'continue_phase' ? 'border-magenta bg-magenta/5' : 'border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="resolutionAction"
+                      value="continue_phase"
+                      checked={resolutionAction === 'continue_phase'}
+                      onChange={() => setResolutionAction('continue_phase')}
+                      className="mt-1 text-magenta focus:ring-magenta cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">Continue Phase with Custom Team</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Transition status to the next active level and adjust team members.</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {resolutionAction === 'continue_phase' && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Next Status *</label>
+                    <select
+                      value={resolutionTargetStatus}
+                      onChange={(e) => setResolutionTargetStatus(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 bg-white outline-none focus:border-magenta cursor-pointer"
+                    >
+                      <option value="researching">Researching</option>
+                      <option value="building_demo">Building Demo</option>
+                      <option value="preparing_handover">Preparing Handover</option>
+                      <option value="demo_ready">Demo Ready</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Customize Team Members</label>
+                    <div className="border border-gray-205 rounded-xl p-3 flex flex-col gap-2 bg-gray-50/50">
+                      <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
+                        {activeCubes.map((c) => {
+                          const isSelected = resolutionMemberIds.includes(c.id);
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => {
+                                setResolutionMemberIds(prev =>
+                                  prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                                );
+                              }}
+                              className="flex items-center gap-2 py-1.5 px-1 cursor-pointer hover:bg-white rounded transition"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
+                              />
+                              <span className="text-xs font-semibold text-gray-750">
+                                {c.user?.name} <span className="text-[9px] text-gray-400 font-bold uppercase">(#{c.cube_number})</span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center justify-end gap-3 mt-4 border-t border-gray-50 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowResolveModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-xs uppercase tracking-wider hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResolveSubmit}
+                  disabled={resolveSubmitting}
+                  className="px-4 py-2.5 rounded-xl bg-magenta text-white font-bold text-xs uppercase tracking-wider hover:bg-magenta-hover transition flex items-center gap-1.5 disabled:opacity-75"
+                >
+                  <span>{resolveSubmitting ? 'Resolving...' : 'Confirm'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

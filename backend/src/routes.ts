@@ -2353,7 +2353,7 @@ router.get('/cube/dashboard', requireAuth, async (req: AuthenticatedRequest, res
     });
 
     const activeMemberships = memberships.filter(
-      m => m.team.mission.status !== 'reviewed' && m.team.mission.status !== 'archived'
+      m => !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(m.team.mission.status)
     );
     const activeMission = activeMemberships[0]?.team.mission || null;
     const activeTeam = activeMemberships[0]?.team || null;
@@ -2721,6 +2721,79 @@ router.post('/missions/:missionId/approve', requireAuth, isMentorOrAdmin, async 
       success: true,
       mission: updatedMission
     });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Resolve Mission lifecycle endpoint
+router.post('/missions/:id/resolve', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { action, targetStatus, newMemberIds } = req.body;
+
+    const mission = await prisma.mission.findUnique({
+      where: { id },
+      include: { teams: true }
+    });
+
+    if (!mission) {
+      return res.status(404).json({ error: 'Mission not found' });
+    }
+
+    if (action === 'complete_archive') {
+      // 1. Mark mission as completed
+      await prisma.mission.update({
+        where: { id },
+        data: { status: MissionStatus.completed }
+      });
+      return res.json({ success: true, message: 'Mission completed and archived successfully.' });
+    }
+
+    if (action === 'fail_reassign') {
+      // 1. Delete all teams associated with this mission to dissolve groups
+      await prisma.missionTeam.deleteMany({
+        where: { mission_id: id }
+      });
+      // 2. Reset mission status to selected (or idea_pool)
+      await prisma.mission.update({
+        where: { id },
+        data: { status: MissionStatus.selected }
+      });
+      return res.json({ success: true, message: 'Mission reset and teams dissolved successfully.' });
+    }
+
+    if (action === 'continue_phase') {
+      // 1. Update status to next phase
+      if (targetStatus) {
+        await prisma.mission.update({
+          where: { id },
+          data: { status: targetStatus as any }
+        });
+      }
+
+      // 2. If newMemberIds are provided, update the first team's members
+      if (newMemberIds && mission.teams.length > 0) {
+        const teamId = mission.teams[0].id;
+        
+        // Delete old members
+        await prisma.missionTeamMember.deleteMany({
+          where: { team_id: teamId }
+        });
+
+        // Add new members
+        await prisma.missionTeamMember.createMany({
+          data: newMemberIds.map((cubeId: string) => ({
+            team_id: teamId,
+            cube_id: cubeId,
+            role: 'Contributor'
+          }))
+        });
+      }
+      return res.json({ success: true, message: 'Mission transitioned to next phase and team members updated.' });
+    }
+
+    return res.status(400).json({ error: 'Invalid action parameter' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
