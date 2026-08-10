@@ -188,6 +188,15 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
             id: true,
             name: true
           }
+        },
+        team_memberships: {
+          include: {
+            team: {
+              include: {
+                mission: true
+              }
+            }
+          }
         }
       },
       orderBy: {

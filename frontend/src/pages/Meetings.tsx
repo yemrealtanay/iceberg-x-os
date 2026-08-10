@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Calendar, Clock, Plus, Trash2, Edit3, Check, X, 
@@ -561,7 +562,7 @@ export const Meetings: React.FC = () => {
                   />
                   <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
                     {cubes
-                      .filter(c => c.user?.name.toLowerCase().includes(cubeSearch.toLowerCase()))
+                      .filter(c => (c.user?.name || '').toLowerCase().includes(cubeSearch.toLowerCase()))
                       .map((c) => {
                         const isSelected = selectedCubeIds.includes(c.id);
                         return (
@@ -689,7 +690,7 @@ export const Meetings: React.FC = () => {
                   />
                   <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
                     {cubes
-                      .filter(c => c.user?.name.toLowerCase().includes(cubeSearch.toLowerCase()))
+                      .filter(c => (c.user?.name || '').toLowerCase().includes(cubeSearch.toLowerCase()))
                       .map((c) => {
                         const isSelected = selectedCubeIds.includes(c.id);
                         return (

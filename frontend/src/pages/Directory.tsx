@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Filter, ShieldAlert, Award, Sparkles, Trash } from 'lucide-react';
+import { Search, Filter, ShieldAlert, Award, Sparkles, Trash, Rocket, AlertCircle } from 'lucide-react';
 
 export const Directory: React.FC = () => {
   const { user } = useAuth();
@@ -13,6 +13,7 @@ export const Directory: React.FC = () => {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all', 'assigned', 'unassigned'
 
   const fetchCubes = async () => {
     try {
@@ -23,6 +24,16 @@ export const Directory: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getActiveMission = (cube: any) => {
+    if (!cube.team_memberships || cube.team_memberships.length === 0) return null;
+    const activeMem = cube.team_memberships.find((m: any) => {
+      const mission = m.team?.mission;
+      if (!mission) return false;
+      return !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(mission.status);
+    });
+    return activeMem?.team?.mission || null;
   };
 
   useEffect(() => {
@@ -79,7 +90,16 @@ export const Directory: React.FC = () => {
 
     const matchesLevel = levelFilter ? cube.current_level === levelFilter : true;
 
-    return matchesSearch && matchesLevel;
+    const activeMission = getActiveMission(cube);
+    const isUnassigned = !activeMission;
+    const matchesAssignment = 
+      assignmentFilter === 'all'
+        ? true
+        : assignmentFilter === 'unassigned'
+          ? isUnassigned
+          : !isUnassigned;
+
+    return matchesSearch && matchesLevel && matchesAssignment;
   });
 
   return (
@@ -103,8 +123,8 @@ export const Directory: React.FC = () => {
           />
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-56">
+        <div className="flex gap-3 w-full md:w-auto flex-wrap">
+          <div className="relative flex-1 md:w-48">
             <Filter className="absolute left-3.5 top-3 w-4.5 h-4.5 text-gray-400" />
             <select
               value={levelFilter}
@@ -119,6 +139,20 @@ export const Directory: React.FC = () => {
               <option value="Alumni">Alumni</option>
             </select>
           </div>
+          {(user?.role === 'ADMIN' || user?.role === 'MENTOR') && (
+            <div className="relative flex-1 md:w-48">
+              <Filter className="absolute left-3.5 top-3 w-4.5 h-4.5 text-gray-400" />
+              <select
+                value={assignmentFilter}
+                onChange={(e) => setAssignmentFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer text-slate-800"
+              >
+                <option value="all">All Assignments</option>
+                <option value="unassigned">Unassigned (Görevsiz)</option>
+                <option value="assigned">Assigned (Görevli)</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -162,23 +196,30 @@ export const Directory: React.FC = () => {
             }
 
             let cardClassName = "p-6 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-5 group relative ";
+            const activeMission = getActiveMission(cube);
+            const isUnassigned = !activeMission;
+
             if (isIceberger) {
               cardClassName += "bg-gradient-to-br from-[#0c1b33] via-[#090f1d] to-[#04060c] border-2 border-cyan-500/70 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] hover:-translate-y-1 text-white";
             } else if (isFounding) {
               cardClassName += "bg-gradient-to-br from-amber-50/20 via-white to-white border-2 border-amber-400/80 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.08)] hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:-translate-y-1";
             } else {
-              cardClassName += "bg-white border border-gray-100 hover:border-magenta/20 hover:-translate-y-1 shadow-subtle hover:shadow-premium";
+              const alertUnassigned = (user?.role === 'ADMIN' || user?.role === 'MENTOR') && isUnassigned;
+              if (alertUnassigned) {
+                cardClassName += "bg-red-50/30 border-2 border-red-200 hover:border-red-300 hover:-translate-y-1 shadow-subtle hover:shadow-premium";
+              } else {
+                cardClassName += "bg-white border border-gray-100 hover:border-magenta/20 hover:-translate-y-1 shadow-subtle hover:shadow-premium";
+              }
             }
 
             return (
-              <Link
+              <div
                 key={cube.id}
-                to={`/cubes/${cube.id}`}
                 className={cardClassName}
               >
                 <div>
                   <div className="flex justify-between items-start">
-                    <div>
+                    <Link to={`/cubes/${cube.id}`} className="hover:opacity-85 transition-opacity block flex-1">
                       <h3 className={`font-extrabold transition-colors flex items-center gap-1.5 ${
                         isIceberger
                           ? 'text-white group-hover:text-cyan-400'
@@ -191,7 +232,7 @@ export const Directory: React.FC = () => {
                         {isIceberger && <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />}
                       </h3>
                       <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
-                    </div>
+                    </Link>
                     <div className="flex items-center gap-2">
                       <span className={`font-extrabold text-xs px-2.5 py-0.5 rounded ${
                         isIceberger
@@ -255,6 +296,27 @@ export const Directory: React.FC = () => {
                       </p>
                     )}
                   </div>
+
+                  {/* Active Assignment Section */}
+                  <div className={`mt-4 pt-3 border-t ${isIceberger ? 'border-slate-800' : 'border-gray-100'} text-xs flex flex-col gap-1`}>
+                    <span className={`font-bold text-[10px] uppercase tracking-wider ${isIceberger ? 'text-cyan-400/90' : 'text-gray-400'}`}>
+                      Active Mission:
+                    </span>
+                    {activeMission ? (
+                      <Link
+                        to={`/missions/${activeMission.id}`}
+                        className="text-magenta hover:text-magenta-hover font-bold hover:underline flex items-center gap-1 mt-0.5 truncate"
+                      >
+                        <Rocket className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
+                        <span className="truncate">{activeMission.title}</span>
+                      </Link>
+                    ) : (
+                      <span className="text-red-500 font-extrabold flex items-center gap-1 mt-0.5">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 animate-bounce" />
+                        <span>Görevlendirilmemiş (Unassigned)</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Skills Tags */}
@@ -285,7 +347,7 @@ export const Directory: React.FC = () => {
                     )}
                   </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </div>
