@@ -6,6 +6,7 @@ import prisma from '../services/prisma';
 import { requireAuth, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { forbidden, notFound, sendError } from '../utils/http';
 import { createBulkNotification } from '../services/notification.service';
+import { assertCubesAreActive } from '../services/cubeStatus.service';
 
 const router = Router();
 
@@ -121,6 +122,10 @@ router.post('/meetings', requireAuth, isMentorOrAdmin, async (req, res) => {
       return res.status(400).json({ error: 'title and date are required' });
     }
 
+    if (Array.isArray(invited_cube_ids)) {
+      await assertCubesAreActive(invited_cube_ids, 'be invited to a meeting');
+    }
+
     const meeting = await prisma.meeting.create({
       data: {
         title,
@@ -145,6 +150,10 @@ router.put('/meetings/:id', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, date, invited_cube_ids } = req.body;
+
+    if (Array.isArray(invited_cube_ids)) {
+      await assertCubesAreActive(invited_cube_ids, 'be invited to a meeting');
+    }
 
     const meeting = await prisma.meeting.update({
       where: { id },

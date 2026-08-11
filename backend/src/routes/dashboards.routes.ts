@@ -4,10 +4,20 @@
 import { Router } from 'express';
 import prisma from '../services/prisma';
 import { requireAuth, isAdmin, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
-import { ACTIVE_CUBE_LEVELS, ACTIVE_MISSION_STATUSES } from '../config/constants';
+import { IN_PROGRAMME_CUBE_LEVELS, ACTIVE_MISSION_STATUSES } from '../config/constants';
 import { sendError } from '../utils/http';
 
 const router = Router();
+
+/** Keeps the first entry per Cube, preserving order. */
+function dedupeByCube<T extends { cubeId?: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter(row => {
+    if (!row.cubeId || seen.has(row.cubeId)) return false;
+    seen.add(row.cubeId);
+    return true;
+  });
+}
 
 router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
   try {
@@ -16,7 +26,7 @@ router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
     // Same definition as GET /cubes?active=true, which previously counted only
     // level "Cube" and disagreed with this dashboard.
     const activeCubes = await prisma.cubeProfile.count({
-      where: { current_level: { in: ACTIVE_CUBE_LEVELS } }
+      where: { current_level: { in: IN_PROGRAMME_CUBE_LEVELS } }
     });
     const activeMissions = await prisma.mission.count({
       where: { status: { in: ACTIVE_MISSION_STATUSES } }
@@ -52,32 +62,44 @@ router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
     });
 
     // Cubes recommended for progression
+    // Only Cubes still in the programme belong on these action lists: someone
+    // who has already left cannot be progressed or chased for inactivity.
+    const stillInProgramme = {
+      cube_profile: { is: { current_level: { in: IN_PROGRAMME_CUBE_LEVELS } } }
+    };
+
     const recommendedFeedback = await prisma.mentorFeedback.findMany({
       where: {
         recommended_next_step: {
           in: ['Consider_for_Senior_Cube', 'Consider_as_Iceberger', 'Consider_as_Alumni']
-        }
+        },
+        cube: stillInProgramme
       },
       include: {
         cube: { select: { id: true, name: true, cube_profile: { select: { id: true, current_level: true } } } },
         mentor: { select: { name: true } }
       },
-      orderBy: { created_at: 'desc' },
-      take: 5
+      orderBy: { created_at: 'desc' }
     });
 
-    const progressionCubes = recommendedFeedback.map(f => ({
-      cubeId: f.cube.cube_profile?.id,
-      name: f.cube.name,
-      current_level: f.cube.cube_profile?.current_level,
-      recommended: f.recommended_next_step,
-      by: f.mentor.name
-    }));
+    // One row per Cube: the list is ordered newest-first, so the first entry a
+    // Cube appears in is their latest recommendation. Without this a Cube was
+    // listed once per feedback record.
+    const progressionCubes = dedupeByCube(
+      recommendedFeedback.map(f => ({
+        cubeId: f.cube.cube_profile?.id,
+        name: f.cube.name,
+        current_level: f.cube.cube_profile?.current_level,
+        recommended: f.recommended_next_step,
+        by: f.mentor.name
+      }))
+    ).slice(0, 5);
 
     // Cubes at inactive risk
     const inactiveRiskFeedback = await prisma.mentorFeedback.findMany({
       where: {
-        recommended_next_step: 'Inactive_Risk'
+        recommended_next_step: 'Inactive_Risk',
+        cube: stillInProgramme
       },
       include: {
         cube: { select: { id: true, name: true, cube_profile: { select: { id: true } } } },
@@ -86,11 +108,13 @@ router.get('/admin/dashboard', requireAuth, isAdmin, async (req, res) => {
       orderBy: { created_at: 'desc' }
     });
 
-    const inactiveRiskCubes = inactiveRiskFeedback.map(f => ({
-      cubeId: f.cube.cube_profile?.id,
-      name: f.cube.name,
-      by: f.mentor.name
-    }));
+    const inactiveRiskCubes = dedupeByCube(
+      inactiveRiskFeedback.map(f => ({
+        cubeId: f.cube.cube_profile?.id,
+        name: f.cube.name,
+        by: f.mentor.name
+      }))
+    );
 
     return res.json({
       totalCubes,
@@ -113,9 +137,14 @@ router.get('/mentor/dashboard', requireAuth, isMentorOrAdmin, async (req: Authen
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-    // Cubes assigned to this mentor
+    // Cubes assigned to this mentor. Someone who has left the programme is no
+    // longer part of the mentor's workspace; the assignment itself is kept as
+    // history and still shows on their profile.
     const assignedCubes = await prisma.cubeProfile.findMany({
-      where: { assigned_mentor_id: req.user.id },
+      where: {
+        assigned_mentor_id: req.user.id,
+        current_level: { in: IN_PROGRAMME_CUBE_LEVELS }
+      },
       include: { user: { select: { name: true, email: true, id: true } } }
     });
 

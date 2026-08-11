@@ -6,6 +6,7 @@ import prisma from '../services/prisma';
 import { requireAuth, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { badRequest, sendError } from '../utils/http';
 import { syncTeamMembers, detachTeamsFromMission, normalizeMembers } from '../services/team.service';
+import { assertCubesAreActive } from '../services/cubeStatus.service';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.post('/teams', requireAuth, isMentorOrAdmin, async (req: AuthenticatedReq
     if (!name) throw badRequest('Team name is required');
 
     const members = normalizeMembers(req.body.members);
+    await assertCubesAreActive(members.map(m => m.cubeProfileId), 'be added to a team');
 
     const result = await prisma.$transaction(async (tx) => {
       const detachedTeams = mission_id
@@ -49,6 +51,7 @@ router.post('/missions/:id/teams', requireAuth, isMentorOrAdmin, async (req: Aut
     if (!name) throw badRequest('Team name is required');
 
     const members = normalizeMembers(req.body.members);
+    await assertCubesAreActive(members.map(m => m.cubeProfileId), 'be added to a team');
     const missionId = id && id !== 'none' ? id : null;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -102,6 +105,7 @@ router.put('/teams/:id', requireAuth, isMentorOrAdmin, async (req: Authenticated
     const { name, mission_id } = req.body;
     const hasMembers = Array.isArray(req.body.members);
     const members = normalizeMembers(req.body.members);
+    await assertCubesAreActive(members.map(m => m.cubeProfileId), 'be added to a team');
 
     const detachedTeams = await prisma.$transaction(async (tx) => {
       // 1. Update basic fields

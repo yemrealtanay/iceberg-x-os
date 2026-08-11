@@ -5,9 +5,9 @@ import { Router } from 'express';
 import prisma from '../services/prisma';
 import { requireAuth, isAdmin, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { MIN_SCORE, MAX_SCORE } from '../config/constants';
-import { badRequest, forbidden, sendError, parseScore } from '../utils/http';
+import { badRequest, conflict, forbidden, sendError, parseScore } from '../utils/http';
 import { createSingleNotification } from '../services/notification.service';
-import { RecommendedNextStep } from '@prisma/client';
+import { CubeLevel, RecommendedNextStep } from '@prisma/client';
 
 const router = Router();
 
@@ -35,6 +35,19 @@ router.post('/feedback', requireAuth, isMentorOrAdmin, async (req: Authenticated
 
     if (!cube_id || !recommended_next_step || !strengths || !areas_to_improve) {
       throw badRequest('Missing feedback fields');
+    }
+
+    // Alumni have graduated, so there is nothing left to assess. A Former Cube
+    // is only paused and may return, so their record stays open for a final
+    // assessment.
+    const target = await prisma.user.findUnique({
+      where: { id: cube_id },
+      select: { name: true, cube_profile: { select: { current_level: true } } }
+    });
+    if (target?.cube_profile?.current_level === CubeLevel.Alumni) {
+      throw conflict(
+        `${target.name} has graduated as Alumni. Scorecards are only for Cubes still in the programme.`
+      );
     }
 
     // The radar chart renders score / 5, so anything outside 1..5 (or NaN from

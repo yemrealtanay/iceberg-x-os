@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Filter, ShieldAlert, Award, Sparkles, Trash, Rocket, AlertCircle } from 'lucide-react';
+import { Search, Filter, ShieldAlert, Award, Sparkles, Trash, Rocket, AlertCircle, GraduationCap } from 'lucide-react';
+import { getLevelMeta, isInProgramme } from '../utils/cubeStatus';
 
 export const Directory: React.FC = () => {
   const { user } = useAuth();
@@ -14,10 +15,15 @@ export const Directory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
   const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all', 'assigned', 'unassigned'
+  const [showAlumni, setShowAlumni] = useState(false);
 
-  const fetchCubes = async () => {
+  // Alumni are excluded by default and fetched only when asked for, so the
+  // directory stays a view of the people currently around rather than an
+  // ever-growing archive.
+  const fetchCubes = async (withAlumni: boolean) => {
     try {
-      const res = await api.get('/cubes');
+      setLoading(true);
+      const res = await api.get(withAlumni ? '/cubes?includeAlumni=true' : '/cubes');
       setCubes(res);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch Cube directory');
@@ -37,8 +43,8 @@ export const Directory: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCubes();
-  }, []);
+    fetchCubes(showAlumni);
+  }, [showAlumni]);
 
   const handleDeleteClick = async (e: React.MouseEvent, cube: any) => {
     e.stopPropagation();
@@ -54,7 +60,7 @@ export const Directory: React.FC = () => {
     try {
       await api.delete(`/admin/users/${cube.user_id}`);
       alert("Cube deleted successfully.");
-      fetchCubes();
+      fetchCubes(showAlumni);
     } catch (err: any) {
       alert(err.message || "Failed to delete Cube");
     }
@@ -91,13 +97,15 @@ export const Directory: React.FC = () => {
     const matchesLevel = levelFilter ? cube.current_level === levelFilter : true;
 
     const activeMission = getActiveMission(cube);
-    const isUnassigned = !activeMission;
-    const matchesAssignment = 
+    // Only people doing the programme can meaningfully be "unassigned";
+    // Icebergers, Former Cubes and Alumni are not waiting for a mission.
+    const isUnassigned = !activeMission && isInProgramme(cube.current_level);
+    const matchesAssignment =
       assignmentFilter === 'all'
         ? true
         : assignmentFilter === 'unassigned'
           ? isUnassigned
-          : !isUnassigned;
+          : !!activeMission;
 
     return matchesSearch && matchesLevel && matchesAssignment;
   });
@@ -128,17 +136,42 @@ export const Directory: React.FC = () => {
             <Filter className="absolute left-3.5 top-3 w-4.5 h-4.5 text-gray-400" />
             <select
               value={levelFilter}
-              onChange={(e) => setLevelFilter(e.target.value)}
+              onChange={(e) => {
+                setLevelFilter(e.target.value);
+                // Picking Alumni explicitly has to pull them in from the server
+                if (e.target.value === 'Alumni') setShowAlumni(true);
+              }}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer"
             >
               <option value="">All Statuses (Levels)</option>
               <option value="Cube">Cube</option>
               <option value="Senior_Cube">Senior Cube</option>
-              <option value="Former_Cube">Former Cube</option>
               <option value="Iceberger">Iceberger</option>
+              <option value="Former_Cube">Former Cube</option>
               <option value="Alumni">Alumni</option>
             </select>
           </div>
+
+          <label
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border cursor-pointer transition-colors select-none ${
+              showAlumni
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100/50'
+            }`}
+            title="Alumni have graduated out of the programme and are hidden by default"
+          >
+            <input
+              type="checkbox"
+              checked={showAlumni}
+              onChange={(e) => {
+                setShowAlumni(e.target.checked);
+                if (!e.target.checked && levelFilter === 'Alumni') setLevelFilter('');
+              }}
+              className="w-3.5 h-3.5 rounded text-amber-600 border-gray-300 focus:ring-amber-500 cursor-pointer"
+            />
+            <GraduationCap className="w-4 h-4" />
+            <span className="text-xs font-bold whitespace-nowrap">Show Alumni</span>
+          </label>
           {(user?.role === 'ADMIN' || user?.role === 'MENTOR') && (
             <div className="relative flex-1 md:w-48">
               <Filter className="absolute left-3.5 top-3 w-4.5 h-4.5 text-gray-400" />
@@ -198,9 +231,20 @@ export const Directory: React.FC = () => {
             let cardClassName = "p-6 rounded-2xl transition-all duration-300 flex flex-col justify-between gap-5 group relative ";
             const activeMission = getActiveMission(cube);
             const isUnassigned = !activeMission;
+            const isAlumni = cube.current_level === 'Alumni';
+            const isFormer = cube.current_level === 'Former_Cube';
+            // Icebergers, Former Cubes and Alumni are not doing the programme,
+            // so "no active mission" is expected, not something to flag.
+            const hasLeftProgramme = isAlumni || isFormer || isIceberger;
 
-            if (isIceberger) {
+            if (isAlumni) {
+              // Deliberately unlike every other card: muted, sepia, no hover
+              // lift. Graduates are a record, not part of the working roster.
+              cardClassName += "bg-gradient-to-br from-amber-50/60 via-stone-50 to-stone-100 border border-dashed border-amber-300/70 opacity-90 hover:opacity-100";
+            } else if (isIceberger) {
               cardClassName += "bg-gradient-to-br from-[#0c1b33] via-[#090f1d] to-[#04060c] border-2 border-cyan-500/70 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] hover:-translate-y-1 text-white";
+            } else if (isFormer) {
+              cardClassName += "bg-slate-50 border border-slate-200 border-dashed hover:border-slate-300 shadow-none";
             } else if (isFounding) {
               cardClassName += "bg-gradient-to-br from-amber-50/20 via-white to-white border-2 border-amber-400/80 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.08)] hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:-translate-y-1";
             } else {
@@ -261,15 +305,25 @@ export const Directory: React.FC = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-4">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
-                      isIceberger
-                        ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/20'
-                        : isFounding
+                    <span
+                      title={getLevelMeta(cube.current_level).hint}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
+                        isFounding && !hasLeftProgramme
                           ? 'text-amber-700 bg-amber-400/10 border-amber-400/20'
-                          : 'text-magenta bg-magenta/5 border-magenta/10'
-                    }`}>
-                      {cube.current_level.replace('_', ' ')}
+                          : getLevelMeta(cube.current_level).badge
+                      }`}
+                    >
+                      {getLevelMeta(cube.current_level).label}
                     </span>
+                    {hasLeftProgramme && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
+                        isIceberger
+                          ? 'text-cyan-300/80 bg-white/5 border-white/10'
+                          : 'text-gray-500 bg-white border-gray-200'
+                      }`}>
+                        {getLevelMeta(cube.current_level).hint}
+                      </span>
+                    )}
                     {isFounding && (
                       <span className="bg-amber-400/10 border border-amber-400/20 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm uppercase tracking-wide">
                         <Award className="w-3 h-3 text-amber-500" />
@@ -297,26 +351,30 @@ export const Directory: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Active Assignment Section */}
-                  <div className={`mt-4 pt-3 border-t ${isIceberger ? 'border-slate-800' : 'border-gray-100'} text-xs flex flex-col gap-1`}>
-                    <span className={`font-bold text-[10px] uppercase tracking-wider ${isIceberger ? 'text-cyan-400/90' : 'text-gray-400'}`}>
-                      Active Mission:
-                    </span>
-                    {activeMission ? (
-                      <Link
-                        to={`/missions/${activeMission.id}`}
-                        className="text-magenta hover:text-magenta-hover font-bold hover:underline flex items-center gap-1 mt-0.5 truncate"
-                      >
-                        <Rocket className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
-                        <span className="truncate">{activeMission.title}</span>
-                      </Link>
-                    ) : (
-                      <span className="text-red-500 font-extrabold flex items-center gap-1 mt-0.5">
-                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 animate-bounce" />
-                        <span>Görevlendirilmemiş (Unassigned)</span>
+                  {/* Active Assignment Section.
+                      Only meaningful for people currently in the programme —
+                      an Alumni with no mission is not a problem to solve. */}
+                  {!hasLeftProgramme && (
+                    <div className={`mt-4 pt-3 border-t border-gray-100 text-xs flex flex-col gap-1`}>
+                      <span className="font-bold text-[10px] uppercase tracking-wider text-gray-400">
+                        Active Mission:
                       </span>
-                    )}
-                  </div>
+                      {activeMission ? (
+                        <Link
+                          to={`/missions/${activeMission.id}`}
+                          className="text-magenta hover:text-magenta-hover font-bold hover:underline flex items-center gap-1 mt-0.5 truncate"
+                        >
+                          <Rocket className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
+                          <span className="truncate">{activeMission.title}</span>
+                        </Link>
+                      ) : (
+                        <span className="text-red-500 font-extrabold flex items-center gap-1 mt-0.5">
+                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 animate-bounce" />
+                          <span>Görevlendirilmemiş (Unassigned)</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Skills Tags */}

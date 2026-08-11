@@ -5,6 +5,11 @@ import { Router } from 'express';
 import prisma from '../services/prisma';
 import { requireAuth, isMentorOrAdmin } from '../middlewares/auth.middleware';
 import { badRequest, conflict, notFound, sendError } from '../utils/http';
+import {
+  assertCertificateTypeForLevel,
+  assertOffboardingTargetLevel
+} from '../services/cubeStatus.service';
+import { CERTIFICATE_TYPES_BY_LEVEL } from '../config/constants';
 import { CubeLevel } from '@prisma/client';
 
 const router = Router();
@@ -83,18 +88,46 @@ router.get('/offboarding/stats/:cubeId', requireAuth, isMentorOrAdmin, async (re
   }
 });
 
-// Get offboarded alumni list
+/**
+ * Everyone who has been offboarded, keyed on the offboarding record rather than
+ * on level.
+ *
+ * This used to filter on `current_level = Alumni`, which forced admins to mark
+ * a Former Cube as Alumni just to make them appear here — and that in turn made
+ * them eligible for a certificate of success they had not earned.
+ */
 router.get('/offboarding/alumni', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
-    const alumni = await prisma.cubeProfile.findMany({
-      where: { current_level: CubeLevel.Alumni },
+    const offboarded = await prisma.cubeProfile.findMany({
+      where: { offboarding_record: { isNot: null } },
       include: {
         user: { select: { id: true, name: true, email: true } },
         offboarding_record: true
       },
       orderBy: { cube_number: 'asc' }
     });
-    return res.json(alumni);
+    return res.json(offboarded);
+  } catch (error: any) {
+    return sendError(res, error);
+  }
+});
+
+/**
+ * Cubes that can still be offboarded: anyone who does not already hold a
+ * certificate, whatever their level. A Former Cube who quit last term is listed
+ * here without first having to be mislabelled as Alumni.
+ */
+router.get('/offboarding/eligible', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const eligible = await prisma.cubeProfile.findMany({
+      where: { offboarding_record: null },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        assigned_mentor: { select: { id: true, name: true } }
+      },
+      orderBy: { cube_number: 'asc' }
+    });
+    return res.json(eligible);
   } catch (error: any) {
     return sendError(res, error);
   }
@@ -124,15 +157,11 @@ router.post('/offboarding', requireAuth, isMentorOrAdmin, async (req, res) => {
       );
     }
 
-    // Validate targetLevel or fallback to Alumni
-    let levelToSet: CubeLevel = CubeLevel.Alumni;
-    if (targetLevel) {
-      if (Object.values(CubeLevel).includes(targetLevel as any)) {
-        levelToSet = targetLevel as CubeLevel;
-      } else {
-        throw badRequest(`Invalid targetLevel. Must be one of: ${Object.values(CubeLevel).join(', ')}`);
-      }
-    }
+    // A Cube leaves either as a Former Cube (stopped partway) or as Alumni
+    // (graduated); the certificate has to match. A Former Cube can only be
+    // given a certificate of participation.
+    const levelToSet = assertOffboardingTargetLevel(targetLevel);
+    assertCertificateTypeForLevel(type, levelToSet);
 
     // Certificate No: ICE-YYYY-0000XX. Existing certificates keep this exact
     // format; a re-issue in the same year gets an -R2/-R3 suffix instead of
@@ -187,8 +216,14 @@ router.post('/offboarding/revert', requireAuth, isMentorOrAdmin, async (req, res
       return res.status(400).json({ error: 'cubeProfileId and targetLevel are required' });
     }
 
-    if (!Object.values(CubeLevel).includes(targetLevel as any)) {
-      return res.status(400).json({ error: `Invalid targetLevel. Must be one of: ${Object.values(CubeLevel).join(', ')}` });
+    // Reverting undoes the exit, so the Cube goes back to a level that is not
+    // itself an exit — otherwise they would sit in Former/Alumni with no
+    // certificate backing it.
+    const REVERT_LEVELS: CubeLevel[] = [CubeLevel.Cube, CubeLevel.Senior_Cube, CubeLevel.Iceberger];
+    if (!REVERT_LEVELS.includes(targetLevel as CubeLevel)) {
+      throw badRequest(
+        `A reverted Cube must return as one of: ${REVERT_LEVELS.map(l => l.replace(/_/g, ' ')).join(', ')}.`
+      );
     }
 
     const profile = await prisma.cubeProfile.findUnique({

@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../services/prisma';
 import { requireAuth, isAdmin, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
-import { ACTIVE_CUBE_LEVELS } from '../config/constants';
+import { IN_PROGRAMME_CUBE_LEVELS, DIRECTORY_HIDDEN_LEVELS } from '../config/constants';
 import { badRequest, conflict, sendError, parseCubeNumber } from '../utils/http';
 import { createSingleNotification } from '../services/notification.service';
 import { Role, CubeLevel } from '@prisma/client';
@@ -17,12 +17,20 @@ const router = Router();
 // Get list of all Cubes (Directory)
 router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { active, level } = req.query;
+    const { active, level, includeAlumni } = req.query;
     const whereClause: any = {};
+
     if (active === 'true') {
-      whereClause.current_level = { in: ACTIVE_CUBE_LEVELS };
+      // Pickers for missions, meetings, scorecards and broadcasts: only people
+      // actually doing the programme. Icebergers are on the main team now and
+      // Former Cubes / Alumni have left, so none of them belong here.
+      whereClause.current_level = { in: IN_PROGRAMME_CUBE_LEVELS };
     } else if (level) {
       whereClause.current_level = level as CubeLevel;
+    } else if (includeAlumni !== 'true') {
+      // Directory default: everyone except Alumni, who are shown on request.
+      // Icebergers stay visible — they are the example of where this leads.
+      whereClause.current_level = { notIn: DIRECTORY_HIDDEN_LEVELS };
     }
 
     // Phone numbers are staff-only; the directory does not display them.

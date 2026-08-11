@@ -3,6 +3,7 @@ import { api } from '../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Award, FileText, ArrowRight, Check, X, ShieldAlert, Sparkles, Languages, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { certificateTypesFor, getLevelMeta } from '../utils/cubeStatus';
 
 export const Offboarding: React.FC = () => {
   const { user } = useAuth();
@@ -40,14 +41,15 @@ export const Offboarding: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [allCubes, allAlumni] = await Promise.all([
-        api.get('/cubes?active=true'),
+      // Eligible = anyone without a certificate yet, at any level. A Former Cube
+      // is listed here directly; they no longer have to be mislabelled as
+      // Alumni just to become selectable.
+      const [eligible, offboarded] = await Promise.all([
+        api.get('/offboarding/eligible'),
         api.get('/offboarding/alumni')
       ]);
-      // Filter out already offboarded (Alumni) from active list
-      const activeCubes = allCubes.filter((c: any) => c.current_level !== 'Alumni');
-      setCubes(activeCubes);
-      setAlumni(allAlumni);
+      setCubes(eligible);
+      setAlumni(offboarded);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch offboarding data');
     } finally {
@@ -58,6 +60,16 @@ export const Offboarding: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // The target level decides which certificate is legitimate: a Former Cube
+  // stopped partway, so a certificate of success would not be true. Snap the
+  // selection back if the level no longer permits it.
+  const availableCertTypes = certificateTypesFor(targetLevel);
+  useEffect(() => {
+    if (!availableCertTypes.includes(certType)) {
+      setCertType(availableCertTypes[0] || 'participation');
+    }
+  }, [targetLevel]);
 
   // Prefill mentor name when a Cube is selected
   useEffect(() => {
@@ -319,15 +331,40 @@ Iceberg Digital Team`
                 </button>
               </div>
 
-              {/* Step 1: Configuration Fields */}
+              {/* Step 1: Configuration Fields.
+                  Target level comes first because it decides which certificate
+                  is even possible. */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Yeni Statü (Target Level) *</label>
+                  <select
+                    value={targetLevel}
+                    onChange={(e) => setTargetLevel(e.target.value)}
+                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px] cursor-pointer"
+                  >
+                    <option value="Alumni">Alumni — programı tamamladı</option>
+                    <option value="Former_Cube">Former Cube — programı yarıda bıraktı</option>
+                  </select>
+                  <p className="text-[10px] text-gray-400 font-semibold pl-1 leading-relaxed">
+                    {targetLevel === 'Former_Cube'
+                      ? 'Yarıda bırakan bir Cube yalnızca katılım sertifikası alabilir.'
+                      : 'Mezun olan bir Cube katılım veya başarı sertifikası alabilir.'}
+                  </p>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Certificate Type *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
+                      disabled={!availableCertTypes.includes('success')}
+                      title={
+                        availableCertTypes.includes('success')
+                          ? undefined
+                          : 'Programı yarıda bırakan bir Cube başarı sertifikası alamaz.'
+                      }
                       onClick={() => setCertType('success')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
                         certType === 'success'
                           ? 'border-magenta bg-magenta/5 text-magenta'
                           : 'border-gray-200 hover:bg-gray-50 text-gray-600'
@@ -361,21 +398,6 @@ Iceberg Digital Team`
                     placeholder="Mentor Adı Soyadı"
                     className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px]"
                   />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Yeni Statü (Target Level) *</label>
-                  <select
-                    value={targetLevel}
-                    onChange={(e) => setTargetLevel(e.target.value)}
-                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px] cursor-pointer"
-                  >
-                    <option value="Alumni">Alumni</option>
-                    <option value="Former_Cube">Former Cube</option>
-                    <option value="Senior_Cube">Senior Cube</option>
-                    <option value="Cube">Cube</option>
-                    <option value="Iceberger">Iceberger</option>
-                  </select>
                 </div>
               </div>
 
@@ -605,6 +627,7 @@ Iceberg Digital Team`
                 <tr className="border-b border-gray-100 text-gray-400 uppercase text-[9px] tracking-wider font-bold">
                   <th className="py-3 px-4">Cube #</th>
                   <th className="py-3 px-4">Name</th>
+                  <th className="py-3 px-4">Left As</th>
                   <th className="py-3 px-4">Certificate No</th>
                   <th className="py-3 px-4">Certificate Type</th>
                   <th className="py-3 px-4">Mentor</th>
@@ -620,6 +643,11 @@ Iceberg Digital Team`
                       <Link to={`/cubes/${a.id}`} className="font-bold text-gray-800 hover:text-magenta transition">
                         {a.user.name}
                       </Link>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getLevelMeta(a.current_level).badge}`}>
+                        {getLevelMeta(a.current_level).label}
+                      </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono font-bold text-[10px] text-gray-700">
                       {a.offboarding_record?.certificate_no}

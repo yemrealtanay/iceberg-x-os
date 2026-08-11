@@ -8,6 +8,7 @@ import { TERMINAL_MISSION_STATUSES } from '../config/constants';
 import { badRequest, conflict, notFound, sendError } from '../utils/http';
 import { createBulkNotification } from '../services/notification.service';
 import { syncTeamMembers, detachTeamsFromMission } from '../services/team.service';
+import { assertCubesAreActive } from '../services/cubeStatus.service';
 import {
   allowedNextStatuses,
   assertInitialStatus,
@@ -516,6 +517,7 @@ router.post('/missions/:id/resolve', requireAuth, isMentorOrAdmin, async (req: A
 
     if (action === 'continue_phase') {
       const memberIds: string[] = Array.isArray(newMemberIds) ? newMemberIds : [];
+      await assertCubesAreActive(memberIds, 'continue on this mission');
       const nextStatus = targetStatus
         ? assertTransition(mission.status, targetStatus, transitionOptions)
         : null;
