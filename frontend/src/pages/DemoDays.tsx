@@ -173,7 +173,7 @@ export const DemoDays: React.FC = () => {
                 onChange={(e) => setScheduleNotify(e.target.checked)}
                 className="w-4 h-4 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
               />
-              <label htmlFor="notify-demoday" className="text-xs text-gray-650 font-bold cursor-pointer">
+              <label htmlFor="notify-demoday" className="text-xs text-gray-600 font-bold cursor-pointer">
                 Send notification to Cubes
               </label>
             </div>

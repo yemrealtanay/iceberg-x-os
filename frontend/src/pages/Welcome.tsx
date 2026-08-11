@@ -877,7 +877,7 @@ export const Welcome: React.FC = () => {
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
                   <div className="flex flex-col gap-3">
                     <Quote className="w-6 h-6 text-[#e6007e]/20" />
-                    <p className="text-slate-755 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
+                    <p className="text-slate-700 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
                       "{t.content}"
                     </p>
                   </div>
@@ -906,7 +906,7 @@ export const Welcome: React.FC = () => {
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
                     <div className="flex flex-col gap-3">
                       <Quote className="w-6 h-6 text-[#e6007e]/20" />
-                      <p className="text-slate-755 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
+                      <p className="text-slate-700 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
                         "{t.content}"
                       </p>
                     </div>

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
 import prisma from '../services/prisma';
+import { JWT_SECRET } from '../config/env';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -10,8 +11,6 @@ export interface AuthenticatedRequest extends Request {
     cubeProfileId?: string; // If role is CUBE
   };
 }
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_iceberg_x';
 
 export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {

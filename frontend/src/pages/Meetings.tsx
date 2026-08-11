@@ -352,11 +352,20 @@ export const Meetings: React.FC = () => {
                   const isExpanded = !!expandedMeetings[meeting.id];
                   const attendees = meeting.attendance?.filter((a: any) => a.attended) || [];
                   const absentees = meeting.attendance?.filter((a: any) => !a.attended) || [];
-                  
+
+                  // For Cubes the backend returns only their own attendance row
+                  // plus aggregate counts, so the roster totals come from there.
+                  const totalAttended = isAdminOrMentor
+                    ? attendees.length
+                    : (meeting.attendance_summary?.attended ?? attendees.length);
+                  const totalLogged = isAdminOrMentor
+                    ? (meeting.attendance || []).length
+                    : (meeting.attendance_summary?.total ?? (meeting.attendance || []).length);
+
                   // Check if this cube logged in was absent or attended
                   let ownAttendance: any = null;
                   if (!isAdminOrMentor && user) {
-                    ownAttendance = meeting.attendance?.find((a: any) => a.cube?.user_id === user.id);
+                    ownAttendance = meeting.attendance?.[0] || null;
                   }
 
                   return (
@@ -395,7 +404,7 @@ export const Meetings: React.FC = () => {
                           )}
 
                           <span className="text-xs font-semibold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg">
-                            {attendees.length} / {(meeting.attendance || []).length} Attended
+                            {totalAttended} / {totalLogged} Attended
                           </span>
                           
                           {isAdminOrMentor && (
@@ -428,7 +437,10 @@ export const Meetings: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Expandable Attendance Section */}
+                      {/* Expandable Attendance Section — staff only. The roster
+                          lists every Cube's absence excuse, which is not a Cube's
+                          to read; the backend no longer sends it to them either. */}
+                      {isAdminOrMentor && (
                       <div className="mt-4 pt-4 border-t border-gray-50">
                         <button
                           onClick={() => toggleExpand(meeting.id)}
@@ -485,6 +497,7 @@ export const Meetings: React.FC = () => {
                           </div>
                         )}
                       </div>
+                      )}
                     </div>
                   );
                 })}
@@ -560,7 +573,7 @@ export const Meetings: React.FC = () => {
                     onChange={(e) => setCubeSearch(e.target.value)}
                     className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
                   />
-                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
+                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-100 flex flex-col gap-1 pr-1">
                     {cubes
                       .filter(c => (c.user?.name || '').toLowerCase().includes(cubeSearch.toLowerCase()))
                       .map((c) => {
@@ -581,7 +594,7 @@ export const Meetings: React.FC = () => {
                               onChange={() => {}}
                               className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
                             />
-                            <span className="text-xs font-semibold text-gray-750">
+                            <span className="text-xs font-semibold text-gray-700">
                               {c.user?.name} <span className="text-[9px] text-gray-400 font-bold uppercase">(#{c.cube_number})</span>
                             </span>
                           </div>
@@ -599,7 +612,7 @@ export const Meetings: React.FC = () => {
                   onChange={(e) => setNotify(e.target.checked)}
                   className="w-4 h-4 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
                 />
-                <label htmlFor="notify-meeting" className="text-xs text-gray-650 font-bold cursor-pointer">
+                <label htmlFor="notify-meeting" className="text-xs text-gray-600 font-bold cursor-pointer">
                   Send notification to Cubes
                 </label>
               </div>
@@ -688,7 +701,7 @@ export const Meetings: React.FC = () => {
                     onChange={(e) => setCubeSearch(e.target.value)}
                     className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
                   />
-                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
+                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-100 flex flex-col gap-1 pr-1">
                     {cubes
                       .filter(c => (c.user?.name || '').toLowerCase().includes(cubeSearch.toLowerCase()))
                       .map((c) => {
@@ -709,7 +722,7 @@ export const Meetings: React.FC = () => {
                               onChange={() => {}}
                               className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
                             />
-                            <span className="text-xs font-semibold text-gray-750">
+                            <span className="text-xs font-semibold text-gray-700">
                               {c.user?.name} <span className="text-[9px] text-gray-400 font-bold uppercase">(#{c.cube_number})</span>
                             </span>
                           </div>

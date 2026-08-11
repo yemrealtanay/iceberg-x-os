@@ -29,10 +29,26 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, config);
-  
+
   if (!response.ok) {
+    // The token lasts 24h. Without this, an expired session showed a generic
+    // error on every page instead of sending the user back to sign in.
+    if (response.status === 401 && token && !endpoint.startsWith('/auth/login')) {
+      localStorage.removeItem('iceberg_token');
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login');
+      }
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    const error = new Error(errorData.error || `HTTP error! status: ${response.status}`) as Error & {
+      status?: number;
+      details?: any;
+    };
+    error.status = response.status;
+    error.details = errorData.details;
+    throw error;
   }
 
   return response.json();

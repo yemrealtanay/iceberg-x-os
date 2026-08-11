@@ -1,0 +1,26 @@
+# Never ship host build output or host-installed dependencies.
+#
+# The Dockerfile runs `npm install` and then `COPY backend/ ./`, so without this
+# file the host's macOS node_modules would overwrite the Linux ones installed in
+# the image, and a stale dist/ would shadow freshly compiled output.
+node_modules
+**/node_modules
+dist
+**/dist
+
+# Local environment and secrets
+.env
+**/.env
+.env.*
+
+# VCS and tooling
+.git
+.gitignore
+.idea
+.vscode
+.claude
+
+# Local artifacts
+*.log
+.DS_Store
+**/.DS_Store

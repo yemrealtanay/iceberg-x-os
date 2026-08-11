@@ -88,8 +88,8 @@ export const Notifications: React.FC = () => {
           )}
 
           {error && (
-            <div className="bg-red-50 text-red-750 text-xs font-semibold p-3.5 rounded-xl border border-red-100 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-650 shrink-0" />
+            <div className="bg-red-50 text-red-700 text-xs font-semibold p-3.5 rounded-xl border border-red-100 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -165,7 +165,7 @@ export const Notifications: React.FC = () => {
                   />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-gray-800 truncate">{c.user.name}</p>
-                    <p className="text-[10px] text-gray-450 font-bold uppercase">Cube #{c.cube_number}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase">Cube #{c.cube_number}</p>
                   </div>
                 </div>
               ))

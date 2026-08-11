@@ -284,7 +284,7 @@ export const Teams: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleDeleteTeam(team.id)}
-                      className="p-1.5 hover:bg-red-50 border border-red-100 rounded-lg text-gray-400 hover:text-red-650 transition-colors"
+                      className="p-1.5 hover:bg-red-50 border border-red-100 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
                       title="Dissolve & Delete Team"
                     >
                       <Trash className="w-4 h-4" />

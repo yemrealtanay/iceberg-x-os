@@ -1,41 +1,30 @@
 import express from 'express';
 import cors from 'cors';
-import * as dotenv from 'dotenv';
 import path from 'path';
+import { APP_URL, IS_PROD } from './config/env';
 import router from './routes';
-
-dotenv.config();
 
 const app = express();
 
-const isProd = process.env.NODE_ENV === 'production';
-const allowedOrigin = process.env.APP_URL ? process.env.APP_URL.replace(/['"]/g, '').trim() : 'http://localhost:5001';
-
-const allowedOrigins = [
-  allowedOrigin,
-  'http://localhost:5001',
-  'http://localhost:5173'
-];
+// Explicit allow-list. Development origins stay open because the Vite dev
+// server runs on a different port; production accepts only APP_URL.
+const allowedOrigins = IS_PROD
+  ? [APP_URL]
+  : [APP_URL, 'http://localhost:5001', 'http://localhost:5173'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like same-origin, mobile apps, curl, postman)
+    // Requests with no Origin header (same-origin, curl, health checks)
     if (!origin) return callback(null, true);
-    
-    // Normalize origin by removing trailing slash if present
+
     const normalizedOrigin = origin.replace(/\/$/, '');
-    
-    if (
-      allowedOrigins.includes(normalizedOrigin) || 
-      !isProd ||
-      normalizedOrigin.startsWith('http://localhost:') ||
-      normalizedOrigin.endsWith('.railway.app')
-    ) {
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
-    } else {
-      // Return false instead of throwing an Error to prevent Express 500 Internal Server Error
-      return callback(null, false);
     }
+
+    // Return false rather than throwing so Express answers 403-style instead of 500
+    return callback(null, false);
   },
   credentials: true
 }));
@@ -72,10 +61,12 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Error handling middleware
+// Error handling middleware. Logs the full error but never returns internal
+// details (Prisma messages expose table and column names) to the client.
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err);
-  res.status(500).json({ error: err.message || 'Internal Server Error' });
+  console.error('[app] Unhandled error:', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'An unexpected server error occurred.' });
 });
 
 export default app;

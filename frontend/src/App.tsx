@@ -28,6 +28,7 @@ import { Certificate } from './pages/Certificate';
 import { VerifyCertificate } from './pages/VerifyCertificate';
 import { Notifications } from './pages/Notifications';
 import { AdminTestimonials } from './pages/AdminTestimonials';
+import { AcceptInvite } from './pages/AcceptInvite';
 
 function App() {
   return (
@@ -42,6 +43,9 @@ function App() {
 
           {/* Public Certificate Verification Route */}
           <Route path="/verify/:certNo" element={<VerifyCertificate />} />
+
+          {/* Public one-time invite acceptance */}
+          <Route path="/invite/:token" element={<AcceptInvite />} />
 
           {/* Secure App Routes */}
           <Route

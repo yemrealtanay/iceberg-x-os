@@ -1,9 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Rocket, Plus, Filter, ShieldAlert } from 'lucide-react';
-import { CustomMarkdown } from '../components/CustomMarkdown';
+import { Plus, Filter, ShieldAlert, ArrowUpDown } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
+import {
+  avatarColor,
+  getDifficultyMeta,
+  getInitials,
+  getStatusMeta,
+  stripMarkdown,
+  TERMINAL_MISSION_STATUSES
+} from '../utils/missionMeta';
+
+type SortKey = 'updated' | 'created' | 'title';
+
+interface AssignedCube {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+/** Overlapping initials/avatars, capped so the row height never shifts. */
+const CubeAvatarStack: React.FC<{ cubes: AssignedCube[] }> = ({ cubes }) => {
+  const visible = cubes.slice(0, 4);
+  const overflow = cubes.length - visible.length;
+
+  return (
+    <div className="flex -space-x-2">
+      {visible.map((cube) => {
+        const src = getAssetUrl(cube.avatarUrl);
+        return src ? (
+          <img
+            key={cube.id}
+            src={src}
+            alt={cube.name}
+            title={cube.name}
+            className="w-7 h-7 rounded-full object-cover ring-2 ring-white"
+          />
+        ) : (
+          <span
+            key={cube.id}
+            title={cube.name}
+            className={`w-7 h-7 rounded-full ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-white ${avatarColor(cube.id)}`}
+          >
+            {getInitials(cube.name)}
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span
+          title={cubes.slice(4).map((c) => c.name).join(', ')}
+          className="w-7 h-7 rounded-full ring-2 ring-white bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] font-bold"
+        >
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
+};
 
 export const Missions: React.FC = () => {
   const { user } = useAuth();
@@ -11,9 +66,10 @@ export const Missions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
+  // Filters & sorting
   const [statusFilter, setStatusFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('updated');
 
   const fetchMissions = async () => {
     try {
@@ -29,6 +85,25 @@ export const Missions: React.FC = () => {
   useEffect(() => {
     fetchMissions();
   }, []);
+
+  const visibleMissions = useMemo(() => {
+    const filtered = missions.filter((m) => {
+      // This page lists missions still in flight; finished ones live in the Vault
+      if (TERMINAL_MISSION_STATUSES.includes(m.status)) return false;
+
+      const matchesStatus = statusFilter ? m.status === statusFilter : true;
+      const matchesDiff = difficultyFilter ? m.difficulty_level === difficultyFilter : true;
+      return matchesStatus && matchesDiff;
+    });
+
+    const byDate = (value?: string) => (value ? new Date(value).getTime() : 0);
+
+    return [...filtered].sort((a, b) => {
+      if (sortKey === 'title') return (a.title || '').localeCompare(b.title || '', 'tr');
+      if (sortKey === 'created') return byDate(b.created_at) - byDate(a.created_at);
+      return byDate(b.updated_at) - byDate(a.updated_at);
+    });
+  }, [missions, statusFilter, difficultyFilter, sortKey]);
 
   if (loading) {
     return (
@@ -47,31 +122,20 @@ export const Missions: React.FC = () => {
     );
   }
 
-  // Filter client side (or server side, we support client filter for speed)
-  const filteredMissions = missions.filter((m) => {
-    // Exclude finished/archived/cancelled missions from active page
-    const isFinished = ['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(m.status);
-    if (isFinished) return false;
-
-    const matchesStatus = statusFilter ? m.status === statusFilter : true;
-    const matchesDiff = difficultyFilter ? m.difficulty_level === difficultyFilter : true;
-    return matchesStatus && matchesDiff;
-  });
-
   const isMentorOrAdmin = user?.role === 'ADMIN' || user?.role === 'MENTOR';
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">R&D Missions</h1>
+      <div className="flex flex-wrap justify-between items-center gap-4">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-extrabold tracking-tight">R&amp;D Missions</h1>
           <p className="text-gray-500 mt-1">Explore, prototype, and deliver active commercial-grade challenges.</p>
         </div>
         {isMentorOrAdmin && (
           <Link
             to="/missions/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors shadow-sm shadow-magenta/15"
+            className="flex items-center gap-2 px-4 py-2.5 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors shadow-sm shadow-magenta/15 shrink-0 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             <span>New Mission</span>
@@ -95,6 +159,7 @@ export const Missions: React.FC = () => {
             <option value="building_demo">Building Demo</option>
             <option value="preparing_handover">Preparing Handover</option>
             <option value="demo_ready">Demo Ready</option>
+            <option value="pending_approval">Pending Approval</option>
           </select>
         </div>
 
@@ -115,85 +180,117 @@ export const Missions: React.FC = () => {
         </div>
       </div>
 
+      {/* Result count & sorting */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <p className="text-sm text-gray-500 font-semibold">
+          {visibleMissions.length} active mission{visibleMissions.length === 1 ? '' : 's'}
+        </p>
+        <label className="flex items-center gap-2 text-xs font-bold text-gray-400">
+          <ArrowUpDown className="w-3.5 h-3.5" />
+          <span className="uppercase tracking-wider">Sorted by</span>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="bg-transparent text-gray-700 font-bold outline-none cursor-pointer"
+          >
+            <option value="updated">Recently updated</option>
+            <option value="created">Recently created</option>
+            <option value="title">Title A–Z</option>
+          </select>
+        </label>
+      </div>
+
       {/* Grid */}
-      {filteredMissions.length > 0 ? (
+      {visibleMissions.length > 0 ? (
+        // Default `stretch` alignment: every card in a row shares the tallest
+        // height, and the footer is pinned to the bottom by mt-auto above it.
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMissions.map((m) => {
-            const assignedCubes = m.teams?.flatMap((t: any) => t.members.map((mem: any) => ({
-              name: mem.cube?.user?.name,
-              id: mem.cube_id
-            }))).filter((c: any) => c.name && c.id) || [];
-            const hasAssignments = assignedCubes.length > 0;
-            const isActive = hasAssignments && !['completed', 'cancelled', 'archived'].includes(m.status);
+          {visibleMissions.map((m) => {
+            const difficulty = getDifficultyMeta(m.difficulty_level);
+            const status = getStatusMeta(m.status);
+
+            const assignedCubes: AssignedCube[] = (m.teams || [])
+              .flatMap((t: any) => t.members || [])
+              .map((mem: any) => ({
+                id: mem.cube?.id || mem.cube_id,
+                name: mem.cube?.user?.name,
+                avatarUrl: mem.cube?.avatar_url || null
+              }))
+              .filter((c: AssignedCube) => c.id && c.name);
+
+            const excerpt = stripMarkdown(m.description);
 
             return (
-              <div
+              <Link
                 key={m.id}
-                className={`bg-white border p-6 rounded-2xl flex flex-col justify-between gap-5 group transition-all duration-300 ${
-                  isActive
-                    ? 'border-emerald-250 shadow-md shadow-emerald-500/5 hover:border-emerald-350 hover:shadow-lg hover:shadow-emerald-500/10'
-                    : 'border-gray-100 shadow-subtle hover:border-magenta/20 hover:shadow-premium'
-                }`}
+                to={`/missions/${m.id}`}
+                className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-subtle overflow-hidden transition-all duration-300 hover:border-magenta/20 hover:shadow-premium"
               >
-                <Link to={`/missions/${m.id}`} className="block flex-1 group/link">
-                  <div className="flex flex-wrap gap-1.5 items-center min-h-[1.75rem]">
-                    <span className="text-[10px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      {m.difficulty_level.replace(/_/g, ' ').replace('Level ', 'L')}
+                {/* Difficulty accent */}
+                <span className={`h-1 w-full shrink-0 ${difficulty.accent}`} aria-hidden="true" />
+
+                <div className="flex-1 flex flex-col gap-3 p-5">
+                  {/* Level + status */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md tracking-wide ${difficulty.chip}`}>
+                      {difficulty.short}
                     </span>
-                    <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full uppercase">
-                      {m.category}
+                    <span className="text-xs font-semibold text-gray-500 truncate">
+                      {difficulty.label}
                     </span>
-                    {isActive && (
-                      <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                        Active
-                      </span>
-                    )}
-                    <span className="text-[10px] font-extrabold text-gray-500 bg-gray-100 border border-gray-200/50 px-2.5 py-0.5 rounded-full uppercase ml-auto">
-                      {m.status.replace(/_/g, ' ')}
+                    <span className={`ml-auto shrink-0 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full ${status.pill}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                      {status.label}
                     </span>
                   </div>
 
-                  <h3 className="font-extrabold text-gray-900 group-hover/link:text-magenta transition-colors mt-3 text-base leading-snug line-clamp-2 min-h-[2.75rem] flex items-center">
+                  {/* Title & excerpt: fixed heights keep every card aligned */}
+                  <h3 className="font-extrabold text-gray-900 text-base leading-snug line-clamp-2 min-h-[2.75rem] transition-colors group-hover:text-magenta">
                     {m.title}
                   </h3>
-                  <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-3 leading-relaxed min-h-[3.75rem]">
-                    <CustomMarkdown>{m.description}</CustomMarkdown>
-                  </div>
-                </Link>
+                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 min-h-[3.4rem]">
+                    {excerpt || 'No description provided.'}
+                  </p>
 
-                <div className="flex flex-col gap-1 border-t border-gray-50 pt-3 min-h-[3.25rem]">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Assigned Cubes</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {hasAssignments ? (
-                      assignedCubes.map((cube: any, idx: number) => (
-                        <Link
-                          key={idx}
-                          to={`/cubes/${cube.id}`}
-                          className="bg-slate-100 text-slate-800 hover:bg-magenta hover:text-white text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors duration-200"
-                        >
-                          {cube.name}
-                        </Link>
-                      ))
+                  {/* Assigned Cubes */}
+                  <div className="mt-auto pt-1 flex items-center gap-2.5 h-8">
+                    {assignedCubes.length > 0 ? (
+                      <>
+                        <CubeAvatarStack cubes={assignedCubes} />
+                        <span className="text-xs font-semibold text-gray-500">
+                          {assignedCubes.length} cube{assignedCubes.length === 1 ? '' : 's'} assigned
+                        </span>
+                      </>
                     ) : (
-                      <span className="text-[10px] text-gray-450 italic font-semibold">Unassigned</span>
+                      <span className="text-xs font-semibold text-gray-400 italic">
+                        No cubes assigned yet
+                      </span>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-gray-50 pt-4 flex items-center justify-between text-xs text-gray-500 font-semibold">
-                  <span>Mentor: {m.mentor ? m.mentor.name : 'Unassigned'}</span>
-                  <Link to={`/missions/${m.id}`} className="text-magenta group-hover:translate-x-1 transition-transform">
+                {/* Footer */}
+                <div className="border-t border-gray-100 px-5 py-3.5 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="flex items-baseline gap-2 min-w-0">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Mentor</span>
+                      <span className="text-xs font-bold text-gray-700 truncate">
+                        {m.mentor ? m.mentor.name : 'Unassigned'}
+                      </span>
+                    </p>
+                    <p className="text-[10px] font-semibold text-gray-400 truncate mt-0.5">{m.category}</p>
+                  </div>
+                  <span className="text-xs font-bold text-magenta shrink-0 transition-transform group-hover:translate-x-1">
                     Details →
-                  </Link>
+                  </span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
       ) : (
         <p className="text-gray-400 text-sm py-12 text-center bg-white border border-gray-100 rounded-2xl shadow-subtle">
-          No R&D missions found.
+          No R&amp;D missions found.
         </p>
       )}
     </div>

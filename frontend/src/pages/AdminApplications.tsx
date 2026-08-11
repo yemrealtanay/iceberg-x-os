@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Mail, GraduationCap, Github, Linkedin, CheckCircle2, XCircle, Trash2, Calendar, Search, FileText, ExternalLink, ShieldAlert, Award } from 'lucide-react';
+import { InviteLinkPanel } from '../components/InviteLinkPanel';
 
 export const AdminApplications: React.FC = () => {
   const [applications, setApplications] = useState<any[]>([]);
@@ -15,6 +16,9 @@ export const AdminApplications: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [cohort, setCohort] = useState('Summer 2026');
   const [approving, setApproving] = useState(false);
+
+  // One-time invite link returned by an approval; shown until dismissed
+  const [issuedInvite, setIssuedInvite] = useState<{ url: string; expiresAt?: string; name?: string } | null>(null);
 
   const fetchApplications = async () => {
     try {
@@ -60,10 +64,20 @@ export const AdminApplications: React.FC = () => {
         cohort
       });
 
-      alert(`Application Approved!\n\nUser: ${res.user.name}\nEmail: ${res.user.email}\nCube Number: #${res.profile.cube_number}\n\nShare login credentials through the approved secure channel.`);
-      
       setApplications(prev => prev.map(a => a.id === selectedApp.id ? { ...a, status: 'approved' } : a));
       setSelectedApp(null);
+
+      // The invite link is returned exactly once, so it is shown in a panel the
+      // admin can copy from rather than an alert they might dismiss.
+      if (res.inviteUrl) {
+        setIssuedInvite({
+          url: res.inviteUrl,
+          expiresAt: res.expiresAt,
+          name: res.user?.name
+        });
+      } else {
+        alert(res.message || 'Application approved.');
+      }
     } catch (err: any) {
       alert(err.message || 'Failed to approve application');
     } finally {
@@ -102,6 +116,15 @@ export const AdminApplications: React.FC = () => {
           <p className="text-gray-400 text-sm font-semibold tracking-wide uppercase mt-1">Review and approve prospective Ice Cubes</p>
         </div>
       </div>
+
+      {issuedInvite && (
+        <InviteLinkPanel
+          url={issuedInvite.url}
+          expiresAt={issuedInvite.expiresAt}
+          name={issuedInvite.name}
+          onDismiss={() => setIssuedInvite(null)}
+        />
+      )}
 
       {/* Controls: Tabs & Search */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 bg-white border border-gray-100 p-4 rounded-2xl shadow-subtle">

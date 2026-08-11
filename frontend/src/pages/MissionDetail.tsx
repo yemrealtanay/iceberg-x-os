@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Plus, Save, Trash2, Check, X } from 'lucide-react';
 import { CustomMarkdown } from '../components/CustomMarkdown';
+import { getStatusMeta } from '../utils/missionMeta';
 
 export const MissionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Mission ID
@@ -65,12 +66,13 @@ export const MissionDetail: React.FC = () => {
     setStatusSubmitting(true);
 
     try {
-      const updated = await api.put(`/missions/${id}`, {
+      const { allowedNextStatuses, ...updated } = await api.put(`/missions/${id}`, {
         status: newStatus,
         decision: newDecision || null
       });
       setData((prev: any) => ({
         ...prev,
+        allowedNextStatuses,
         mission: { ...prev.mission, ...updated }
       }));
       setIsEditingStatus(false);
@@ -708,23 +710,25 @@ export const MissionDetail: React.FC = () => {
               <form onSubmit={handleStatusUpdate} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Mission Status</label>
+                  {/* Only statuses the mission lifecycle actually allows from
+                      its current state, as reported by the backend. */}
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
                     className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs font-semibold outline-none"
                   >
-                    <option value="idea_pool">Idea Pool</option>
-                    <option value="selected">Selected</option>
-                    <option value="researching">Researching</option>
-                    <option value="building_demo">Building Demo</option>
-                    <option value="preparing_handover">Preparing Handover</option>
-                    <option value="demo_ready">Demo Ready</option>
-                    <option value="reviewed">Reviewed</option>
-                    <option value="promoted_to_product_backlog">Promoted to Product Backlog</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="archived">Archived</option>
+                    <option value={mission.status}>
+                      {getStatusMeta(mission.status).label} (current)
+                    </option>
+                    {(data.allowedNextStatuses || []).map((s: string) => (
+                      <option key={s} value={s}>{getStatusMeta(s).label}</option>
+                    ))}
                   </select>
+                  {(data.allowedNextStatuses || []).length === 0 && (
+                    <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                      This mission is closed. An admin can reopen it from the mission edit page.
+                    </p>
+                  )}
                 </div>
 
                 {isAdmin && (
@@ -911,7 +915,7 @@ export const MissionDetail: React.FC = () => {
               </div>
               <button 
                 onClick={() => setShowResolveModal(false)} 
-                className="text-gray-450 hover:text-gray-700 p-1 hover:bg-gray-150 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={16} />
               </button>
@@ -986,8 +990,8 @@ export const MissionDetail: React.FC = () => {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Customize Team Members</label>
-                    <div className="border border-gray-205 rounded-xl p-3 flex flex-col gap-2 bg-gray-50/50">
-                      <div className="max-h-36 overflow-y-auto divide-y divide-gray-150 flex flex-col gap-1 pr-1">
+                    <div className="border border-gray-200 rounded-xl p-3 flex flex-col gap-2 bg-gray-50/50">
+                      <div className="max-h-36 overflow-y-auto divide-y divide-gray-100 flex flex-col gap-1 pr-1">
                         {activeCubes.map((c) => {
                           const isSelected = resolutionMemberIds.includes(c.id);
                           return (
@@ -1006,7 +1010,7 @@ export const MissionDetail: React.FC = () => {
                                 onChange={() => {}}
                                 className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
                               />
-                              <span className="text-xs font-semibold text-gray-750">
+                              <span className="text-xs font-semibold text-gray-700">
                                 {c.user?.name} <span className="text-[9px] text-gray-400 font-bold uppercase">(#{c.cube_number})</span>
                               </span>
                             </div>

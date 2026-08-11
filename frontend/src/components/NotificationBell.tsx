@@ -98,7 +98,7 @@ export const NotificationBell: React.FC = () => {
             {notifications.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="text-[10px] text-gray-405 hover:text-magenta font-extrabold uppercase flex items-center gap-1 transition"
+                className="text-[10px] text-gray-400 hover:text-magenta font-extrabold uppercase flex items-center gap-1 transition"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Dismiss All</span>
@@ -128,7 +128,7 @@ export const NotificationBell: React.FC = () => {
                   </div>
                   <button
                     onClick={(e) => handleDeleteOne(e, n.id)}
-                    className="text-gray-300 hover:text-gray-550 p-1 rounded hover:bg-gray-150 transition opacity-0 group-hover:opacity-100 shrink-0"
+                    className="text-gray-300 hover:text-gray-500 p-1 rounded hover:bg-gray-100 transition opacity-0 group-hover:opacity-100 shrink-0"
                     title="Dismiss"
                   >
                     <X className="w-3.5 h-3.5" />

@@ -6,6 +6,7 @@ import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBra
 import { getBadgeConfig } from '../utils/badgeHelper';
 import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
+import { getAssetUrl } from '../utils/assets';
 
 const formatExternalUrl = (url: string | null | undefined): string => {
   if (!url) return '';
@@ -14,14 +15,6 @@ const formatExternalUrl = (url: string | null | undefined): string => {
     return trimmed;
   }
   return `https://${trimmed}`;
-};
-
-const getAssetUrl = (path: string | null | undefined): string | null => {
-  if (!path) return null;
-  const base = window.location.origin.includes(':5173')
-    ? 'http://localhost:5001'
-    : '';
-  return `${base}${path}`;
 };
 
 
@@ -374,7 +367,8 @@ export const Profile: React.FC = () => {
   const totalMeetings = attendanceList.length;
   const attendedMeetings = attendanceList.filter((a: any) => a.attended).length;
   const missedMeetings = totalMeetings - attendedMeetings;
-  const attendanceRate = totalMeetings > 0 ? Math.round((attendedMeetings / totalMeetings) * 100) : 100;
+  // null when there is no meeting history yet — showing 100% would be misleading
+  const attendanceRate = totalMeetings > 0 ? Math.round((attendedMeetings / totalMeetings) * 100) : null;
 
   // Calculate average scores for radar chart
   const averageScores: { [key: string]: number } = {};
@@ -664,9 +658,10 @@ export const Profile: React.FC = () => {
             <div className="flex justify-between items-center text-xs mt-1">
               <span className="text-gray-500 font-semibold">Attendance Rate:</span>
               <span className={`font-bold px-2 py-0.5 rounded-lg ${
+                attendanceRate === null ? 'bg-gray-100 text-gray-500' :
                 attendanceRate >= 90 ? 'bg-emerald-50 text-emerald-700' :
                 attendanceRate >= 75 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-              }`}>{attendanceRate}%</span>
+              }`}>{attendanceRate === null ? 'No data' : `${attendanceRate}%`}</span>
             </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-gray-500 font-semibold">Attended:</span>
@@ -704,7 +699,7 @@ export const Profile: React.FC = () => {
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Performance Index</span>
-                <p className="text-xs text-gray-650 font-semibold leading-relaxed">
+                <p className="text-xs text-gray-600 font-semibold leading-relaxed">
                   Calculated from scorecard reviews and internal private scores.
                 </p>
               </div>
@@ -713,14 +708,14 @@ export const Profile: React.FC = () => {
             {/* Sub Averages */}
             <div className="flex flex-col gap-3">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-550 font-semibold">Scorecard Avg (5 max):</span>
-                <span className="font-bold text-gray-805">
+                <span className="text-gray-500 font-semibold">Scorecard Avg (5 max):</span>
+                <span className="font-bold text-gray-800">
                   {feedbackScoresCount > 0 ? `${feedbackAverage.toFixed(2)} / 5 (${feedbackPercentage.toFixed(1)}%)` : 'No reviews'}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-550 font-semibold">Private Notes Avg (10 max):</span>
-                <span className="font-bold text-gray-805">
+                <span className="text-gray-500 font-semibold">Private Notes Avg (10 max):</span>
+                <span className="font-bold text-gray-800">
                   {privateScoresCount > 0 ? `${privateAverage.toFixed(2)} / 10 (${privatePercentage.toFixed(1)}%)` : 'No scores'}
                 </span>
               </div>
@@ -862,8 +857,8 @@ export const Profile: React.FC = () => {
           </form>
 
           <div className="bg-red-50/40 border border-red-100 rounded-2xl p-6 flex flex-col gap-4">
-            <h3 className="font-extrabold text-sm text-red-750 border-b border-red-100 pb-2">Danger Zone</h3>
-            <p className="text-xs text-red-650 leading-relaxed font-semibold">
+            <h3 className="font-extrabold text-sm text-red-700 border-b border-red-100 pb-2">Danger Zone</h3>
+            <p className="text-xs text-red-600 leading-relaxed font-semibold">
               Are you sure you want to delete this Cube completely? The Cube's account, profile data, badges, demo submissions, and all other records will be permanently deleted. This action cannot be undone!
             </p>
             <button 
@@ -1014,11 +1009,11 @@ export const Profile: React.FC = () => {
 
             {/* Notes List */}
             {privateNotes.length === 0 ? (
-              <p className="text-xs text-gray-405 font-semibold py-2">No internal notes recorded yet for this Cube.</p>
+              <p className="text-xs text-gray-400 font-semibold py-2">No internal notes recorded yet for this Cube.</p>
             ) : (
               <div className="flex flex-col gap-4">
                 {privateNotes.map((n) => (
-                  <div key={n.id} className="bg-white border border-slate-150 rounded-xl p-4 flex flex-col gap-2 relative shadow-sm group">
+                  <div key={n.id} className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col gap-2 relative shadow-sm group">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">{n.subject}</span>
@@ -1045,7 +1040,7 @@ export const Profile: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleDeleteNote(n.id)}
-                              className="text-gray-400 hover:text-red-650 p-0.5"
+                              className="text-gray-400 hover:text-red-600 p-0.5"
                               title="Delete note"
                             >
                               <Trash className="w-3.5 h-3.5" />
@@ -1054,7 +1049,7 @@ export const Profile: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <p className="text-xs text-gray-650 font-medium whitespace-pre-wrap leading-relaxed">
+                    <p className="text-xs text-gray-600 font-medium whitespace-pre-wrap leading-relaxed">
                       {n.note}
                     </p>
                   </div>
@@ -1337,7 +1332,7 @@ export const Profile: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => setShowNoteModal(false)} 
-                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={18} />
               </button>

@@ -38,6 +38,17 @@ export default {
       boxShadow: {
         premium: '0 24px 60px -20px rgba(17, 17, 17, 0.08)',
         subtle: '0 8px 24px -10px rgba(17, 17, 17, 0.06)',
+      },
+      // `animate-fadeIn` was used in ~10 components but never defined, so no
+      // dropdown or panel ever animated.
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(-4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        fadeIn: 'fadeIn 0.18s ease-out',
       }
     },
   },

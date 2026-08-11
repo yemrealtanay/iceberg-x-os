@@ -123,7 +123,7 @@ export const VerifyCertificate: React.FC = () => {
             
             <div>
               <h3 className="font-extrabold text-gray-900 text-base">Geçersiz Sertifika</h3>
-              <p className="text-[10px] text-red-650 font-bold uppercase tracking-wider mt-0.5">Verification Failed</p>
+              <p className="text-[10px] text-red-600 font-bold uppercase tracking-wider mt-0.5">Verification Failed</p>
             </div>
 
             <p className="text-xs text-gray-500 leading-relaxed">

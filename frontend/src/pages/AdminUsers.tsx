@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Trash2, UserPlus, ArrowLeft, Mail, User, Shield, BookOpen, Key, Link2 } from 'lucide-react';
+import { ShieldAlert, Trash2, UserPlus, ArrowLeft, Mail, User, Shield, BookOpen, Key, Link2, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { InviteLinkPanel } from '../components/InviteLinkPanel';
 
 export const AdminUsers: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -15,6 +16,10 @@ export const AdminUsers: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Default onboarding path: no shared or admin-chosen password at all
+  const [useInvite, setUseInvite] = useState(true);
+  const [issuedInvite, setIssuedInvite] = useState<{ url: string; expiresAt?: string; name?: string } | null>(null);
+  const [invitingUserId, setInvitingUserId] = useState<string | null>(null);
   const [role, setRole] = useState<'CUBE' | 'MENTOR'>('CUBE');
   
   // Cube Profile fields
@@ -65,9 +70,15 @@ export const AdminUsers: React.FC = () => {
     const payload: any = {
       name,
       email,
-      password,
       role,
     };
+
+    // Omitting the password makes the backend issue a one-time invite link
+    if (useInvite) {
+      payload.invite = true;
+    } else {
+      payload.password = password;
+    }
 
     if (role === 'CUBE') {
       payload.cube_number = cubeNumber;
@@ -84,8 +95,11 @@ export const AdminUsers: React.FC = () => {
     }
 
     try {
-      await api.post('/admin/users/create', payload);
+      const res = await api.post('/admin/users/create', payload);
       setFormSuccess(true);
+      if (res.inviteUrl) {
+        setIssuedInvite({ url: res.inviteUrl, expiresAt: res.expiresAt, name });
+      }
       
       // Reset form
       setName('');
@@ -125,6 +139,25 @@ export const AdminUsers: React.FC = () => {
       alert(err.message || 'Failed to delete user');
     } finally {
       setDeleteSubmitting(false);
+    }
+  };
+
+  /**
+   * Issues a fresh single-use invite link. The account's current password stays
+   * valid until the person actually accepts, so this is safe to use on an
+   * existing user who simply lost their link.
+   */
+  const handleSendInvite = async (item: any) => {
+    if (!confirm(`Issue a new invite link for ${item.name}? Any previous unused link stops working.`)) return;
+    setInvitingUserId(item.id);
+    try {
+      const res = await api.post(`/admin/users/${item.id}/invite`, {});
+      setIssuedInvite({ url: res.inviteUrl, expiresAt: res.expiresAt, name: item.name });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      alert(err.message || 'Failed to issue invite link');
+    } finally {
+      setInvitingUserId(null);
     }
   };
 
@@ -226,16 +259,30 @@ export const AdminUsers: React.FC = () => {
 
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
-                  <Key className="w-3.5 h-3.5" /> Temporary Password
+                  <Key className="w-3.5 h-3.5" /> Password
                 </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="p-2.5 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
-                />
+                <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useInvite}
+                    onChange={(e) => setUseInvite(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-magenta border-gray-200 focus:ring-magenta cursor-pointer"
+                  />
+                  <span className="text-[11px] font-bold text-gray-600">
+                    Send an invite link instead (they choose their own password)
+                  </span>
+                </label>
+                {!useInvite && (
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 8 characters"
+                    minLength={8}
+                    className="p-2.5 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold"
+                  />
+                )}
               </div>
 
               <div className="flex flex-col gap-1">
@@ -376,6 +423,15 @@ export const AdminUsers: React.FC = () => {
         </div>
       )}
 
+      {issuedInvite && (
+        <InviteLinkPanel
+          url={issuedInvite.url}
+          expiresAt={issuedInvite.expiresAt}
+          name={issuedInvite.name}
+          onDismiss={() => setIssuedInvite(null)}
+        />
+      )}
+
       {/* Users List Card */}
       <div className="bg-white border border-gray-100 rounded-2xl shadow-subtle overflow-hidden">
         <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white">
@@ -464,15 +520,25 @@ export const AdminUsers: React.FC = () => {
                           </button>
                         </div>
                       ) : (
-                        !isCurrent && (
+                        <div className="flex justify-end gap-1">
                           <button
-                            onClick={() => setConfirmDeleteId(item.id)}
-                            className="p-2 hover:bg-red-50 border border-transparent rounded-lg text-gray-400 hover:text-red-500 hover:border-red-100 transition-all opacity-0 group-hover:opacity-100"
-                            title="Delete user and all associated records"
+                            onClick={() => handleSendInvite(item)}
+                            disabled={invitingUserId === item.id}
+                            className="p-2 hover:bg-magenta/5 border border-transparent rounded-lg text-gray-400 hover:text-magenta hover:border-magenta/10 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                            title="Issue a new one-time invite link so they can set their own password"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Send className="w-4 h-4" />
                           </button>
-                        )
+                          {!isCurrent && (
+                            <button
+                              onClick={() => setConfirmDeleteId(item.id)}
+                              className="p-2 hover:bg-red-50 border border-transparent rounded-lg text-gray-400 hover:text-red-500 hover:border-red-100 transition-all opacity-0 group-hover:opacity-100"
+                              title="Delete user and all associated records"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

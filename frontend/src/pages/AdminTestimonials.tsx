@@ -109,7 +109,7 @@ export const AdminTestimonials: React.FC = () => {
                   <div className="flex gap-2 justify-end mt-2 pt-2 border-t border-gray-50">
                     <button
                       onClick={() => handleDelete(t.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-red-100 hover:bg-red-50 text-red-650 font-bold text-[10px] rounded-lg transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-red-100 hover:bg-red-50 text-red-600 font-bold text-[10px] rounded-lg transition"
                     >
                       <Trash2 size={12} />
                       <span>Delete</span>
@@ -149,12 +149,12 @@ export const AdminTestimonials: React.FC = () => {
                       <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Cohort {t.cube?.cohort}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-650 leading-relaxed font-semibold italic">"{t.content}"</p>
+                  <p className="text-xs text-gray-600 leading-relaxed font-semibold italic">"{t.content}"</p>
                   
                   <div className="flex gap-2 justify-end mt-2 pt-2 border-t border-gray-50">
                     <button
                       onClick={() => handleDelete(t.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-red-100 hover:bg-red-50 text-red-650 font-bold text-[10px] rounded-lg transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-red-100 hover:bg-red-50 text-red-600 font-bold text-[10px] rounded-lg transition"
                     >
                       <Trash2 size={12} />
                       <span>Remove</span>

@@ -62,7 +62,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
       glow: 'shadow-[0_8px_20px_rgba(16,185,129,0.18)] group-hover:shadow-[0_12px_28px_rgba(16,185,129,0.32)]',
       category: 'Execution',
       textColor: 'text-emerald-700',
-      badgeBg: 'bg-emerald-50 border border-emerald-150',
+      badgeBg: 'bg-emerald-50 border border-emerald-100',
       borderColor: 'border-emerald-100 hover:border-emerald-300'
     };
   }
@@ -84,7 +84,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
       glow: 'shadow-[0_8px_20px_rgba(139,92,246,0.18)] group-hover:shadow-[0_12px_28px_rgba(139,92,246,0.32)]',
       category: 'Research',
       textColor: 'text-purple-700',
-      badgeBg: 'bg-purple-50 border border-purple-150',
+      badgeBg: 'bg-purple-50 border border-purple-100',
       borderColor: 'border-purple-100 hover:border-purple-300'
     };
   }
@@ -106,7 +106,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
       glow: 'shadow-[0_8px_20px_rgba(6,182,212,0.18)] group-hover:shadow-[0_12px_28px_rgba(6,182,212,0.32)]',
       category: 'Prototype',
       textColor: 'text-cyan-700',
-      badgeBg: 'bg-cyan-50 border border-cyan-150',
+      badgeBg: 'bg-cyan-50 border border-cyan-100',
       borderColor: 'border-cyan-100 hover:border-cyan-300'
     };
   }
@@ -128,7 +128,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
       glow: 'shadow-[0_8px_20px_rgba(244,63,94,0.18)] group-hover:shadow-[0_12px_28px_rgba(244,63,94,0.32)]',
       category: 'Relations',
       textColor: 'text-rose-700',
-      badgeBg: 'bg-rose-50 border border-rose-150',
+      badgeBg: 'bg-rose-50 border border-rose-100',
       borderColor: 'border-rose-100 hover:border-rose-300'
     };
   }
@@ -150,7 +150,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
       glow: 'shadow-[0_8px_20px_rgba(249,115,22,0.18)] group-hover:shadow-[0_12px_28px_rgba(249,115,22,0.32)]',
       category: 'Growth',
       textColor: 'text-orange-700',
-      badgeBg: 'bg-orange-50 border border-orange-150',
+      badgeBg: 'bg-orange-50 border border-orange-100',
       borderColor: 'border-orange-100 hover:border-orange-300'
     };
   }
@@ -172,7 +172,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
       glow: 'shadow-[0_8px_20px_rgba(245,158,11,0.18)] group-hover:shadow-[0_12px_28px_rgba(245,158,11,0.32)]',
       category: 'Leadership',
       textColor: 'text-amber-700',
-      badgeBg: 'bg-amber-50 border border-amber-150',
+      badgeBg: 'bg-amber-50 border border-amber-100',
       borderColor: 'border-amber-100 hover:border-amber-300'
     };
   }
@@ -184,7 +184,7 @@ export const getBadgeConfig = (iconName: string, badgeName: string = ''): BadgeC
     glow: 'shadow-[0_8px_20px_rgba(100,116,139,0.15)]',
     category: 'General',
     textColor: 'text-gray-700',
-    badgeBg: 'bg-gray-50 border border-gray-150',
+    badgeBg: 'bg-gray-50 border border-gray-100',
     borderColor: 'border-gray-100 hover:border-gray-300'
   };
 };

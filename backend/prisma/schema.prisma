@@ -99,6 +99,8 @@ model User {
   presentations        DemoDayPresentation[]
   private_notes_created PrivateNote[]        @relation("NotesCreated")
   notifications        Notification[]       @relation("UserNotifications")
+  invites              UserInvite[]         @relation("UserInvites")
+  invites_created      UserInvite[]         @relation("InvitesCreated")
 }
 
 model CubeProfile {
@@ -132,6 +134,9 @@ model CubeProfile {
   offboarding_record OffboardingRecord?
   private_notes      PrivateNote[]
   testimonials       Testimonial[]
+
+  @@index([assigned_mentor_id])
+  @@index([current_level])
 }
 
 model Mission {
@@ -162,6 +167,10 @@ model Mission {
   mentor_feedbacks   MentorFeedback[]
   cube_badges        CubeBadge[]
   presentations      DemoDayPresentation[]
+
+  @@index([status])
+  @@index([mentor_id])
+  @@index([updated_at])
 }
 
 model MissionTeam {
@@ -176,6 +185,8 @@ model MissionTeam {
   members            MissionTeamMember[]
   demo_submissions   DemoSubmission[]
   presentations      DemoDayPresentation[]
+
+  @@index([mission_id])
 }
 
 model MissionTeamMember {
@@ -194,6 +205,7 @@ model MissionTeamMember {
   updated_at           DateTime       @updatedAt
 
   @@unique([team_id, cube_id])
+  @@index([cube_id])
 }
 
 model Update {
@@ -207,6 +219,9 @@ model Update {
   blockers   String?
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
+
+  @@index([mission_id, created_at])
+  @@index([cube_id])
 }
 
 model DemoSubmission {
@@ -235,6 +250,10 @@ model DemoSubmission {
 
   // Relations
   presentations                 DemoDayPresentation[]
+
+  @@index([mission_id])
+  @@index([submitted_by_id])
+  @@index([team_id])
 }
 
 model MentorFeedback {
@@ -263,6 +282,9 @@ model MentorFeedback {
   updated_at               DateTime            @updatedAt
 
   @@unique([cube_id, mission_id, mentor_id])
+  @@index([mentor_id])
+  @@index([mission_id])
+  @@index([recommended_next_step])
 }
 
 model Badge {
@@ -289,6 +311,11 @@ model CubeBadge {
   awarded_by    User        @relation("BadgeAwarder", fields: [awarded_by_id], references: [id])
   reason        String
   awarded_at    DateTime    @default(now())
+
+  @@index([cube_id])
+  @@index([badge_id])
+  @@index([mission_id])
+  @@index([awarded_at])
 }
 
 model DemoDay {
@@ -319,6 +346,10 @@ model DemoDayPresentation {
   mentor_summary     String?
   created_at         DateTime        @default(now())
   updated_at         DateTime        @updatedAt
+
+  @@index([demo_day_id])
+  @@index([mission_id])
+  @@index([presenter_id])
 }
 
 model CubeApplication {
@@ -363,6 +394,7 @@ model MeetingAttendance {
   updated_at DateTime    @updatedAt
 
   @@unique([meeting_id, cube_id])
+  @@index([cube_id])
 }
 
 model OffboardingRecord {
@@ -390,6 +422,9 @@ model PrivateNote {
   score          Int?
   created_at     DateTime    @default(now())
   updated_at     DateTime    @updatedAt
+
+  @@index([cube_id, created_at])
+  @@index([created_by_id])
 }
 
 model Notification {
@@ -398,6 +433,30 @@ model Notification {
   user       User     @relation("UserNotifications", fields: [user_id], references: [id], onDelete: Cascade)
   message    String   @db.Text
   created_at DateTime @default(now())
+
+  @@index([user_id, created_at])
+}
+
+/// One-time invitation used to onboard a new user without a shared password.
+///
+/// This is a NEW table. No existing table or row is touched: users already
+/// created with DEFAULT_CUBE_PASSWORD keep their password_hash and can keep
+/// signing in exactly as before.
+model UserInvite {
+  id          String    @id @default(uuid())
+  user_id     String
+  user        User      @relation("UserInvites", fields: [user_id], references: [id], onDelete: Cascade)
+  /// SHA-256 of the raw token. The raw value is shown to the admin once and
+  /// never stored, so a database leak cannot be replayed as an invite link.
+  token_hash  String    @unique
+  expires_at  DateTime
+  accepted_at DateTime?
+  created_by_id String
+  created_by  User      @relation("InvitesCreated", fields: [created_by_id], references: [id], onDelete: Cascade)
+  created_at  DateTime  @default(now())
+
+  @@index([user_id])
+  @@index([expires_at])
 }
 
 model Testimonial {
@@ -408,5 +467,8 @@ model Testimonial {
   is_approved Boolean     @default(false)
   created_at  DateTime    @default(now())
   updated_at  DateTime    @updatedAt
+
+  @@index([cube_id])
+  @@index([is_approved, created_at])
 }
 

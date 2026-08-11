@@ -60,7 +60,7 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-dark flex flex-col font-sans">
       {/* Navigation Header */}
-      <nav className="sticky top-0 z-50 bg-white/86 backdrop-blur-md border-b border-gray-100 shadow-sm">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 min-h-20">
             <div className="flex items-center min-w-0">
@@ -98,7 +98,7 @@ export const Layout: React.FC = () => {
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ${
                       adminDropdownOpen || getAdminLinks().some(l => location.pathname === l.path)
                         ? 'bg-gray-800 text-white shadow-md'
-                        : 'text-gray-605 hover:text-gray-905 hover:bg-gray-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
                     <Shield className="w-3.5 h-3.5" />

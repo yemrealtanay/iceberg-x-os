@@ -136,13 +136,13 @@ export const CubeVault: React.FC = () => {
                   <div className="flex flex-col gap-3">
                     <div>
                       <h4 className="font-bold text-gray-800 uppercase tracking-wide">Problem Statement</h4>
-                      <div className="markdown-body mt-1 font-mono bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs font-semibold text-gray-650">
+                      <div className="markdown-body mt-1 font-mono bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs font-semibold text-gray-600">
                         <CustomMarkdown>{m.problem_statement}</CustomMarkdown>
                       </div>
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-800 uppercase tracking-wide">What Was Tried</h4>
-                      <div className="markdown-body mt-1 text-xs font-semibold text-gray-655">
+                      <div className="markdown-body mt-1 text-xs font-semibold text-gray-600">
                         <CustomMarkdown>{m.description}</CustomMarkdown>
                       </div>
                     </div>

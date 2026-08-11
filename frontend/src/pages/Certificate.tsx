@@ -95,7 +95,7 @@ export const Certificate: React.FC = () => {
       {/* Styled Printable A4 Landscape Container */}
       <div className={`print-container relative shadow-2xl border aspect-[1.414] overflow-hidden select-text transition-all ${
         isSuccess 
-          ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-955/20 text-white' 
+          ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-900/20 text-white' 
           : 'bg-[#F8F6F2] border-gray-200/50 text-gray-800'
         }`}
         style={{
@@ -154,7 +154,7 @@ export const Certificate: React.FC = () => {
           </h1>
 
           {/* Description Text */}
-          <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${isSuccess ? 'text-gray-300' : 'text-gray-650'}`}>
+          <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${isSuccess ? 'text-gray-300' : 'text-gray-600'}`}>
             {isSuccess ? (
               <>
                 Iceberg Digital teknoloji fellowship programını üstün bir performansla tamamladığını ve<br />

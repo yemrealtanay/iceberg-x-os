@@ -247,7 +247,7 @@ export const Directory: React.FC = () => {
                         <button
                           type="button"
                           onClick={(e) => handleDeleteClick(e, cube)}
-                          className={`p-1.5 rounded-lg border text-red-650 transition z-20 ${
+                          className={`p-1.5 rounded-lg border text-red-600 transition z-20 ${
                             isIceberger
                               ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20 text-red-300'
                               : 'bg-red-50 border-red-100 hover:bg-red-100'

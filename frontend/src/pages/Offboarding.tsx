@@ -18,7 +18,7 @@ export const Offboarding: React.FC = () => {
   const [mentorName, setMentorName] = useState(user?.name || '');
   const [targetLevel, setTargetLevel] = useState<string>('Alumni');
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [stats, setStats] = useState<{ completedMissions: number; badgesEarned: number; attendanceRate: number } | null>(null);
+  const [stats, setStats] = useState<{ completedMissions: number; badgesEarned: number; attendanceRate: number | null } | null>(null);
 
   // Email Text Drafts (Editable)
   const [emailTr, setEmailTr] = useState('');
@@ -84,7 +84,9 @@ export const Offboarding: React.FC = () => {
       try {
         let completedMissions = 0;
         let badgesEarned = 0;
-        let attendanceRate = 100;
+        // null means the Cube has no meeting history yet — the line is then
+        // left out of the certificate email rather than claiming 100%.
+        let attendanceRate: number | null = null;
 
         if (certType === 'success') {
           // Fetch stats from backend
@@ -96,6 +98,13 @@ export const Offboarding: React.FC = () => {
         } else {
           setStats(null);
         }
+
+        const attendanceLineTr = attendanceRate !== null
+          ? `\n- Toplantılara katılım oranınız %${attendanceRate} olarak gerçekleşti.`
+          : '';
+        const attendanceLineEn = attendanceRate !== null
+          ? `\n- Your meeting attendance rate was ${attendanceRate}%.`
+          : '';
 
         // Generate email texts
         const cubeNo = selectedCube.cube_number;
@@ -109,8 +118,7 @@ Iceberg Digital Teknoloji Fellowship programındaki Cube #${cubeNo} kodlu staj p
 
 Stajınız boyunca:
 - ${completedMissions} adet görevi başarıyla tamamladınız.
-- ${badgesEarned} adet teknik ve yetkinlik rozeti kazandınız.
-- Toplantılara katılım oranınız %${attendanceRate} olarak gerçekleşti.
+- ${badgesEarned} adet teknik ve yetkinlik rozeti kazandınız.${attendanceLineTr}
 
 Gösterdiğiniz üstün performans ve katkılarınız için teşekkür eder, kariyerinizde başarılar dileriz. Başarı sertifikanız sisteminize eklenmiştir.
 
@@ -127,8 +135,7 @@ You have successfully completed your internship program as Cube #${cubeNo} in th
 
 During your internship:
 - You successfully completed ${completedMissions} missions.
-- You earned ${badgesEarned} technical and competency badges.
-- Your meeting attendance rate was ${attendanceRate}%.
+- You earned ${badgesEarned} technical and competency badges.${attendanceLineEn}
 
 Thank you for your outstanding performance and contributions. We wish you the best in your future career. Your Certificate of Success has been added to your profile.
 
@@ -406,7 +413,7 @@ Iceberg Digital Team`
                         
                         {certType === 'success' ? (
                           /* Dark mode success preview card */
-                          <div className="w-full max-w-[340px] aspect-[1.41] bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] text-white p-3 rounded-lg border border-amber-955/20 flex flex-col justify-between shadow-md text-[8px] relative">
+                          <div className="w-full max-w-[340px] aspect-[1.41] bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] text-white p-3 rounded-lg border border-amber-900/20 flex flex-col justify-between shadow-md text-[8px] relative">
                             {/* Inner border */}
                             <div className="absolute inset-1.5 border border-amber-400/20 pointer-events-none rounded" />
                             
@@ -456,7 +463,7 @@ Iceberg Digital Team`
                             <div className="text-center my-1 flex flex-col gap-0.5 z-10">
                               <span className="bg-magenta/5 text-magenta text-[4px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Katılım Sertifikası</span>
                               <h5 className="font-black text-[10px] text-gray-900 mt-0.5">{selectedCube.user.name}</h5>
-                              <p className="text-[4.5px] text-gray-505 leading-normal max-w-[260px] mx-auto mt-0.5">
+                              <p className="text-[4.5px] text-gray-500 leading-normal max-w-[260px] mx-auto mt-0.5">
                                 Teknoloji staj programına Cube #{selectedCube.cube_number} olarak katılım gösterdiğini belgeler.
                               </p>
                             </div>
@@ -495,7 +502,7 @@ Iceberg Digital Team`
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between pl-1">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Outreach Draft</span>
-                        <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-150">
+                        <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-100">
                           <button
                             type="button"
                             onClick={() => setActiveLangTab('tr')}
@@ -677,14 +684,14 @@ Iceberg Digital Team`
               </div>
               <button 
                 onClick={() => setViewingAlumni(null)} 
-                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={18} />
               </button>
             </div>
             
             <div className="p-6 flex flex-col gap-4">
-              <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-150 w-max">
+              <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-100 w-max">
                 <button
                   type="button"
                   onClick={() => setActiveLangTab('tr')}
@@ -736,14 +743,14 @@ Iceberg Digital Team`
               </div>
               <button 
                 onClick={() => setRevertingAlumni(null)} 
-                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={18} />
               </button>
             </div>
 
             <div className="p-6 flex flex-col gap-4">
-              <p className="text-xs text-gray-650 leading-relaxed font-semibold">
+              <p className="text-xs text-gray-600 leading-relaxed font-semibold">
                 Are you sure you want to delete this Cube's offboarding record and restore them to the active directory? Please select their restored status:
               </p>
 
@@ -798,7 +805,7 @@ Iceberg Digital Team`
               </div>
               <button 
                 onClick={() => setShowLargePreview(false)} 
-                className="text-gray-400 hover:text-gray-650 p-1 hover:bg-gray-100 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={18} />
               </button>
@@ -809,7 +816,7 @@ Iceberg Digital Team`
               <div className="relative overflow-hidden rounded-2xl border shadow-lg bg-white w-[561px] h-[397px] md:w-[842px] md:h-[596px] shrink-0">
                 <div className={`w-[1122px] h-[794px] transform scale-[0.5] md:scale-[0.75] origin-top-left select-text relative transition-all ${
                   certType === 'success' 
-                    ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-955/20 text-white' 
+                    ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-900/20 text-white' 
                     : 'bg-[#F8F6F2] border-gray-200/50 text-gray-800'
                   }`}
                 >
@@ -863,7 +870,7 @@ Iceberg Digital Team`
                     </h1>
 
                     {/* Description Text */}
-                    <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${certType === 'success' ? 'text-gray-300' : 'text-gray-650'}`}>
+                    <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${certType === 'success' ? 'text-gray-300' : 'text-gray-600'}`}>
                       {certType === 'success' ? (
                         <>
                           Iceberg Digital teknoloji fellowship programını üstün bir performansla tamamladığını ve<br />
