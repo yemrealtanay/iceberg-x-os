@@ -3,7 +3,6 @@ import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Filter, ShieldAlert, ArrowUpDown } from 'lucide-react';
-import { getAssetUrl } from '../utils/assets';
 import {
   avatarColor,
   getDifficultyMeta,
@@ -18,36 +17,30 @@ type SortKey = 'updated' | 'created' | 'title';
 interface AssignedCube {
   id: string;
   name: string;
-  avatarUrl: string | null;
 }
 
-/** Overlapping initials/avatars, capped so the row height never shifts. */
+/**
+ * Overlapping initials, capped so the row height never shifts.
+ *
+ * Deliberately initials-only: uploaded avatars live on the container's local
+ * disk, which is wiped on every deploy, so half of them render as broken
+ * images. A coloured monogram is always correct and needs no object storage.
+ */
 const CubeAvatarStack: React.FC<{ cubes: AssignedCube[] }> = ({ cubes }) => {
   const visible = cubes.slice(0, 4);
   const overflow = cubes.length - visible.length;
 
   return (
     <div className="flex -space-x-2">
-      {visible.map((cube) => {
-        const src = getAssetUrl(cube.avatarUrl);
-        return src ? (
-          <img
-            key={cube.id}
-            src={src}
-            alt={cube.name}
-            title={cube.name}
-            className="w-7 h-7 rounded-full object-cover ring-2 ring-white"
-          />
-        ) : (
-          <span
-            key={cube.id}
-            title={cube.name}
-            className={`w-7 h-7 rounded-full ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-white ${avatarColor(cube.id)}`}
-          >
-            {getInitials(cube.name)}
-          </span>
-        );
-      })}
+      {visible.map((cube) => (
+        <span
+          key={cube.id}
+          title={cube.name}
+          className={`w-7 h-7 rounded-full ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-white ${avatarColor(cube.id)}`}
+        >
+          {getInitials(cube.name)}
+        </span>
+      ))}
       {overflow > 0 && (
         <span
           title={cubes.slice(4).map((c) => c.name).join(', ')}
@@ -213,8 +206,7 @@ export const Missions: React.FC = () => {
               .flatMap((t: any) => t.members || [])
               .map((mem: any) => ({
                 id: mem.cube?.id || mem.cube_id,
-                name: mem.cube?.user?.name,
-                avatarUrl: mem.cube?.avatar_url || null
+                name: mem.cube?.user?.name
               }))
               .filter((c: AssignedCube) => c.id && c.name);
 

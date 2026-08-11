@@ -162,7 +162,7 @@ router.patch('/admin/applications/:id', requireAuth, isAdmin, async (req: Authen
       inviteUrl: invite.url,
       expiresAt: invite.expiresAt,
       expiresInHours: INVITE_TTL_HOURS,
-      message: 'Send this single-use link to the applicant so they can set their own password. It is shown only once.'
+      message: 'No email is sent. Copy this single-use link and share it with the applicant so they can set their own password — it is shown only once.'
     });
   } catch (error: any) {
     return sendError(res, error);

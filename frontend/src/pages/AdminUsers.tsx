@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Trash2, UserPlus, ArrowLeft, Mail, User, Shield, BookOpen, Key, Link2, Send } from 'lucide-react';
+import { ShieldAlert, Trash2, UserPlus, ArrowLeft, Mail, User, Shield, BookOpen, Key, Link2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { InviteLinkPanel } from '../components/InviteLinkPanel';
 
@@ -147,8 +147,12 @@ export const AdminUsers: React.FC = () => {
    * valid until the person actually accepts, so this is safe to use on an
    * existing user who simply lost their link.
    */
-  const handleSendInvite = async (item: any) => {
-    if (!confirm(`Issue a new invite link for ${item.name}? Any previous unused link stops working.`)) return;
+  const handleIssueInvite = async (item: any) => {
+    if (!confirm(
+      `Generate a new invite link for ${item.name}?\n\n` +
+      `Nothing is emailed — you copy the link and send it yourself. ` +
+      `Any previous unused link stops working. Their current password stays valid until they accept.`
+    )) return;
     setInvitingUserId(item.id);
     try {
       const res = await api.post(`/admin/users/${item.id}/invite`, {});
@@ -522,12 +526,12 @@ export const AdminUsers: React.FC = () => {
                       ) : (
                         <div className="flex justify-end gap-1">
                           <button
-                            onClick={() => handleSendInvite(item)}
+                            onClick={() => handleIssueInvite(item)}
                             disabled={invitingUserId === item.id}
                             className="p-2 hover:bg-magenta/5 border border-transparent rounded-lg text-gray-400 hover:text-magenta hover:border-magenta/10 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                            title="Issue a new one-time invite link so they can set their own password"
+                            title="Generate a one-time invite link to copy and share (no email is sent)"
                           >
-                            <Send className="w-4 h-4" />
+                            <Link2 className="w-4 h-4" />
                           </button>
                           {!isCurrent && (
                             <button

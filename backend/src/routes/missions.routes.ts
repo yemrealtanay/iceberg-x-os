@@ -46,10 +46,9 @@ router.get('/missions', requireAuth, async (req, res) => {
             members: {
               include: {
                 cube: {
-                  // avatar_url powers the avatar stack on the mission cards
+                  // The mission cards show initials only, so no avatar is sent
                   select: {
                     id: true,
-                    avatar_url: true,
                     user: { select: { name: true } }
                   }
                 }

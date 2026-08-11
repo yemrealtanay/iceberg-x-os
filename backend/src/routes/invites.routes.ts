@@ -120,7 +120,7 @@ router.post('/admin/users/:id/invite', requireAuth, isAdmin, async (req: Authent
       inviteUrl: invite.url,
       expiresAt: invite.expiresAt,
       expiresInHours: INVITE_TTL_HOURS,
-      message: 'Send this single-use link to the user. It is shown only once.'
+      message: 'No email is sent. Copy this single-use link and share it yourself — it is shown only once.'
     });
   } catch (error: any) {
     return sendError(res, error);

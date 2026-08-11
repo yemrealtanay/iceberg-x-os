@@ -158,7 +158,7 @@ function inviteResponse(invite: { url: string; expiresAt: Date } | null) {
     inviteUrl: invite.url,
     expiresAt: invite.expiresAt,
     expiresInHours: INVITE_TTL_HOURS,
-    message: 'Send this single-use link to the user so they can set their own password. It is shown only once.'
+    message: 'No email is sent. Copy this single-use link and share it yourself — it is shown only once.'
   };
 }
 

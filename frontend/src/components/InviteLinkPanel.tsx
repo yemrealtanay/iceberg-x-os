@@ -36,8 +36,8 @@ export const InviteLinkPanel: React.FC<InviteLinkPanelProps> = ({ url, expiresAt
             Invite link{name ? ` for ${name}` : ''}
           </p>
           <p className="text-[11px] text-gray-500 font-semibold leading-relaxed mt-0.5">
-            Send this to them so they can set their own password. It works once and is shown only now —
-            copy it before closing.
+            Nothing is emailed automatically — copy this link and pass it on yourself.
+            They use it to set their own password. It works once and is shown only now.
           </p>
         </div>
       </div>
