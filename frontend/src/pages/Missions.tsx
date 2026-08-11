@@ -136,7 +136,7 @@ export const Missions: React.FC = () => {
                 }`}
               >
                 <Link to={`/missions/${m.id}`} className="block flex-1 group/link">
-                  <div className="flex flex-wrap gap-1.5 items-center">
+                  <div className="flex flex-wrap gap-1.5 items-center min-h-[1.75rem]">
                     <span className="text-[10px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                       {m.difficulty_level.replace(/_/g, ' ').replace('Level ', 'L')}
                     </span>
@@ -154,15 +154,15 @@ export const Missions: React.FC = () => {
                     </span>
                   </div>
 
-                  <h3 className="font-extrabold text-gray-900 group-hover/link:text-magenta transition-colors mt-4 text-base leading-snug">
+                  <h3 className="font-extrabold text-gray-900 group-hover/link:text-magenta transition-colors mt-3 text-base leading-snug line-clamp-2 min-h-[2.75rem] flex items-center">
                     {m.title}
                   </h3>
-                  <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-3 leading-relaxed">
+                  <div className="markdown-body text-xs text-gray-400 mt-2 line-clamp-3 leading-relaxed min-h-[3.75rem]">
                     <CustomMarkdown>{m.description}</CustomMarkdown>
                   </div>
                 </Link>
 
-                <div className="flex flex-col gap-1 border-t border-gray-50 pt-3">
+                <div className="flex flex-col gap-1 border-t border-gray-50 pt-3 min-h-[3.25rem]">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Assigned Cubes</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {hasAssignments ? (

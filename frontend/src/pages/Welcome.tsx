@@ -175,6 +175,35 @@ export const Welcome: React.FC = () => {
       object-position: center;
       display: block;
     }
+
+    /* TESTIMONIALS MARQUEE */
+    @keyframes marqueeLeft {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes marqueeRight {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+    .animate-marquee-left {
+      display: flex;
+      width: max-content;
+      animation: marqueeLeft 45s linear infinite;
+    }
+    .animate-marquee-right {
+      display: flex;
+      width: max-content;
+      animation: marqueeRight 45s linear infinite;
+    }
+    .animate-marquee-left:hover, .animate-marquee-right:hover {
+      animation-play-state: paused;
+    }
+    .marquee-mask {
+      position: relative;
+      overflow: hidden;
+      mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+    }
   `;
 
   // Static items for grid builds
@@ -433,22 +462,24 @@ export const Welcome: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. FOUNDING CUBES */}
+      {/* 4. THE INAUGURAL COHORT (LEGACY) */}
       <section className="py-24 bg-gradient-to-b from-[#0f0c05] to-[#1a1305] text-white">
         <div className="max-w-[1200px] mx-auto px-7">
           <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#f3d27a] text-xs uppercase font-extrabold tracking-wider">The First Cohort</span>
+            <span className="text-[#f3d27a] text-xs uppercase font-extrabold tracking-wider">Inaugural Cohort (History)</span>
             <h2 className="text-3xl sm:text-5xl font-black leading-none">The Founding Cubes</h2>
-            <p className="text-white/60 font-medium leading-relaxed">The first cohort will become the Founding Cubes. Their numbers will forever represent the beginning of this portal. This status can never be earned again.</p>
+            <p className="text-white/60 font-medium leading-relaxed">
+              The first cohort (Cubes #001 to #003) laid the foundation of the Iceberg X R&D portal. Their legacy is permanently archived as the Founding Cubes. This inaugural chapter is closed, and new cohorts continue to build the next generation of systems.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((num) => (
               <div key={num} className="gold-card-bg rounded-[2rem] p-8 sm:p-10 flex flex-col gap-4 hover:translate-y-[-8px] hover:shadow-2xl hover:shadow-[#c9a227]/25 transition-all">
-                <div className="text-[0.7rem] text-[#f3d27a] font-bold uppercase tracking-widest flex items-center gap-2">◆ Founding Cube</div>
+                <div className="text-[0.7rem] text-[#f3d27a] font-bold uppercase tracking-widest flex items-center gap-2">◆ Founding Cube (Legacy)</div>
                 <div className="text-4xl font-extrabold gold-text">#00{num}</div>
                 <div className="text-sm text-white/55 font-medium">
-                  {num === 1 ? 'The very first. Where it all begins.' : num === 2 ? 'A permanent place in our history.' : 'A status that can never be earned again.'}
+                  {num === 1 ? 'The very first. Where it all began.' : num === 2 ? 'A permanent place in our R&D history.' : 'A status preserved for the inaugural builders.'}
                 </div>
               </div>
             ))}
@@ -475,6 +506,97 @@ export const Welcome: React.FC = () => {
                 <p className="text-slate-500 text-xs font-semibold leading-relaxed">{cat.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Active Missions Showcase */}
+          <div className="mt-16 pt-16 border-t border-black/5">
+            <div className="text-center max-w-[600px] mx-auto flex flex-col gap-2 mb-10">
+              <span className="text-magenta text-xs font-bold uppercase tracking-wider">Active R&D Board</span>
+              <h3 className="text-2xl font-extrabold text-slate-900">Current Cohort Projects</h3>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Here are actual research challenges currently being developed by our active Cubes.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  title: 'Build the Support Intelligence Platform',
+                  cat: 'AI / NLP',
+                  desc: 'Engineering a semantic search and automated resolution pipeline for customer success workloads.'
+                },
+                {
+                  title: 'OAuth2 / JWT MFA Integration Research',
+                  cat: 'Security / Go',
+                  desc: 'Researching multi-factor auth patterns and OAuth2 flows under Golang & MongoDB state-stores.'
+                },
+                {
+                  title: 'AI-Powered Dynamic Form Schema Renderer',
+                  cat: 'Frontend Eng',
+                  desc: 'Designing a declarative JSON schema parser that builds production-grade responsive UI forms on the fly.'
+                }
+              ].map((proj, idx) => (
+                <div key={idx} className="bg-slate-50/50 border border-black/5 hover:border-magenta/10 rounded-2xl p-6 shadow-subtle flex flex-col justify-between gap-4 hover:scale-[1.02] transition-all">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[9px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded-md uppercase self-start">
+                      {proj.cat}
+                    </span>
+                    <h4 className="font-extrabold text-slate-900 text-sm leading-snug mt-1">{proj.title}</h4>
+                    <p className="text-slate-500 text-[11px] font-semibold leading-relaxed">{proj.desc}</p>
+                  </div>
+                  <div className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100/50 px-2 py-0.5 rounded-md font-bold uppercase self-start flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                    <span>Active Research</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FELLOWSHIP PROCESS TIMELINE */}
+      <section className="py-24 bg-white border-b border-black/5" id="process">
+        <div className="max-w-[1200px] mx-auto px-7">
+          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
+            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">How It Works</span>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Fellowship Cycle</h2>
+            <p className="text-slate-500 font-medium leading-relaxed">From initial code checks to the final archival, here is how a Cube moves through the program.</p>
+          </div>
+
+          <div className="relative max-w-[900px] mx-auto flex flex-col md:flex-row gap-6 md:gap-4 justify-between items-stretch">
+            {/* Step 1 */}
+            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
+              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">1</div>
+              <h4 className="font-extrabold text-slate-900 text-sm">Application & Verification</h4>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Apply online, submit your github portfolio, and pass the async review to join the cohort.</p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
+              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">2</div>
+              <h4 className="font-extrabold text-slate-900 text-sm">Briefing & Teams</h4>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Get grouped into 1-to-many teams and select your custom R&D mission blueprint.</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
+              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">3</div>
+              <h4 className="font-extrabold text-slate-900 text-sm">Ship Code & Badge</h4>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Submit daily timeline updates, receive mentor evaluations, and earn program badges.</p>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
+              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">4</div>
+              <h4 className="font-extrabold text-slate-900 text-sm">Demo Day Showcases</h4>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Deliver your functional prototype presentations directly to the founding engineering team.</p>
+            </div>
+
+            {/* Step 5 */}
+            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] text-white font-black text-xs flex items-center justify-center shadow-sm">5</div>
+              <h4 className="font-extrabold text-slate-900 text-sm">Vault & Progression</h4>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Archive your finished project in the Vault, get your certificate, and start your next mission. Graduation is a mutual decision when you are ready.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -736,37 +858,38 @@ export const Welcome: React.FC = () => {
         </div>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
+      {/* TESTIMONIALS INFINITE MARQUEE */}
       {testimonials.length > 0 && (
-        <section className="py-24 bg-[#f6f6f8] border-t border-black/5" id="testimonials">
-          <div className="max-w-[1200px] mx-auto px-7">
-            <div className="text-center max-w-[600px] mx-auto flex flex-col gap-3 mb-16">
+        <section className="py-24 bg-[#f6f6f8] border-t border-black/5 overflow-hidden font-sans" id="testimonials">
+          <div className="max-w-[1200px] mx-auto px-7 mb-12">
+            <div className="text-center max-w-[600px] mx-auto flex flex-col gap-3">
               <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Fellowship Success</span>
               <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">What Our Cubes Say</h2>
-              <p className="text-slate-500 text-sm leading-relaxed">Hear from fellow developers who transformed their research prototypes into working products.</p>
+              <p className="text-slate-500 text-sm leading-relaxed">Hear from developers who transformed their research prototypes into working systems.</p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {testimonials.map((t: any) => (
-                <div key={t.id} className="bg-white border border-black/5 rounded-3xl p-8 shadow-subtle hover:shadow-premium hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
-                  
-                  <div className="flex flex-col gap-4">
-                    <Quote className="w-8 h-8 text-[#e6007e]/20" />
-                    <p className="text-slate-700 text-sm font-medium leading-relaxed italic relative z-10">
+          <div className="marquee-mask flex flex-col gap-6 w-full py-4">
+            {/* Row 1: Scrolling Left */}
+            <div className="animate-marquee-left">
+              {[...testimonials, ...testimonials].map((t: any, idx: number) => (
+                <div key={`${t.id}-r1-${idx}`} className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
+                  <div className="flex flex-col gap-3">
+                    <Quote className="w-6 h-6 text-[#e6007e]/20" />
+                    <p className="text-slate-755 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
                       "{t.content}"
                     </p>
                   </div>
-
-                  <div className="flex items-center gap-3.5 pt-4 border-t border-slate-50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-sm flex items-center justify-center border border-[#e6007e]/20 shadow-sm">
+                  <div className="flex items-center gap-3 pt-3 border-t border-slate-50">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-xs flex items-center justify-center border border-[#e6007e]/20 shadow-sm shrink-0">
                       {t.cube?.user?.name ? t.cube.user.name[0] : 'C'}
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-xs text-slate-900 leading-tight">
+                      <h4 className="font-extrabold text-[11px] text-slate-900 leading-tight">
                         {t.cube?.user?.name || 'Anonymous Cube'}
                       </h4>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
+                      <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
                         Cohort {t.cube?.cohort || 'Unknown'} · Cube #{t.cube?.cube_number || 'N/A'}
                       </p>
                     </div>
@@ -774,6 +897,36 @@ export const Welcome: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {/* Row 2: Scrolling Right (only if we have more than 2 testimonials) */}
+            {testimonials.length > 2 && (
+              <div className="animate-marquee-right">
+                {[...testimonials.slice(1), ...testimonials, ...testimonials.slice(0, 1)].map((t: any, idx: number) => (
+                  <div key={`${t.id}-r2-${idx}`} className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
+                    <div className="flex flex-col gap-3">
+                      <Quote className="w-6 h-6 text-[#e6007e]/20" />
+                      <p className="text-slate-755 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
+                        "{t.content}"
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 pt-3 border-t border-slate-50">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-xs flex items-center justify-center border border-[#e6007e]/20 shadow-sm shrink-0">
+                        {t.cube?.user?.name ? t.cube.user.name[0] : 'C'}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-[11px] text-slate-900 leading-tight">
+                          {t.cube?.user?.name || 'Anonymous Cube'}
+                        </h4>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
+                          Cohort {t.cube?.cohort || 'Unknown'} · Cube #{t.cube?.cube_number || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -786,9 +939,11 @@ export const Welcome: React.FC = () => {
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">Ready to become a Cube?</h2>
             <p className="text-slate-500 text-lg leading-relaxed">This isn't a placement. It's the start of something you'll carry for the rest of your career.</p>
             
-            <div className="scarcity-box rounded-3xl p-8 text-white mt-4 shadow-xl shadow-magenta/30">
-              <span className="text-xs uppercase font-bold text-magenta-3 tracking-widest block mb-2">Founding Cohort</span>
-              <p className="text-sm text-white/80 leading-relaxed">The first cohort will become the Founding Cubes. Those places will only exist once — and can never be earned again.</p>
+            <div className="bg-[#111111] text-white p-6 rounded-3xl relative overflow-hidden flex flex-col gap-2 mt-4 shadow-xl">
+              <span className="text-xs uppercase font-bold text-magenta-3 tracking-widest block mb-2">Active Cohorts</span>
+              <p className="text-sm text-white/80 leading-relaxed">
+                Although the inaugural Founding Cube cohort is closed, new active cohorts join the portal regularly to collaborate on production systems.
+              </p>
             </div>
           </div>
 
@@ -800,7 +955,7 @@ export const Welcome: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-black text-slate-900">Application received.</h3>
                 <p className="text-slate-500 font-semibold max-w-[340px] leading-relaxed mt-2">
-                  You're in the running for a Founding Cube number. We'll be in touch — keep building in the meantime.
+                  Your application has been logged. We will be in touch regarding upcoming cohort selections — keep building in the meantime!
                 </p>
               </div>
             ) : (
@@ -941,7 +1096,7 @@ export const Welcome: React.FC = () => {
                   )}
                 </button>
                 <p className="text-slate-400 text-[0.78rem] text-center mt-2 font-semibold">
-                  We review every application personally. Founding Cube places are limited.
+                  We review every application personally. Fellowship cohort places are limited.
                 </p>
               </form>
             )}
