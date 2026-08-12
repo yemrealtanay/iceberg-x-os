@@ -1,7 +1,7 @@
 import {
   Hammer, Wrench, Cog, Boxes, Package, Rocket, Zap, Flame, Anchor, Pickaxe,
   Lightbulb, Search, Microscope, Telescope, Radar, BookOpen, GraduationCap,
-  FlaskConical, Beaker, Brain, Puzzle, Map, Compass, Route, Milestone,
+  FlaskConical, Beaker, Brain, Puzzle, Compass, Route, Milestone,
   Code, Code2, Terminal, Braces, GitBranch, GitMerge, Bug, Database, Server, Cloud,
   Cpu, CircuitBoard, Layers, Blocks, Component, Wand2, Sparkles, Palette, PenTool,
   Monitor, Smartphone, LayoutDashboard, Play, CheckCircle, CheckCheck, Target, Crosshair,
@@ -9,7 +9,13 @@ import {
   Users, UserCheck, Handshake, MessageSquare, MessagesSquare, Megaphone, Radio, Bell,
   Mic, Presentation, Share2, Heart, HeartHandshake, ThumbsUp, Smile,
   TrendingUp, LineChart, BarChart3, Activity, Gauge, Timer, Clock, CalendarCheck,
-  RefreshCw, Recycle, Repeat, ArrowUpRight, Move3d, Infinity as InfinityIcon,
+  RefreshCw, Recycle, Repeat, ArrowUpRight, Move3d,
+  // Aliased on purpose: these lucide exports share a name with a JavaScript
+  // global. Importing them unaliased shadows the real `Map` / `Infinity` for
+  // the whole module, and the `new Map(...)` lookup further down this file
+  // throws at import time — which blanks the entire app, not just badges.
+  // TypeScript cannot catch it: the types are perfectly valid.
+  Map as MapIcon, Infinity as InfinityIcon,
   Eye, AlertTriangle, ShieldAlert, LifeBuoy, Lock, KeyRound, Bookmark, FileCheck,
   Mountain, Sunrise, Moon, Waves, Snowflake, Leaf, TreePine, Feather, Bird, Ghost,
   type LucideIcon
@@ -65,7 +71,7 @@ export const BADGE_ICONS: BadgeIconOption[] = [
 
   // Direction
   { key: 'compass', label: 'Compass', group: 'Direction', Icon: Compass },
-  { key: 'map', label: 'Map', group: 'Direction', Icon: Map },
+  { key: 'map', label: 'Map', group: 'Direction', Icon: MapIcon },
   { key: 'route', label: 'Route', group: 'Direction', Icon: Route },
   { key: 'milestone', label: 'Milestone', group: 'Direction', Icon: Milestone },
   { key: 'flag', label: 'Flag', group: 'Direction', Icon: Flag },
