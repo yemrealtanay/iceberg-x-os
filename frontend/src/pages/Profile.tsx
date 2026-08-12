@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X } from 'lucide-react';
-import { getBadgeConfig } from '../utils/badgeHelper';
+import { BadgeDisc, RarityPill } from '../components/BadgeMedal';
+import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
 import { getAssetUrl } from '../utils/assets';
@@ -1068,25 +1069,36 @@ export const Profile: React.FC = () => {
 
           {profile.cube_badges && profile.cube_badges.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {profile.cube_badges.map((award: any) => {
-                const config = getBadgeConfig(award.badge.icon, award.badge.name);
-                const IconComp = config.icon;
+              {/* Rarest first, and each in its own rarity treatment */}
+              {[...profile.cube_badges]
+                .sort((a: any, b: any) => compareByRarity(a.badge?.rarity, b.badge?.rarity))
+                .map((award: any) => {
+                  const meta = getRarityMeta(award.badge?.rarity);
+                  const isEpic = meta.key === 'Epic';
 
-                return (
-                  <div key={award.id} className="border border-gray-100 p-4 rounded-xl flex flex-col items-center text-center gap-2 bg-gray-50/50 hover:border-magenta/20 hover:scale-[1.02] transition-all duration-300 group" title={award.reason}>
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${config.gradient} text-white flex items-center justify-center ${config.glow} transition-all duration-500 group-hover:scale-110 group-hover:rotate-3`}>
-                      <IconComp className="w-5 h-5" />
+                  return (
+                    <div
+                      key={award.id}
+                      className={`group relative ${meta.frame} transition-transform duration-300 hover:scale-[1.02]`}
+                      title={award.reason}
+                    >
+                      {isEpic && <span className="badge-sheen" />}
+                      <div className={`relative ${meta.surface} p-4 flex flex-col items-center text-center gap-2 h-full`}>
+                        <BadgeDisc icon={award.badge?.icon} rarity={award.badge?.rarity} size="md" />
+                        <div>
+                          <h4 className={`font-bold text-xs leading-tight ${meta.title}`}>{award.badge.name}</h4>
+                          <p className={`text-[9px] mt-1 uppercase tracking-wider ${meta.muted}`}>
+                            {award.mission ? award.mission.title : 'General Award'}
+                          </p>
+                        </div>
+                        <RarityPill rarity={award.badge?.rarity} />
+                        <p className={`text-[10px] font-semibold line-clamp-2 mt-1 italic ${meta.body}`}>
+                          "{award.reason}"
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-gray-900 leading-tight">{award.badge.name}</h4>
-                      <p className="text-[9px] text-gray-400 mt-1 uppercase tracking-wider">
-                        {award.mission ? award.mission.title : 'General Award'}
-                      </p>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-semibold line-clamp-2 mt-1 italic">"{award.reason}"</p>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           ) : (
             <p className="text-gray-400 text-sm py-4 text-center">No badges awarded yet.</p>

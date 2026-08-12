@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Award, Rocket, MessageSquare, ShieldAlert, Sparkles, Send, PlayCircle, ExternalLink, MessageCircle } from 'lucide-react';
 import { CustomMarkdown } from '../components/CustomMarkdown';
-import { getBadgeConfig } from '../utils/badgeHelper';
+import { BadgeDisc } from '../components/BadgeMedal';
+import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 
 export const CubeDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -390,21 +391,27 @@ export const CubeDashboard: React.FC = () => {
 
             {profile.cube_badges && profile.cube_badges.length > 0 ? (
               <div className="grid grid-cols-3 gap-3">
-                {profile.cube_badges.map((award: any) => {
-                  const config = getBadgeConfig(award.badge.icon, award.badge.name);
-                  const IconComp = config.icon;
-
-                  return (
-                    <div key={award.id} className="flex flex-col items-center text-center p-2.5 bg-gray-50 border border-gray-100 rounded-xl hover:scale-105 transition-all duration-300 group" title={award.reason}>
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${config.gradient} text-white flex items-center justify-center ${config.glow} transition-all duration-500 group-hover:scale-110`}>
-                        <IconComp className="w-4.5 h-4.5" />
+                {/* Rarest first, each shown in its own rarity treatment */}
+                {[...profile.cube_badges]
+                  .sort((a: any, b: any) => compareByRarity(a.badge?.rarity, b.badge?.rarity))
+                  .map((award: any) => {
+                    const meta = getRarityMeta(award.badge?.rarity);
+                    return (
+                      <div
+                        key={award.id}
+                        className={`group relative ${meta.frame} transition-transform duration-300 hover:scale-105`}
+                        title={award.reason}
+                      >
+                        {meta.key === 'Epic' && <span className="badge-sheen" />}
+                        <div className={`relative ${meta.surface} flex flex-col items-center text-center p-2.5`}>
+                          <BadgeDisc icon={award.badge?.icon} rarity={award.badge?.rarity} size="sm" />
+                          <span className={`text-[10px] font-bold mt-2 truncate max-w-full ${meta.title}`}>
+                            {award.badge.name}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold text-gray-800 mt-2 truncate max-w-full">
-                        {award.badge.name}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             ) : (
               <p className="text-gray-400 text-sm py-4 text-center">No badges awarded yet. Deliver a working prototype to earn badges!</p>

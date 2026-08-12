@@ -18,6 +18,119 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ==========================================================================
+   Epic badge frame
+   --------------------------------------------------------------------------
+   A rotating conic-gradient border. Tailwind cannot express an animated conic
+   gradient, so it lives here: an oversized spinning gradient sits behind the
+   card and an inset panel covers the middle, leaving a 2px animated edge.
+   ========================================================================== */
+.badge-frame-epic {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.badge-frame-epic::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  left: 50%;
+  top: 50%;
+  width: 220%;
+  aspect-ratio: 1 / 1;
+  translate: -50% -50%;
+  background: conic-gradient(
+    #e6007e, #8b5cf6, #22d3ee, #f59e0b, #e6007e
+  );
+  animation: badge-spin 6s linear infinite;
+}
+
+/* Inset panel: everything except the 2px edge */
+.badge-frame-epic::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2px;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(230, 0, 126, 0.18), transparent 55%),
+    radial-gradient(120% 100% at 100% 100%, rgba(139, 92, 246, 0.2), transparent 55%),
+    #0b0b12;
+}
+
+@keyframes badge-spin {
+  to { transform: rotate(1turn); }
+}
+
+/* Holographic sheen sweeping across an Epic card */
+.badge-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.badge-sheen::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  bottom: -60%;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.02),
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: badge-sheen-sweep 4.5s ease-in-out infinite;
+}
+
+@keyframes badge-sheen-sweep {
+  0%, 65% { left: -60%; }
+  100% { left: 130%; }
+}
+
+.badge-pill-epic {
+  background: linear-gradient(110deg, #e6007e, #8b5cf6, #f59e0b);
+  background-size: 200% 100%;
+  animation: badge-pill-shift 5s ease infinite;
+}
+
+@keyframes badge-pill-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Drifting sparkles on Epic badges */
+.badge-spark {
+  position: absolute;
+  border-radius: 9999px;
+  background: #fff;
+  pointer-events: none;
+  animation: badge-spark-float 3.6s ease-in-out infinite;
+}
+
+@keyframes badge-spark-float {
+  0%, 100% { opacity: 0; transform: translateY(4px) scale(0.6); }
+  50% { opacity: 0.9; transform: translateY(-4px) scale(1); }
+}
+
+/* Anyone who prefers reduced motion gets the same design, held still. */
+@media (prefers-reduced-motion: reduce) {
+  .badge-frame-epic::before,
+  .badge-sheen::after,
+  .badge-pill-epic,
+  .badge-spark {
+    animation: none;
+  }
+  .badge-spark { opacity: 0.8; }
+}
+
 /* Custom premium transitions */
 .transition-premium {
   transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);

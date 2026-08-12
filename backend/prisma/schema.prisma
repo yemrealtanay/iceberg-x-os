@@ -287,16 +287,28 @@ model MentorFeedback {
   @@index([recommended_next_step])
 }
 
+/// How hard a badge is to earn. Drives the frame and treatment it is shown with.
+enum BadgeRarity {
+  Common
+  Rare
+  Epic
+}
+
 model Badge {
   id          String      @id @default(uuid())
   name        String      @unique
   description String
-  icon        String      // String representation of icon
+  icon        String      // Icon key from the badge icon catalogue
+  rarity      BadgeRarity @default(Common)
+  /// Optional accent colour key; falls back to the rarity's own palette.
+  accent      String?
   created_at  DateTime    @default(now())
   updated_at  DateTime    @updatedAt
 
   // Relations
   cube_badges CubeBadge[]
+
+  @@index([rarity])
 }
 
 model CubeBadge {

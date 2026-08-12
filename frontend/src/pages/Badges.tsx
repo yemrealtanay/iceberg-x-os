@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Plus, Award, Check, Trash2, X } from 'lucide-react';
-import { getBadgeConfig } from '../utils/badgeHelper';
+import { ShieldAlert, Plus, Award, Check, Trash2, X, Pencil } from 'lucide-react';
+import { BadgeMedal, BadgeDisc } from '../components/BadgeMedal';
+import { BadgeDesigner, type BadgeDraft } from '../components/BadgeDesigner';
+import { RARITIES, getRarityMeta, compareByRarity } from '../utils/badgeRarity';
 
 export const Badges: React.FC = () => {
   const { user } = useAuth();
@@ -21,12 +23,12 @@ export const Badges: React.FC = () => {
   const [awardSubmitting, setAwardSubmitting] = useState(false);
   const [awardSuccess, setAwardSuccess] = useState(false);
 
-  // Create Badge Form States
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newBadgeName, setNewBadgeName] = useState('');
-  const [newBadgeDesc, setNewBadgeDesc] = useState('');
-  const [newBadgeIcon, setNewBadgeIcon] = useState('Builder');
-  const [createSubmitting, setCreateSubmitting] = useState(false);
+  // Badge designer: null = closed, {} = creating, {id,...} = editing
+  const [designerDraft, setDesignerDraft] = useState<Partial<BadgeDraft> | null>(null);
+  const [designerSubmitting, setDesignerSubmitting] = useState(false);
+
+  // Rarity filter for the showcase
+  const [rarityFilter, setRarityFilter] = useState('');
 
   const fetchBadgeData = async () => {
     try {
@@ -79,33 +81,48 @@ export const Badges: React.FC = () => {
     }
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBadgeName || !newBadgeDesc) return;
-
-    setCreateSubmitting(true);
+  /** Creates a new badge, or saves edits when the draft carries an id. */
+  const handleDesignerSubmit = async (draft: BadgeDraft) => {
+    setDesignerSubmitting(true);
     try {
-      await api.post('/badges', {
-        name: newBadgeName,
-        description: newBadgeDesc,
-        icon: newBadgeIcon
-      });
-      setNewBadgeName('');
-      setNewBadgeDesc('');
-      setShowCreateForm(false);
+      const payload = {
+        name: draft.name,
+        description: draft.description,
+        icon: draft.icon,
+        rarity: draft.rarity
+      };
+      if (draft.id) {
+        await api.put(`/badges/${draft.id}`, payload);
+      } else {
+        await api.post('/badges', payload);
+      }
+      setDesignerDraft(null);
       fetchBadgeData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create badge');
+      alert(err.message || 'Failed to save badge');
     } finally {
-      setCreateSubmitting(false);
+      setDesignerSubmitting(false);
     }
   };
 
-  const handleDeleteBadge = async (badgeId: string) => {
-    if (!window.confirm("Are you sure you want to delete this badge definition? All awarded instances will be deleted!")) return;
+  const handleDeleteBadge = async (badge: any) => {
+    const awarded = badge.cube_badges?.length || 0;
+    if (awarded > 0) {
+      // Editing keeps the awards; deleting takes them off every profile.
+      const proceed = window.confirm(
+        `"${badge.name}" has been awarded to ${awarded} Cube(s).\n\n` +
+        `Deleting it removes the badge from their profiles permanently. ` +
+        `If you only want to change how it looks, close this and use Edit instead.\n\n` +
+        `Delete anyway?`
+      );
+      if (!proceed) return;
+    } else if (!window.confirm(`Delete the "${badge.name}" badge definition?`)) {
+      return;
+    }
+
     try {
-      await api.delete(`/badges/${badgeId}`);
-      setBadges((prev) => prev.filter((b) => b.id !== badgeId));
+      await api.delete(`/badges/${badge.id}${awarded > 0 ? '?force=true' : ''}`);
+      setBadges((prev) => prev.filter((b) => b.id !== badge.id));
     } catch (err: any) {
       alert(err.message || 'Failed to delete badge');
     }
@@ -120,6 +137,15 @@ export const Badges: React.FC = () => {
       alert(err.message || 'Failed to revoke badge award');
     }
   };
+
+  // Rarest first so the showcase leads with what is hardest to earn
+  const visibleBadges = useMemo(
+    () =>
+      badges
+        .filter(b => (rarityFilter ? (b.rarity || 'Common') === rarityFilter : true))
+        .sort((a, b) => compareByRarity(a.rarity, b.rarity) || a.name.localeCompare(b.name)),
+    [badges, rarityFilter]
+  );
 
   if (loading) {
     return (
@@ -145,7 +171,7 @@ export const Badges: React.FC = () => {
         <div className="flex gap-3">
           {isMentorOrAdmin && (
             <button
-              onClick={() => { setShowAwardForm(!showAwardForm); setShowCreateForm(false); }}
+              onClick={() => { setShowAwardForm(!showAwardForm); setDesignerDraft(null); }}
               className="flex items-center gap-2 px-4 py-2.5 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors shadow-sm"
             >
               <Award className="w-4 h-4" />
@@ -155,11 +181,11 @@ export const Badges: React.FC = () => {
 
           {isAdmin && (
             <button
-              onClick={() => { setShowCreateForm(!showCreateForm); setShowAwardForm(false); }}
+              onClick={() => { setDesignerDraft(designerDraft ? null : {}); setShowAwardForm(false); }}
               className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Badge</span>
+              <span>Design Badge</span>
             </button>
           )}
         </div>
@@ -170,6 +196,17 @@ export const Badges: React.FC = () => {
           <ShieldAlert className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
+      )}
+
+      {/* Badge designer — full width so the live preview sits beside the controls */}
+      {designerDraft && (
+        <BadgeDesigner
+          key={designerDraft.id || 'new'}
+          initial={designerDraft}
+          submitting={designerSubmitting}
+          onSubmit={handleDesignerSubmit}
+          onCancel={() => setDesignerDraft(null)}
+        />
       )}
 
       {/* Forms Section */}
@@ -198,10 +235,24 @@ export const Badges: React.FC = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-gray-500 uppercase">Select Badge</label>
               <select value={selectedBadgeId} onChange={e => setSelectedBadgeId(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs font-semibold">
-                {badges.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
+                {visibleBadges.map(b => (
+                  <option key={b.id} value={b.id}>
+                    {getRarityMeta(b.rarity).label.toUpperCase()} · {b.name}
+                  </option>
                 ))}
               </select>
+              {selectedBadgeId && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <BadgeDisc
+                    icon={badges.find(b => b.id === selectedBadgeId)?.icon}
+                    rarity={badges.find(b => b.id === selectedBadgeId)?.rarity}
+                    size="sm"
+                  />
+                  <span className="text-[11px] text-gray-500 font-semibold leading-snug">
+                    {badges.find(b => b.id === selectedBadgeId)?.description}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
@@ -232,80 +283,81 @@ export const Badges: React.FC = () => {
           </form>
         )}
 
-        {/* Create Badge Form */}
-        {showCreateForm && (
-          <form onSubmit={handleCreateSubmit} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-premium flex flex-col gap-4 animate-fadeIn">
-            <h3 className="font-extrabold text-sm border-b border-gray-50 pb-2">Create New Badge</h3>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Badge Name</label>
-              <input type="text" required placeholder="e.g. Architect" value={newBadgeName} onChange={e => setNewBadgeName(e.target.value)} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold" />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Badge Description</label>
-              <textarea required rows={2} placeholder="Define what achievements qualify a Cube for this badge..." value={newBadgeDesc} onChange={e => setNewBadgeDesc(e.target.value)} className="p-2.5 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta resize-none font-semibold" />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Icon Class/Name</label>
-              <select value={newBadgeIcon} onChange={e => setNewBadgeIcon(e.target.value)} className="p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold outline-none cursor-pointer">
-                <option value="Builder">Builder</option>
-                <option value="Innovator">Innovator</option>
-                <option value="Collaborator">Collaborator</option>
-                <option value="Pathfinder">Pathfinder</option>
-                <option value="Pioneer">Pioneer</option>
-              </select>
-            </div>
-
-            <button type="submit" disabled={createSubmitting} className="w-full py-2 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors">
-              {createSubmitting ? 'Creating...' : 'Create Badge Definition'}
-            </button>
-          </form>
-        )}
       </div>
 
-      {/* Grid listing Badges */}
+      {/* Rarity filter + counts */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setRarityFilter('')}
+          className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border transition-colors ${
+            rarityFilter === ''
+              ? 'bg-gray-900 text-white border-gray-900'
+              : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          All {badges.length}
+        </button>
+        {RARITIES.map(r => {
+          const meta = getRarityMeta(r);
+          const count = badges.filter(b => (b.rarity || 'Common') === r).length;
+          return (
+            <button
+              key={r}
+              onClick={() => setRarityFilter(rarityFilter === r ? '' : r)}
+              title={meta.hint}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border transition-colors ${
+                rarityFilter === r
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {meta.label} {count}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Grid listing Badges, rarest first */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {badges.map((badge) => {
-          const config = getBadgeConfig(badge.icon, badge.name);
-          const IconComp = config.icon;
+        {visibleBadges.map((badge) => {
+          const meta = getRarityMeta(badge.rarity);
 
           return (
-            <div
+            <BadgeMedal
               key={badge.id}
-              className={`bg-white border ${config.borderColor} p-6 rounded-2xl shadow-subtle hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col gap-4 relative group`}
+              badge={badge}
+              actions={
+                isAdmin && (
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => { setDesignerDraft(badge); setShowAwardForm(false); }}
+                      className={`p-1.5 rounded-lg border border-transparent transition-all ${
+                        meta.key === 'Epic'
+                          ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                          : 'text-gray-400 hover:text-magenta hover:bg-magenta/5 hover:border-magenta/10'
+                      }`}
+                      title="Edit this badge"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBadge(badge)}
+                      className={`p-1.5 rounded-lg border border-transparent transition-all ${
+                        meta.key === 'Epic'
+                          ? 'text-slate-300 hover:text-red-300 hover:bg-red-500/15'
+                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100'
+                      }`}
+                      title="Delete badge definition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )
+              }
             >
-              {isAdmin && (
-                <button
-                  onClick={() => handleDeleteBadge(badge.id)}
-                  className="absolute top-4 right-4 p-1.5 hover:bg-red-50 border border-transparent rounded-lg text-gray-400 hover:text-red-500 hover:border-red-100 transition-all opacity-0 group-hover:opacity-100 z-10"
-                  title="Delete badge definition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-
-              {/* Category Pill Tag */}
-              <span className={`absolute top-4 ${isAdmin ? 'right-12' : 'right-4'} text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${config.badgeBg} ${config.textColor} tracking-wider font-sans`}>
-                {config.category}
-              </span>
-
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${config.gradient} text-white flex items-center justify-center ${config.glow} transition-all duration-500 group-hover:scale-110 group-hover:rotate-3`}>
-                  <IconComp className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-gray-900 leading-tight">{badge.name}</h3>
-                  <p className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase tracking-wider">Icon: {badge.icon}</p>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-500 leading-relaxed font-medium">{badge.description}</p>
-
               {/* List of earners */}
-              <div className="border-t border-gray-50 pt-4 flex flex-col gap-2">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              <div className={`border-t ${meta.divider} pt-4 mt-auto flex flex-col gap-2`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${meta.muted}`}>
                   Earned by ({badge.cube_badges?.length || 0})
                 </p>
                 {badge.cube_badges && badge.cube_badges.length > 0 ? (
@@ -313,14 +365,14 @@ export const Badges: React.FC = () => {
                     {badge.cube_badges.map((award: any) => (
                       <span
                         key={award.id}
-                        className="bg-magenta/5 border border-magenta/10 text-magenta text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${meta.earnerChip}`}
                         title={award.reason}
                       >
                         <span>{award.cube.user.name}</span>
                         {isAdmin && (
                           <button
                             onClick={() => handleRevokeAward(award.id)}
-                            className="hover:bg-magenta/10 rounded-full p-0.5 flex items-center justify-center"
+                            className="hover:bg-black/10 rounded-full p-0.5 flex items-center justify-center"
                             title="Revoke award"
                           >
                             <X className="w-2.5 h-2.5" />
@@ -330,10 +382,12 @@ export const Badges: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-gray-400 italic">No Cubes have earned this badge yet.</p>
+                  <p className={`text-[11px] italic ${meta.muted}`}>
+                    No Cubes have earned this badge yet.
+                  </p>
                 )}
               </div>
-            </div>
+            </BadgeMedal>
           );
         })}
       </div>
