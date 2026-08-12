@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import * as bcrypt from 'bcryptjs';
+import type { Request } from 'express';
 import prisma from './prisma';
-import { APP_URL } from '../config/env';
+import { resolvePublicOrigin } from '../config/env';
 
 /** How long an invite link stays usable. */
 export const INVITE_TTL_HOURS = 72;
@@ -26,8 +27,13 @@ export function hashInviteToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export function inviteUrl(token: string) {
-  return `${APP_URL}/invite/${token}`;
+/**
+ * Builds the link handed to the invited person. The origin comes from APP_URL
+ * (see resolvePublicOrigin) — never from a hardcoded default, because the link
+ * is single-use and a wrong host means the invite has to be reissued.
+ */
+export function inviteUrl(token: string, req?: Request) {
+  return `${resolvePublicOrigin(req)}/invite/${token}`;
 }
 
 /**
@@ -42,7 +48,7 @@ export async function unusablePasswordHash() {
  * Issues an invite for a user, superseding any previous unaccepted one.
  * Returns the raw token — the only time it exists in plaintext.
  */
-export async function issueInvite(tx: any, userId: string, createdById: string) {
+export async function issueInvite(tx: any, userId: string, createdById: string, req?: Request) {
   const { token, tokenHash } = generateInviteToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000);
 
@@ -60,7 +66,7 @@ export async function issueInvite(tx: any, userId: string, createdById: string) 
     }
   });
 
-  return { token, url: inviteUrl(token), expiresAt };
+  return { token, url: inviteUrl(token, req), expiresAt };
 }
 
 /** Looks up a usable invite by raw token, or null when invalid/expired/used. */

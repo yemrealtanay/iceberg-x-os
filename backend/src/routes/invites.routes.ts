@@ -112,7 +112,7 @@ router.post('/admin/users/:id/invite', requireAuth, isAdmin, async (req: Authent
     });
     if (!user) throw notFound('User not found');
 
-    const invite = await prisma.$transaction(tx => issueInvite(tx, user.id, req.user!.id));
+    const invite = await prisma.$transaction(tx => issueInvite(tx, user.id, req.user!.id, req));
 
     return res.status(201).json({
       success: true,

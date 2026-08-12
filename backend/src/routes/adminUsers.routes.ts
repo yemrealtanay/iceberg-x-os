@@ -104,7 +104,7 @@ router.post('/admin/users/create', requireAuth, isAdmin, async (req: Authenticat
           }
         });
 
-        const invite = useInvite ? await issueInvite(tx, user.id, req.user!.id) : null;
+        const invite = useInvite ? await issueInvite(tx, user.id, req.user!.id, req) : null;
 
         const profile = await tx.cubeProfile.create({
           data: {
@@ -140,7 +140,7 @@ router.post('/admin/users/create', requireAuth, isAdmin, async (req: Authenticat
             role: role as Role
           }
         });
-        const invite = useInvite ? await issueInvite(tx, user.id, req.user!.id) : null;
+        const invite = useInvite ? await issueInvite(tx, user.id, req.user!.id, req) : null;
         return { user, invite };
       });
 

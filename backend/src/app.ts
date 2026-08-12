@@ -6,6 +6,14 @@ import router from './routes';
 
 const app = express();
 
+// Behind Railway / any reverse proxy, without this every request looks like it
+// came from the proxy: `req.ip` is the proxy's address, so the login rate limit
+// would count all users into a single bucket and lock everyone out together,
+// and `req.protocol` would report http on an https deployment.
+if (IS_PROD) {
+  app.set('trust proxy', 1);
+}
+
 // Explicit allow-list. Development origins stay open because the Vite dev
 // server runs on a different port; production accepts only APP_URL.
 const allowedOrigins = IS_PROD

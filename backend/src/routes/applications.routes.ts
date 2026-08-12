@@ -150,7 +150,7 @@ router.patch('/admin/applications/:id', requireAuth, isAdmin, async (req: Authen
         data: { status: 'approved' }
       });
 
-      const invite = await issueInvite(tx, user.id, req.user!.id);
+      const invite = await issueInvite(tx, user.id, req.user!.id, req);
 
       return { user, profile, application: updated, invite };
     });
