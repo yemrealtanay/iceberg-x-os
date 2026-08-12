@@ -28,6 +28,7 @@ export const Welcome: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [selectedTestimonial, setSelectedTestimonial] = useState<any>(null);
 
   useEffect(() => {
     api.get('/testimonials')
@@ -873,7 +874,12 @@ export const Welcome: React.FC = () => {
             {/* Row 1: Scrolling Left */}
             <div className="animate-marquee-left">
               {[...testimonials, ...testimonials].map((t: any, idx: number) => (
-                <div key={`${t.id}-r1-${idx}`} className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group">
+                <div
+                  key={`${t.id}-r1-${idx}`}
+                  onClick={() => setSelectedTestimonial(t)}
+                  title="Click to read full testimonial"
+                  className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 hover:border-[#e6007e]/30 cursor-pointer rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group hover:-translate-y-0.5"
+                >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
                   <div className="flex flex-col gap-3">
                     <Quote className="w-6 h-6 text-[#e6007e]/20" />
@@ -902,7 +908,12 @@ export const Welcome: React.FC = () => {
             {testimonials.length > 2 && (
               <div className="animate-marquee-right">
                 {[...testimonials.slice(1), ...testimonials, ...testimonials.slice(0, 1)].map((t: any, idx: number) => (
-                  <div key={`${t.id}-r2-${idx}`} className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group">
+                  <div
+                    key={`${t.id}-r2-${idx}`}
+                    onClick={() => setSelectedTestimonial(t)}
+                    title="Click to read full testimonial"
+                    className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 hover:border-[#e6007e]/30 cursor-pointer rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group hover:-translate-y-0.5"
+                  >
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
                     <div className="flex flex-col gap-3">
                       <Quote className="w-6 h-6 text-[#e6007e]/20" />
@@ -928,6 +939,48 @@ export const Welcome: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Testimonial Zoom Modal */}
+          {selectedTestimonial && (
+            <div 
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+              onClick={() => setSelectedTestimonial(null)}
+            >
+              <div 
+                className="bg-white border border-black/5 rounded-3xl p-8 max-w-[500px] w-full shadow-premium relative flex flex-col gap-6"
+                onClick={e => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelectedTestimonial(null)}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex flex-col gap-4">
+                  <Quote className="w-10 h-10 text-[#e6007e]/20" />
+                  <p className="text-slate-800 text-sm sm:text-base font-semibold leading-relaxed italic">
+                    "{selectedTestimonial.content}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-sm flex items-center justify-center border border-[#e6007e]/20 shadow-sm shrink-0">
+                    {selectedTestimonial.cube?.user?.name ? selectedTestimonial.cube.user.name[0] : 'C'}
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-900 leading-tight">
+                      {selectedTestimonial.cube?.user?.name || 'Anonymous Cube'}
+                    </h4>
+                    <p className="text-xs text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
+                      Cohort {selectedTestimonial.cube?.cohort || 'Unknown'} · Cube #{selectedTestimonial.cube?.cube_number || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
 

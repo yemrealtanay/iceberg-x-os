@@ -20,6 +20,11 @@ router.post('/testimonials', requireAuth, async (req: AuthenticatedRequest, res)
       return res.status(400).json({ error: 'Testimonial content is required' });
     }
 
+    const trimmed = content.trim();
+    if (trimmed.length > 300) {
+      return res.status(400).json({ error: 'Testimonial content cannot exceed 300 characters' });
+    }
+
     const profile = await prisma.cubeProfile.findUnique({
       where: { user_id: req.user.id }
     });

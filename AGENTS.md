@@ -38,6 +38,8 @@ graph TD
 - `components/`: Layout shells, Markdown editors, and components.
 - `pages/`: Specific page views (`Welcome.tsx`, `Missions.tsx`, `Profile.tsx`, etc.).
 - `utils/`: Data formatters, state mappers, and API wrappers (`api.ts`).
+  - `badgeIcons.ts`: Maps Lucide icons, grouping categories, and legacy aliases.
+  - `badgeRarity.ts`: Defines style attributes, frames, and orders for badge rarities.
 
 ---
 
@@ -95,7 +97,23 @@ graph TD
 
 ---
 
-## 4. Database Schema & Migration Rules
+## 4. Badge System & Rarity Hierarchy
+
+The system defines three badge rarity tiers (`BadgeRarity`) with specific visual layouts:
+
+1. **Common**: Flat design, white background card, and neutral border. Hint: expected of every Cube.
+2. **Rare**: Coloured glow, lit gradient border (`from-sky-400 via-cyan-400 to-blue-600`). Hint: real depth of skill.
+3. **Epic**: Dark card, animated rotating spectrum border (`badge-frame-epic` CSS class), sheen sweep, and sparkles. Hint: moves the programme forward.
+
+### Naming & Asset Resolutions
+- **Rarity Sort**: Sorted rarest first using `compareByRarity` (order: Epic = 1, Rare = 2, Common = 3).
+- **Lucide Icon Collisions**: Aliased imports that shadow JavaScript globals (e.g. `Map as MapIcon`, `Infinity as InfinityIcon`) must be strictly observed in `badgeIcons.ts` to prevent import-time application crashes.
+- **Backward Compatibility**: Pre-catalogue PascalCase icons (e.g. `ClarityMaker`, `DeepDiver`) map to new keys using `LEGACY_ICON_ALIASES` in `badgeIcons.ts`.
+- **Award Guards**: Prevents duplicate awards for the same mission/cube combination. Deleting a badge requires `?force=true` query confirmation if active awards exist.
+
+---
+
+## 5. Database Schema & Migration Rules
 
 ### Migration Operations (Zero Loss)
 - **Safe Migrations**: Never push schema changes using `prisma db push` or interactively override database states in production. All schema changes must be logged as SQL migrations in `backend/prisma/migrations/`.
@@ -104,6 +122,6 @@ graph TD
 
 ---
 
-## 5. Terminology Conventions
+## 6. Terminology Conventions
 
 - **Standardized Word**: Use the term **Cube** exclusively across all user interfaces, button texts, page headers, lists, and form placeholders when referring to fellowship developers. Never refer to them as "students" or "interns".

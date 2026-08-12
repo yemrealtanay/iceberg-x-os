@@ -476,11 +476,19 @@ export const CubeDashboard: React.FC = () => {
               <textarea
                 required
                 rows={3}
+                maxLength={300}
                 placeholder="Share your R&D projects experience, skills learned, and mentorship highlight..."
                 value={testimonialContent}
                 onChange={e => setTestimonialContent(e.target.value)}
                 className="w-full p-2.5 border border-gray-100 bg-gray-50 focus:bg-white focus:border-magenta rounded-lg text-xs outline-none resize-none font-semibold transition"
               />
+
+              <div className="flex justify-between items-center text-[10px] font-extrabold px-1">
+                <span className={testimonialContent.length >= 300 ? 'text-magenta' : 'text-gray-400'}>
+                  {testimonialContent.length} / 300 characters
+                </span>
+                {testimonialContent.length >= 300 && <span className="text-magenta">Max limit reached</span>}
+              </div>
 
               <button
                 type="submit"
