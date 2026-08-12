@@ -429,7 +429,12 @@ export const CubeDashboard: React.FC = () => {
               <div className="flex flex-col gap-4">
                 {recentFeedback.map((feedback: any) => (
                   <div key={feedback.id} className="border-l-2 border-magenta pl-3.5 py-1">
-                    <p className="text-xs font-bold text-gray-400">{feedback.mission.title}</p>
+                    {/* A scorecard can be general rather than tied to a mission
+                        (MentorFeedback.mission_id is nullable), in which case
+                        `mission` comes back null. */}
+                    <p className="text-xs font-bold text-gray-400">
+                      {feedback.mission ? feedback.mission.title : 'General Evaluation'}
+                    </p>
                     <p className="text-xs text-gray-500 mt-1 font-semibold">Strengths:</p>
                     <p className="text-xs text-gray-600 italic">"{feedback.strengths}"</p>
                     <p className="text-xs text-gray-500 mt-2 font-semibold">Areas to Improve:</p>

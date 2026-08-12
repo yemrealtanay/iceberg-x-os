@@ -196,8 +196,12 @@ export const DemoSubmission: React.FC = () => {
                 className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs font-semibold outline-none cursor-pointer"
               >
                 <option value="">No team assignment</option>
+                {/* A team can sit without a mission (MissionTeam.mission_id is
+                    nullable, and detaching a mission leaves the team intact). */}
                 {teams.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} (Mission: {t.mission.title})</option>
+                  <option key={t.id} value={t.id}>
+                    {t.name} (Mission: {t.mission ? t.mission.title : 'unassigned'})
+                  </option>
                 ))}
               </select>
             </div>
