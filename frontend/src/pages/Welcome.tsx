@@ -1050,12 +1050,12 @@ export const Welcome: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="f-uni" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">University</label>
+                    <label htmlFor="f-uni" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">School / University</label>
                     <input 
                       id="f-uni" 
                       type="text" 
                       required 
-                      placeholder="e.g. UCL"
+                      placeholder="e.g. Stanford University or Science High School"
                       value={university}
                       onChange={(e) => setUniversity(e.target.value)}
                       disabled={formSubmitting}
@@ -1063,12 +1063,12 @@ export const Welcome: React.FC = () => {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="f-deg" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Degree</label>
+                    <label htmlFor="f-deg" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Major / Grade</label>
                     <input 
                       id="f-deg" 
                       type="text" 
                       required 
-                      placeholder="e.g. Computer Science"
+                      placeholder="e.g. Computer Science or 11th Grade"
                       value={degree}
                       onChange={(e) => setDegree(e.target.value)}
                       disabled={formSubmitting}
@@ -1078,22 +1078,17 @@ export const Welcome: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="f-year" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Year of Study</label>
-                  <select 
+                  <label htmlFor="f-year" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Year / Grade Level</label>
+                  <input 
                     id="f-year" 
+                    type="text" 
                     required 
+                    placeholder="e.g. 11th Grade, Sophomore, Final Year"
                     value={yearOfStudy}
                     onChange={(e) => setYearOfStudy(e.target.value)}
                     disabled={formSubmitting}
                     className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                  >
-                    <option value="">Select year…</option>
-                    <option value="First Year">First Year</option>
-                    <option value="Second Year">Second Year</option>
-                    <option value="Penultimate Year">Penultimate Year</option>
-                    <option value="Final Year">Final Year</option>
-                    <option value="Postgraduate">Postgraduate</option>
-                  </select>
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
