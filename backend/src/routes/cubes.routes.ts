@@ -11,6 +11,7 @@ import { IN_PROGRAMME_CUBE_LEVELS, DIRECTORY_HIDDEN_LEVELS } from '../config/con
 import { badRequest, conflict, sendError, parseCubeNumber } from '../utils/http';
 import { createSingleNotification } from '../services/notification.service';
 import { Role, CubeLevel } from '@prisma/client';
+import { recalculateAllQuestsForCube } from '../services/quest.service';
 
 const router = Router();
 
@@ -319,6 +320,9 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
     if (req.user?.role === 'ADMIN' || req.user?.role === 'MENTOR') {
       await createSingleNotification(profile.user_id, "A mentor updated your profile status.");
     }
+
+    // Recalculate quests (for profile completion checks)
+    await recalculateAllQuestsForCube(id);
 
     return res.json(updated);
   } catch (error: any) {

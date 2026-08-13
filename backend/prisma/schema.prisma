@@ -83,6 +83,8 @@ model User {
   email         String   @unique
   password_hash String
   role          Role     @default(CUBE)
+  last_login_at DateTime?
+  login_streak  Int      @default(0)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
@@ -134,6 +136,7 @@ model CubeProfile {
   offboarding_record OffboardingRecord?
   private_notes      PrivateNote[]
   testimonials       Testimonial[]
+  cube_quests        CubeQuest[]
 
   @@index([assigned_mentor_id])
   @@index([current_level])
@@ -307,6 +310,7 @@ model Badge {
 
   // Relations
   cube_badges CubeBadge[]
+  quests      Quest[]     @relation("QuestToBadge")
 
   @@index([rarity])
 }
@@ -482,5 +486,47 @@ model Testimonial {
 
   @@index([cube_id])
   @@index([is_approved, created_at])
+}
+
+model Quest {
+  id                  String      @id @default(uuid())
+  title               String
+  description         String      @db.Text
+  difficulty          BadgeRarity @default(Common)
+  criteria_type       String
+  criteria_value      Float
+  is_timed            Boolean     @default(false)
+  expires_at          DateTime?
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+
+  dependency_quest_id String?
+  dependency_quest    Quest?      @relation("QuestDependency", fields: [dependency_quest_id], references: [id], onDelete: SetNull)
+  dependent_quests    Quest[]     @relation("QuestDependency")
+
+  // Relations
+  rewards             Badge[]     @relation("QuestToBadge")
+  cube_quests         CubeQuest[]
+
+  @@index([difficulty])
+  @@index([criteria_type])
+  @@index([dependency_quest_id])
+}
+
+model CubeQuest {
+  id            String      @id @default(uuid())
+  cube_id       String
+  cube          CubeProfile @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  quest_id      String
+  quest         Quest       @relation(fields: [quest_id], references: [id], onDelete: Cascade)
+  current_value Float       @default(0)
+  is_completed  Boolean     @default(false)
+  completed_at  DateTime?
+  assigned_at   DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  @@unique([cube_id, quest_id])
+  @@index([cube_id])
+  @@index([quest_id])
 }
 

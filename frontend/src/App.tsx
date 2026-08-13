@@ -29,6 +29,8 @@ import { VerifyCertificate } from './pages/VerifyCertificate';
 import { Notifications } from './pages/Notifications';
 import { AdminTestimonials } from './pages/AdminTestimonials';
 import { AcceptInvite } from './pages/AcceptInvite';
+import { Quests } from './pages/Quests';
+import { AdminQuests } from './pages/AdminQuests';
 
 function App() {
   return (
@@ -184,6 +186,17 @@ function App() {
               element={
                 <RouteGuard allowedRoles={['ADMIN']}>
                   <AdminApplications />
+                </RouteGuard>
+              }
+            />
+
+            {/* Quests gamification (Cubes, Mentors, Admins) */}
+            <Route path="quests" element={<Quests />} />
+            <Route
+              path="admin/quests"
+              element={
+                <RouteGuard allowedRoles={['ADMIN']}>
+                  <AdminQuests />
                 </RouteGuard>
               }
             />

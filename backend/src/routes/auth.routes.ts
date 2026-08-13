@@ -11,6 +11,8 @@ import { JWT_SECRET } from '../config/env';
 import { sendError } from '../utils/http';
 import { Role } from '@prisma/client';
 
+import { trackUserLogin } from '../services/quest.service';
+
 const router = Router();
 
 router.post('/auth/login', loginRateLimit, async (req, res) => {
@@ -33,6 +35,9 @@ router.post('/auth/login', loginRateLimit, async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    // Update login streak and trigger quest calculations
+    await trackUserLogin(user.id);
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown, Trophy } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 
 export const Layout: React.FC = () => {
@@ -38,6 +38,7 @@ export const Layout: React.FC = () => {
       { path: '/missions', label: 'Missions', icon: Rocket },
       { path: '/meetings', label: 'Meetings', icon: Calendar },
       { path: '/badges', label: 'Badges', icon: Award },
+      { path: '/quests', label: 'Quests', icon: Trophy },
       { path: '/vault', label: 'Vault', icon: FolderOpen },
     ];
   };
@@ -51,6 +52,7 @@ export const Layout: React.FC = () => {
     ];
     if (user.role === 'ADMIN') {
       list.push({ path: '/admin/users', label: 'Users Admin', icon: Users });
+      list.push({ path: '/admin/quests', label: 'Quests Admin', icon: Trophy });
     }
     return list;
   };

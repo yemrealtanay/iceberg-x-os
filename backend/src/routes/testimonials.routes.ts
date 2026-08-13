@@ -5,6 +5,7 @@ import { Router } from 'express';
 import prisma from '../services/prisma';
 import { requireAuth, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { sendError } from '../utils/http';
+import { recalculateAllQuestsForCube } from '../services/quest.service';
 
 const router = Router();
 
@@ -40,6 +41,9 @@ router.post('/testimonials', requireAuth, async (req: AuthenticatedRequest, res)
         is_approved: false
       }
     });
+
+    // Trigger quest re-evaluations for testimonial writing
+    await recalculateAllQuestsForCube(profile.id);
 
     return res.status(201).json(testimonial);
   } catch (error: any) {

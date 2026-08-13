@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Award, Rocket, MessageSquare, ShieldAlert, Sparkles, Send, PlayCircle, ExternalLink, MessageCircle } from 'lucide-react';
+import { Award, Rocket, MessageSquare, ShieldAlert, Sparkles, Send, PlayCircle, ExternalLink, MessageCircle, Trophy, CheckCircle, Clock } from 'lucide-react';
 import { CustomMarkdown } from '../components/CustomMarkdown';
 import { BadgeDisc } from '../components/BadgeMedal';
 import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
@@ -28,10 +28,16 @@ export const CubeDashboard: React.FC = () => {
   const [testimonialSuccess, setTestimonialSuccess] = useState(false);
   const [testimonialError, setTestimonialError] = useState<string | null>(null);
 
+  const [quests, setQuests] = useState<any[]>([]);
+
   const fetchDashboardData = async () => {
     try {
-      const res = await api.get('/cube/dashboard');
+      const [res, questsRes] = await Promise.all([
+        api.get('/cube/dashboard'),
+        api.get('/quests')
+      ]);
       setData(res);
+      setQuests(questsRes);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch dashboard data');
     } finally {
@@ -381,6 +387,82 @@ export const CubeDashboard: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Active Quests Dashboard */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+            <h3 className="font-extrabold text-lg border-b border-gray-50 pb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-magenta" />
+                <span>My Quests</span>
+              </div>
+              <Link to="/quests" className="text-[10px] text-magenta font-black uppercase hover:underline">
+                View All
+              </Link>
+            </h3>
+
+            {quests && quests.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {quests.slice(0, 3).map((cq: any) => {
+                  const q = cq.quest;
+                  const progressPercentage = Math.min(100, (cq.current_value / q.criteria_value) * 100);
+                  
+                  return (
+                    <div key={cq.id} className="border border-slate-100 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden bg-slate-50/50">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white border border-slate-200 text-slate-500 rounded-md">
+                          {q.difficulty}
+                        </span>
+                        {cq.is_completed ? (
+                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-green-600">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Done</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-500">
+                            <Clock className="w-3.5 h-3.5 animate-pulse" />
+                            <span>In Progress</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="font-extrabold text-xs text-slate-800 leading-tight">{q.title}</h4>
+                        <p className="text-[10px] font-semibold text-slate-400 mt-1 line-clamp-2 leading-relaxed">{q.description}</p>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        <div className="flex justify-between items-center text-[9px] font-extrabold text-slate-500">
+                          <span className="truncate max-w-[70%]">
+                            {q.criteria_type === 'missions_completed' ? `Complete ${q.criteria_value} Missions` :
+                             q.criteria_type === 'average_score' ? `Average Score of ${q.criteria_value}/5` :
+                             q.criteria_type === 'login_streak' ? `${q.criteria_value} Day Login Streak` :
+                             q.criteria_type === 'meeting_attendance' ? `${q.criteria_value}% Meeting Attendance` :
+                             q.criteria_type === 'profile_completion' ? 'Complete your Profile' :
+                             q.criteria_type === 'write_testimonial' ? `Submit ${q.criteria_value} Testimonial(s)` :
+                             `Goal: ${q.criteria_value}`}
+                          </span>
+                          <span>
+                            {q.criteria_type === 'profile_completion' ? (cq.current_value === 1 ? 'Completed' : 'Incomplete') :
+                             q.criteria_type === 'average_score' ? `${cq.current_value.toFixed(2)} / ${q.criteria_value.toFixed(1)}` :
+                             q.criteria_type === 'meeting_attendance' ? `${cq.current_value.toFixed(1)}% / ${q.criteria_value}%` :
+                             `${cq.current_value} / ${q.criteria_value}`}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div 
+                            className="h-full rounded-full bg-magenta transition-all duration-500"
+                            style={{ width: `${progressPercentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-xs py-4 text-center">No quests assigned yet.</p>
+            )}
+          </div>
 
           {/* Earned Badges */}
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
