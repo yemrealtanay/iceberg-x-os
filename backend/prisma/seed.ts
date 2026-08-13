@@ -608,6 +608,146 @@ async function main() {
     });
   }
 
+  // 7. Seed Quests and auto-assign them to all CubeProfiles
+  console.log('Seeding quests...');
+  const questTemplates = [
+    {
+      title: 'First Milestone',
+      description: 'Complete your very first mission team assignment to kick off your Cube journey.',
+      difficulty: 'Common',
+      criteria_type: 'missions_completed',
+      criteria_value: 1,
+      badgeName: 'Builder',
+      badgeIcon: 'hammer',
+      badgeRarity: 'Common'
+    },
+    {
+      title: 'Consistency Master',
+      description: 'Login to the portal daily for 7 consecutive days to keep tabs on updates.',
+      difficulty: 'Common',
+      criteria_type: 'login_streak',
+      criteria_value: 7,
+      badgeName: 'GrowthMindset',
+      badgeIcon: 'trending-up',
+      badgeRarity: 'Common'
+    },
+    {
+      title: 'Reliable Contributor',
+      description: 'Attend at least 90% of meetings you are invited to.',
+      difficulty: 'Rare',
+      criteria_type: 'meeting_attendance',
+      criteria_value: 90,
+      badgeName: 'NoGhosting',
+      badgeIcon: 'user-check',
+      badgeRarity: 'Rare'
+    },
+    {
+      title: 'High Achiever',
+      description: 'Achieve an average score of 4.2 or above across all your feedback scorecards.',
+      difficulty: 'Rare',
+      criteria_type: 'average_score',
+      criteria_value: 4.2,
+      badgeName: 'OwnYourWork',
+      badgeIcon: 'award',
+      badgeRarity: 'Rare'
+    },
+    {
+      title: 'R&D Heavyweight',
+      description: 'Build and deliver 3 working POCs or integration candidates.',
+      difficulty: 'Epic',
+      criteria_type: 'missions_completed',
+      criteria_value: 3,
+      badgeName: 'DemoMaker',
+      badgeIcon: 'play',
+      badgeRarity: 'Rare'
+    },
+    {
+      title: 'Iceberg Elite Fellow',
+      description: 'Maintain an outstanding feedback score of 4.7+ across multiple completed missions.',
+      difficulty: 'Epic',
+      criteria_type: 'average_score',
+      criteria_value: 4.7,
+      badgeName: 'Crown',
+      badgeIcon: 'crown',
+      badgeRarity: 'Epic'
+    }
+  ];
+
+  const cubes = await prisma.cubeProfile.findMany({ select: { id: true } });
+  console.log(`Found ${cubes.length} CubeProfile(s) to assign quests.`);
+
+  for (const t of questTemplates) {
+    // Ensure reward badge exists
+    let badge = await prisma.badge.findUnique({
+      where: { name: t.badgeName }
+    });
+
+    if (!badge) {
+      console.log(`Badge "${t.badgeName}" not found. Creating it...`);
+      badge = await prisma.badge.create({
+        data: {
+          name: t.badgeName,
+          description: `Automatically awarded for completing quest: ${t.title}`,
+          icon: t.badgeIcon,
+          rarity: t.badgeRarity as any
+        }
+      });
+    }
+
+    // Ensure the quest exists
+    let quest = await prisma.quest.findFirst({
+      where: { title: t.title }
+    });
+
+    if (!quest) {
+      console.log(`Quest "${t.title}" not found. Creating it...`);
+      quest = await prisma.quest.create({
+        data: {
+          title: t.title,
+          description: t.description,
+          difficulty: t.difficulty as any,
+          criteria_type: t.criteria_type,
+          criteria_value: t.criteria_value,
+          rewards: {
+            connect: [{ id: badge.id }]
+          }
+        }
+      });
+    }
+
+    // Assign to existing Cubes
+    for (const c of cubes) {
+      const existingAssignment = await prisma.cubeQuest.findUnique({
+        where: {
+          cube_id_quest_id: {
+            cube_id: c.id,
+            quest_id: quest.id
+          }
+        }
+      });
+
+      if (!existingAssignment) {
+        await prisma.cubeQuest.create({
+          data: {
+            cube_id: c.id,
+            quest_id: quest.id,
+            current_value: 0
+          }
+        });
+      }
+    }
+  }
+
+  // Setup default dependencies
+  const highAchiever = await prisma.quest.findFirst({ where: { title: 'High Achiever' } });
+  const eliteFellow = await prisma.quest.findFirst({ where: { title: 'Iceberg Elite Fellow' } });
+  if (highAchiever && eliteFellow) {
+    await prisma.quest.update({
+      where: { id: eliteFellow.id },
+      data: { dependency_quest_id: highAchiever.id }
+    });
+  }
+
   console.log('Seed completed successfully!');
 }
 
