@@ -49,6 +49,8 @@ export const Quests: React.FC = () => {
     switch (type) {
       case 'missions_completed':
         return `Complete ${value} Mission(s)`;
+      case 'missions_assigned':
+        return `Get assigned to ${value} Mission Team(s)`;
       case 'average_score':
         return `Maintain a Scorecard Average of ${value}/5`;
       case 'login_streak':
@@ -70,6 +72,8 @@ export const Quests: React.FC = () => {
     switch (type) {
       case 'missions_completed':
         return `${current} / ${target} missions`;
+      case 'missions_assigned':
+        return `${current} / ${target} assignments`;
       case 'average_score':
         return `${current.toFixed(2)} / ${target.toFixed(1)} avg`;
       case 'login_streak':

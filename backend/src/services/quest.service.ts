@@ -100,6 +100,11 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
       }
     });
   } 
+  else if (quest.criteria_type === 'missions_assigned') {
+    newValue = await prisma.missionTeamMember.count({
+      where: { cube_id: cubeProfileId }
+    });
+  }
   else if (quest.criteria_type === 'average_score') {
     const profile = await prisma.cubeProfile.findUnique({
       where: { id: cubeProfileId },

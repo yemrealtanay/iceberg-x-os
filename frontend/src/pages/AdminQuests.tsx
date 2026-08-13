@@ -102,6 +102,22 @@ export const AdminQuests: React.FC = () => {
     }
   };
 
+  const handleQuestOverride = async (cubeProfileId: string, questId: string, action: 'complete' | 'revert') => {
+    const confirmMessage = action === 'complete' 
+      ? 'Are you sure you want to force-complete this quest and award its badges?' 
+      : 'Are you sure you want to revert/take back this quest? This will reset progress and delete any awarded badges for this quest.';
+    
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      await api.post('/admin/quests/override', { cubeProfileId, questId, action });
+      alert(action === 'complete' ? 'Quest manually completed!' : 'Quest reverted successfully.');
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Override failed');
+    }
+  };
+
   const handleAssignQuest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assigningQuestId) return;
@@ -304,6 +320,7 @@ export const AdminQuests: React.FC = () => {
                     className="w-full px-3 py-2.5 border border-gray-150 bg-gray-50 focus:bg-white focus:border-magenta rounded-xl text-xs font-semibold outline-none transition"
                   >
                     <option value="missions_completed">Missions Completed</option>
+                    <option value="missions_assigned">Missions Assigned (Joined Teams)</option>
                     <option value="average_score">Scorecard Average (1-5)</option>
                     <option value="login_streak">Login Streak (Days)</option>
                     <option value="meeting_attendance">Meeting Attendance (%)</option>
@@ -775,6 +792,23 @@ export const AdminQuests: React.FC = () => {
                             >
                               Verify
                             </button>
+                            {cq.is_completed ? (
+                              <button
+                                type="button"
+                                onClick={() => handleQuestOverride(cq.cube_id, cq.quest_id, 'revert')}
+                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-250 text-amber-700 rounded-lg text-[10px] font-black uppercase transition"
+                              >
+                                Revert
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleQuestOverride(cq.cube_id, cq.quest_id, 'complete')}
+                                className="px-2.5 py-1 bg-green-50 hover:bg-green-100 border border-green-250 text-green-700 rounded-lg text-[10px] font-black uppercase transition"
+                              >
+                                Complete
+                              </button>
+                            )}
                             {cq.quest?.criteria_type === 'custom' && (
                               <button
                                 type="button"

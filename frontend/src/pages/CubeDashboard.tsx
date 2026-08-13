@@ -434,6 +434,7 @@ export const CubeDashboard: React.FC = () => {
                         <div className="flex justify-between items-center text-[9px] font-extrabold text-slate-500">
                           <span className="truncate max-w-[70%]">
                             {q.criteria_type === 'missions_completed' ? `Complete ${q.criteria_value} Missions` :
+                             q.criteria_type === 'missions_assigned' ? `Assigned to ${q.criteria_value} Mission(s)` :
                              q.criteria_type === 'average_score' ? `Average Score of ${q.criteria_value}/5` :
                              q.criteria_type === 'login_streak' ? `${q.criteria_value} Day Login Streak` :
                              q.criteria_type === 'meeting_attendance' ? `${q.criteria_value}% Meeting Attendance` :

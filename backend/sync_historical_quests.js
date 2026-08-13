@@ -6,7 +6,7 @@ const questTemplates = [
     title: 'First Milestone',
     description: 'Complete your very first mission team assignment to kick off your Cube journey.',
     difficulty: 'Common',
-    criteria_type: 'missions_completed',
+    criteria_type: 'missions_assigned',
     criteria_value: 1,
     badgeName: 'Builder',
     badgeIcon: 'hammer',
@@ -111,6 +111,18 @@ async function syncAll() {
           rewards: { connect: [{ id: badge.id }] }
         }
       });
+    } else {
+      // Sync criteria_type and criteria_value if they changed
+      if (quest.criteria_type !== t.criteria_type || quest.criteria_value !== t.criteria_value) {
+        console.log(`Updating Quest "${t.title}" criteria to ${t.criteria_type} = ${t.criteria_value}`);
+        quest = await prisma.quest.update({
+          where: { id: quest.id },
+          data: {
+            criteria_type: t.criteria_type,
+            criteria_value: t.criteria_value
+          }
+        });
+      }
     }
 
     // Ensure all Cubes are assigned to this quest
@@ -174,6 +186,11 @@ async function syncAll() {
         }
       });
     } 
+    else if (quest.criteria_type === 'missions_assigned') {
+      newValue = await prisma.missionTeamMember.count({
+        where: { cube_id: cubeProfileId }
+      });
+    }
     else if (quest.criteria_type === 'average_score') {
       const completedMissionsCount = await prisma.mission.count({
         where: {

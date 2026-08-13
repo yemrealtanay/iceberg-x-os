@@ -27,7 +27,7 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
     }
 
     // Validate criteria_type
-    const validCriteriaTypes = ['missions_completed', 'average_score', 'login_streak', 'meeting_attendance', 'custom', 'profile_completion', 'write_testimonial'];
+    const validCriteriaTypes = ['missions_completed', 'missions_assigned', 'average_score', 'login_streak', 'meeting_attendance', 'custom', 'profile_completion', 'write_testimonial'];
     if (!validCriteriaTypes.includes(criteria_type)) {
       throw badRequest(`Criteria type must be one of: ${validCriteriaTypes.join(', ')}.`);
     }
@@ -214,6 +214,128 @@ router.post('/admin/quests/custom-progress', requireAuth, isMentorOrAdmin, async
       message: updated.is_completed 
         ? 'Progress updated. Quest is now completed!' 
         : 'Progress updated successfully.'
+    });
+  } catch (error: any) {
+    return sendError(res, error);
+  }
+});
+
+// Admin Override (Force Complete or Revert) quest status (Admin/Mentor only)
+router.post('/admin/quests/override', requireAuth, isMentorOrAdmin, async (req, res) => {
+  try {
+    const { cubeProfileId, questId, action } = req.body;
+
+    if (!cubeProfileId || !questId || !action) {
+      throw badRequest('Missing parameters: cubeProfileId, questId, and action are required.');
+    }
+
+    if (action !== 'complete' && action !== 'revert') {
+      throw badRequest('Action must be either "complete" or "revert".');
+    }
+
+    const cubeQuest = await prisma.cubeQuest.findUnique({
+      where: { cube_id_quest_id: { cube_id: cubeProfileId, quest_id: questId } },
+      include: { quest: { include: { rewards: true } } }
+    });
+
+    if (!cubeQuest) {
+      throw notFound('Quest assignment not found for this Cube.');
+    }
+
+    const systemAdmin = await prisma.user.findFirst({
+      where: { role: 'ADMIN' },
+      select: { id: true }
+    });
+    const awardedById = systemAdmin?.id || 'system';
+
+    const result = await prisma.$transaction(async (tx) => {
+      if (action === 'complete') {
+        // Force complete
+        const updated = await tx.cubeQuest.update({
+          where: { cube_id_quest_id: { cube_id: cubeProfileId, quest_id: questId } },
+          data: {
+            is_completed: true,
+            completed_at: new Date(),
+            current_value: cubeQuest.quest.criteria_value
+          }
+        });
+
+        // Award badges
+        for (const badge of cubeQuest.quest.rewards) {
+          const alreadyAwarded = await tx.cubeBadge.findFirst({
+            where: { cube_id: cubeProfileId, badge_id: badge.id }
+          });
+
+          if (!alreadyAwarded) {
+            await tx.cubeBadge.create({
+              data: {
+                cube_id: cubeProfileId,
+                badge_id: badge.id,
+                reason: `Manually completed by Admin: ${cubeQuest.quest.title}`,
+                awarded_by_id: awardedById
+              }
+            });
+          }
+        }
+
+        // Create notification
+        const profile = await tx.cubeProfile.findUnique({
+          where: { id: cubeProfileId },
+          select: { user_id: true }
+        });
+        if (profile) {
+          await tx.notification.create({
+            data: {
+              user_id: profile.user_id,
+              message: `🎉 Quest manually completed by Admin: "${cubeQuest.quest.title}"!`
+            }
+          });
+        }
+
+        return updated;
+      } else {
+        // Revert completion
+        const updated = await tx.cubeQuest.update({
+          where: { cube_id_quest_id: { cube_id: cubeProfileId, quest_id: questId } },
+          data: {
+            is_completed: false,
+            completed_at: null,
+            current_value: 0
+          }
+        });
+
+        // Remove awarded badges
+        for (const badge of cubeQuest.quest.rewards) {
+          await tx.cubeBadge.deleteMany({
+            where: {
+              cube_id: cubeProfileId,
+              badge_id: badge.id
+            }
+          });
+        }
+
+        // Create notification
+        const profile = await tx.cubeProfile.findUnique({
+          where: { id: cubeProfileId },
+          select: { user_id: true }
+        });
+        if (profile) {
+          await tx.notification.create({
+            data: {
+              user_id: profile.user_id,
+              message: `⚠️ Quest reverted by Admin: "${cubeQuest.quest.title}". Progress reset.`
+            }
+          });
+        }
+
+        return updated;
+      }
+    });
+
+    return res.json({
+      success: true,
+      cubeQuest: result,
+      message: action === 'complete' ? 'Quest manually completed successfully.' : 'Quest successfully reverted to In Progress.'
     });
   } catch (error: any) {
     return sendError(res, error);
