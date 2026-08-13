@@ -255,7 +255,17 @@ async function syncAll() {
       const hasGithub = !!tracker.cube.github_url;
       const hasLinkedin = !!tracker.cube.linkedin_url;
       const hasSkills = (tracker.cube.skills || []).length >= 3;
-      newValue = (hasGithub && hasLinkedin && hasSkills) ? 1 : 0;
+      const isComplete = hasGithub && hasLinkedin && hasSkills;
+
+      if (quest.criteria_value > 1) {
+        let completedParts = 0;
+        if (hasGithub) completedParts++;
+        if (hasLinkedin) completedParts++;
+        if (hasSkills) completedParts++;
+        newValue = Math.round((completedParts / 3) * quest.criteria_value);
+      } else {
+        newValue = isComplete ? 1 : 0;
+      }
     }
     else if (quest.criteria_type === 'write_testimonial') {
       newValue = await prisma.testimonial.count({
