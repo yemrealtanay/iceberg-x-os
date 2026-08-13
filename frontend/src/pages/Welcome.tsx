@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { Check, ShieldAlert, Sparkles, Award, ArrowDown, Users, HelpCircle, Archive, Globe, Quote, Menu, X } from 'lucide-react';
+import { Check, ShieldAlert, Sparkles, Award, ArrowDown, Users, HelpCircle, Archive, Globe, Quote, Menu, X, Target, Compass, Lock } from 'lucide-react';
 
 export const Welcome: React.FC = () => {
   const { user } = useAuth();
@@ -696,6 +696,93 @@ export const Welcome: React.FC = () => {
                 <p className="text-slate-500 text-[11px] font-semibold leading-relaxed">{badge.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 7.5. THE QUEST SYSTEM */}
+      <section className="py-24 bg-[#0a0508] border-b border-black/10 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-radial-gradient from-magenta/5 to-transparent pointer-events-none" />
+        <div className="max-w-[1200px] mx-auto px-7 relative z-10">
+          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
+            <span className="text-magenta text-xs uppercase font-extrabold tracking-wider flex items-center justify-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span>Interactive Progression</span>
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black leading-none tracking-tight">Gamified Quests & Level-Ups</h2>
+            <p className="text-slate-400 font-medium leading-relaxed">
+              Embark on structured challenges designed to accelerate your growth. Achieve milestones, track your stats in real-time, and unlock next-tier quests.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Quest 1 */}
+            <div className="bg-[#120a10] border border-magenta/10 rounded-3xl p-7 flex flex-col justify-between gap-5 relative group hover:border-magenta/30 hover:-translate-y-1 transition-all">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-start">
+                  <span className="inline-flex items-center gap-1 bg-[#1a0f18] text-magenta border border-magenta/20 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                    Common Quest
+                  </span>
+                  <Compass className="w-5 h-5 text-magenta/40" />
+                </div>
+                <h4 className="font-extrabold text-[1.2rem] mt-3">Consistency Master</h4>
+                <p className="text-slate-400 text-xs leading-relaxed mt-1">
+                  Log in to the fellowship portal daily for 7 consecutive days. Form habits, review scorecards, and stay engaged.
+                </p>
+              </div>
+              <div className="border-t border-white/5 pt-4 flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Target: 7 Days</span>
+                <span className="text-[10px] font-black text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded-md">🏆 GrowthMindset</span>
+              </div>
+            </div>
+
+            {/* Quest 2 */}
+            <div className="bg-[#120a10] border border-cyan-500/10 rounded-3xl p-7 flex flex-col justify-between gap-5 relative group hover:border-cyan-500/30 hover:-translate-y-1 transition-all">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-start">
+                  <span className="inline-flex items-center gap-1 bg-cyan-950/40 text-cyan-400 border border-cyan-500/20 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                    Rare Quest
+                  </span>
+                  <Target className="w-5 h-5 text-cyan-400/40" />
+                </div>
+                <h4 className="font-extrabold text-[1.2rem] mt-3">Reliable Contributor</h4>
+                <p className="text-slate-400 text-xs leading-relaxed mt-1">
+                  Attend at least 90% of meetings and R&D synced sessions you are invited to. Value accountability.
+                </p>
+              </div>
+              <div className="border-t border-white/5 pt-4 flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Target: 90% Attend</span>
+                <span className="text-[10px] font-black text-cyan-400 bg-cyan-400/5 border border-cyan-400/10 px-2 py-0.5 rounded-md">🏆 NoGhosting</span>
+              </div>
+            </div>
+
+            {/* Quest 3 */}
+            <div className="bg-[#080306] border border-white/5 rounded-3xl p-7 flex flex-col justify-between gap-5 relative group hover:border-magenta/20 transition-all opacity-80">
+              <div className="absolute right-6 top-6 flex items-center gap-1 bg-magenta/10 text-magenta border border-magenta/20 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
+                <Lock className="w-3 h-3" />
+                <span>Locked Level</span>
+              </div>
+              <div className="flex flex-col gap-2 mt-4">
+                <div className="flex justify-between items-start">
+                  <span className="inline-flex items-center gap-1 bg-slate-900 text-slate-500 border border-white/5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                    Epic Quest
+                  </span>
+                </div>
+                <h4 className="font-extrabold text-[1.2rem] mt-3 text-white/50">Iceberg Elite Fellow</h4>
+                <p className="text-slate-500 text-xs leading-relaxed mt-1">
+                  Maintain an outstanding feedback score of 4.7+ across 5 completed missions.
+                </p>
+              </div>
+              <div className="border-t border-white/5 pt-4 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase text-slate-600 tracking-wider">Target: 4.7+ Avg</span>
+                  <span className="text-[10px] font-black text-white/40 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">🏆 Crown</span>
+                </div>
+                <p className="text-[9px] font-bold text-magenta mt-1 italic">
+                  * Unlocks only after completing "High Achiever" quest
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
