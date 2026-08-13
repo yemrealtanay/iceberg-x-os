@@ -1105,6 +1105,79 @@ export const Profile: React.FC = () => {
           )}
         </div>
 
+        {/* Quests Completed Section */}
+        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+          <h3 className="font-extrabold text-lg flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span>Completed Quests</span>
+          </h3>
+
+          {profile.cube_quests && profile.cube_quests.filter((cq: any) => cq.is_completed).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {profile.cube_quests
+                .filter((cq: any) => cq.is_completed)
+                .map((cq: any) => {
+                  const isEpic = cq.quest?.difficulty === 'Epic';
+                  const isRare = cq.quest?.difficulty === 'Rare';
+                  const borderClass = isEpic 
+                    ? 'border-magenta/40 shadow-sm shadow-magenta/5 bg-slate-950 text-white' 
+                    : isRare 
+                    ? 'border-sky-200 bg-sky-50/10' 
+                    : 'border-slate-100';
+
+                  const badgeMeta = isEpic 
+                    ? 'bg-magenta text-white' 
+                    : isRare 
+                    ? 'bg-sky-50 text-sky-700 border border-sky-100' 
+                    : 'bg-slate-50 text-slate-600 border border-slate-200';
+
+                  return (
+                    <div
+                      key={cq.id}
+                      className={`border rounded-2xl p-4 flex flex-col justify-between gap-3 ${borderClass}`}
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-extrabold text-sm leading-snug">
+                            {cq.quest?.title}
+                          </h4>
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${badgeMeta}`}>
+                            {cq.quest?.difficulty}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${isEpic ? 'text-slate-300' : 'text-slate-500'} leading-relaxed mt-0.5`}>
+                          {cq.quest?.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 border-t pt-2.5 border-slate-100/10">
+                        <div className="flex flex-wrap gap-1">
+                          {cq.quest?.rewards?.map((b: any) => (
+                            <span
+                              key={b.id}
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold ${
+                                isEpic ? 'bg-slate-900 border border-slate-800 text-magenta' : 'bg-slate-50 border border-slate-200 text-slate-700'
+                              }`}
+                            >
+                              🏆 {b.name}
+                            </span>
+                          ))}
+                        </div>
+                        {cq.completed_at && (
+                          <span className="text-[9px] font-bold text-slate-400">
+                            Unlocked: {new Date(cq.completed_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-sm py-4 text-center">No quests completed yet.</p>
+          )}
+        </div>
+
         {/* Technical Skills & Interests */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-5">
           <div>

@@ -607,7 +607,16 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
             created_at: 'desc'
           }
         },
-        offboarding_record: true
+        offboarding_record: true,
+        cube_quests: {
+          include: {
+            quest: {
+              include: {
+                rewards: true
+              }
+            }
+          }
+        }
       }
     });
 
