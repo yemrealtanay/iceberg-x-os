@@ -47,18 +47,29 @@ router.post('/testimonials', requireAuth, async (req: AuthenticatedRequest, res)
   }
 });
 
-// List approved testimonials (Public)
+/**
+ * List approved testimonials. Public — no auth.
+ *
+ * `select` (not `include`) on `cube` is deliberate: an `include` here fetches
+ * every scalar on CubeProfile — phone_number, github/gitlab/linkedin, slack
+ * handle, skills, interests, mentor assignment — and ships it to anyone with
+ * no login at all. Only the name and Cube number belong on a public page.
+ */
 router.get('/testimonials', async (req, res) => {
   try {
     const testimonials = await prisma.testimonial.findMany({
       where: { is_approved: true },
-      include: {
+      select: {
+        id: true, // needed only as a React key; not personal data
+        content: true,
         cube: {
-          include: {
+          select: {
+            cube_number: true,
             user: { select: { name: true } }
           }
         }
       },
+      // Sorting by created_at doesn't require selecting it back
       orderBy: { created_at: 'desc' }
     });
     return res.json(testimonials);
@@ -71,9 +82,19 @@ router.get('/testimonials', async (req, res) => {
 router.get('/admin/testimonials', requireAuth, isMentorOrAdmin, async (req, res) => {
   try {
     const testimonials = await prisma.testimonial.findMany({
-      include: {
+      select: {
+        id: true,
+        content: true,
+        is_approved: true,
+        created_at: true,
         cube: {
-          include: {
+          // Staff already sees every one of these fields via /cubes, so a
+          // wider select here is not a leak — kept to just what the
+          // moderation view renders.
+          select: {
+            id: true,
+            cube_number: true,
+            cohort: true,
             user: { select: { name: true } }
           }
         }

@@ -896,7 +896,7 @@ export const Welcome: React.FC = () => {
                         {t.cube?.user?.name || 'Anonymous Cube'}
                       </h4>
                       <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
-                        Cohort {t.cube?.cohort || 'Unknown'} · Cube #{t.cube?.cube_number || 'N/A'}
+                        Cube #{t.cube?.cube_number || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -930,7 +930,7 @@ export const Welcome: React.FC = () => {
                           {t.cube?.user?.name || 'Anonymous Cube'}
                         </h4>
                         <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
-                          Cohort {t.cube?.cohort || 'Unknown'} · Cube #{t.cube?.cube_number || 'N/A'}
+                          Cube #{t.cube?.cube_number || 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -974,7 +974,7 @@ export const Welcome: React.FC = () => {
                       {selectedTestimonial.cube?.user?.name || 'Anonymous Cube'}
                     </h4>
                     <p className="text-xs text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
-                      Cohort {selectedTestimonial.cube?.cohort || 'Unknown'} · Cube #{selectedTestimonial.cube?.cube_number || 'N/A'}
+                      Cube #{selectedTestimonial.cube?.cube_number || 'N/A'}
                     </p>
                   </div>
                 </div>
