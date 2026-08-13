@@ -107,36 +107,63 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
     });
 
     if (profile) {
-      const feedbacks = await prisma.mentorFeedback.findMany({
-        where: { cube_id: profile.user_id }
-      });
-
-      if (feedbacks.length > 0) {
-        const scoreKeys = [
-          'technical_ability_score',
-          'research_ability_score',
-          'demo_output_score',
-          'ownership_score',
-          'communication_score',
-          'leadership_score',
-          'product_thinking_score',
-          'reliability_score',
-          'self_reflection_score'
-        ];
-
-        let sum = 0;
-        let count = 0;
-
-        for (const fb of feedbacks) {
-          for (const key of scoreKeys) {
-            const val = (fb as any)[key];
-            if (val !== undefined && val !== null) {
-              sum += val;
-              count++;
+      // Enforce minimum completed missions before average score can satisfy the quest
+      const completedMissionsCount = await prisma.mission.count({
+        where: {
+          status: { in: ['completed', 'reviewed', 'promoted_to_product_backlog'] },
+          teams: {
+            some: {
+              members: {
+                some: { cube_id: cubeProfileId }
+              }
             }
           }
         }
-        newValue = count > 0 ? parseFloat((sum / count).toFixed(2)) : 0;
+      });
+
+      let minMissionsRequired = 1;
+      if (quest.criteria_value >= 4.7) {
+        minMissionsRequired = 5;
+      } else if (quest.criteria_value >= 4.2) {
+        minMissionsRequired = 2;
+      }
+
+      if (completedMissionsCount < minMissionsRequired) {
+        newValue = 0;
+      } else {
+        const feedbacks = await prisma.mentorFeedback.findMany({
+          where: { cube_id: profile.user_id }
+        });
+
+        if (feedbacks.length > 0) {
+          const scoreKeys = [
+            'technical_ability_score',
+            'research_ability_score',
+            'demo_output_score',
+            'ownership_score',
+            'communication_score',
+            'leadership_score',
+            'product_thinking_score',
+            'reliability_score',
+            'self_reflection_score'
+          ];
+
+          let sum = 0;
+          let count = 0;
+
+          for (const fb of feedbacks) {
+            for (const key of scoreKeys) {
+              const val = (fb as any)[key];
+              if (val !== undefined && val !== null) {
+                sum += val;
+                count++;
+              }
+            }
+          }
+          newValue = count > 0 ? parseFloat((sum / count).toFixed(2)) : 0;
+        } else {
+          newValue = 0;
+        }
       }
     }
   } 

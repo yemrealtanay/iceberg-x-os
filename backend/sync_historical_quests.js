@@ -175,24 +175,50 @@ async function syncAll() {
       });
     } 
     else if (quest.criteria_type === 'average_score') {
-      const feedbacks = await prisma.mentorFeedback.findMany({
-        where: { cube_id: tracker.cube.user_id }
-      });
-
-      if (feedbacks.length > 0) {
-        let sum = 0;
-        let count = 0;
-
-        for (const fb of feedbacks) {
-          for (const key of scoreKeys) {
-            const val = fb[key];
-            if (val !== undefined && val !== null) {
-              sum += val;
-              count++;
+      const completedMissionsCount = await prisma.mission.count({
+        where: {
+          status: { in: ['completed', 'reviewed', 'promoted_to_product_backlog'] },
+          teams: {
+            some: {
+              members: {
+                some: { cube_id: cubeProfileId }
+              }
             }
           }
         }
-        newValue = count > 0 ? parseFloat((sum / count).toFixed(2)) : 0;
+      });
+
+      let minMissionsRequired = 1;
+      if (quest.criteria_value >= 4.7) {
+        minMissionsRequired = 5;
+      } else if (quest.criteria_value >= 4.2) {
+        minMissionsRequired = 2;
+      }
+
+      if (completedMissionsCount < minMissionsRequired) {
+        newValue = 0;
+      } else {
+        const feedbacks = await prisma.mentorFeedback.findMany({
+          where: { cube_id: tracker.cube.user_id }
+        });
+
+        if (feedbacks.length > 0) {
+          let sum = 0;
+          let count = 0;
+
+          for (const fb of feedbacks) {
+            for (const key of scoreKeys) {
+              const val = fb[key];
+              if (val !== undefined && val !== null) {
+                sum += val;
+                count++;
+              }
+            }
+          }
+          newValue = count > 0 ? parseFloat((sum / count).toFixed(2)) : 0;
+        } else {
+          newValue = 0;
+        }
       }
     } 
     else if (quest.criteria_type === 'login_streak') {
