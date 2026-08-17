@@ -44,19 +44,29 @@ export const Quests: React.FC = () => {
 
   const isCube = user?.role === 'CUBE';
 
+  // Mirrors DEFAULT_MIN_SAMPLE_SIZE in backend/src/services/quest.service.ts —
+  // shown so a Cube understands why 100% attendance or a 4.9 average isn't
+  // enough on its own to finish the quest yet.
+  const DEFAULT_MIN_SAMPLE_SIZE: Record<string, number> = { Common: 3, Rare: 5, Epic: 10 };
+
   // Helper for criteria labels
-  const getCriteriaLabel = (type: string, value: number) => {
+  const getCriteriaLabel = (q: any) => {
+    const { criteria_type: type, criteria_value: value } = q;
     switch (type) {
       case 'missions_completed':
         return `Complete ${value} Mission(s)`;
       case 'missions_assigned':
         return `Get assigned to ${value} Mission Team(s)`;
-      case 'average_score':
-        return `Maintain a Scorecard Average of ${value}/5`;
+      case 'average_score': {
+        const minSample = q.min_sample_size ?? DEFAULT_MIN_SAMPLE_SIZE[q.difficulty] ?? 3;
+        return `Maintain a Scorecard Average of ${value}/5 (across at least ${minSample} completed missions)`;
+      }
       case 'login_streak':
         return `Achieve a Login Streak of ${value} Days`;
-      case 'meeting_attendance':
-        return `Maintain a ${value}% Meeting Attendance Rate`;
+      case 'meeting_attendance': {
+        const minSample = q.min_sample_size ?? DEFAULT_MIN_SAMPLE_SIZE[q.difficulty] ?? 3;
+        return `Maintain a ${value}% Meeting Attendance Rate (across at least ${minSample} meetings)`;
+      }
       case 'profile_completion':
         return 'Complete your Profile (Add GitHub, LinkedIn, and 3+ skills)';
       case 'write_testimonial':
@@ -178,7 +188,7 @@ export const Quests: React.FC = () => {
                   <div className="flex flex-col gap-2 pt-3 border-t border-black/5">
                     <div className="flex justify-between items-center text-[10px] font-extrabold">
                       <span className="uppercase tracking-wider text-magenta/80">
-                        {getCriteriaLabel(q.criteria_type, q.criteria_value)}
+                        {getCriteriaLabel(q)}
                       </span>
                       <span className={styles.textColor}>
                         {getCriteriaProgressLabel(q.criteria_type, cq.current_value, q.criteria_value)}
@@ -284,7 +294,7 @@ export const Quests: React.FC = () => {
 
                     {/* Criteria Info */}
                     <div className="text-[10px] font-bold text-slate-500">
-                      Criteria Requirement: <span className="text-magenta font-black uppercase">{getCriteriaLabel(q.criteria_type, q.criteria_value)}</span>
+                      Criteria Requirement: <span className="text-magenta font-black uppercase">{getCriteriaLabel(q)}</span>
                     </div>
                   </div>
                 </div>

@@ -495,6 +495,13 @@ model Quest {
   difficulty          BadgeRarity @default(Common)
   criteria_type       String
   criteria_value      Float
+  /// For "rate" criteria (average_score, meeting_attendance) only: the minimum
+  /// number of underlying records (feedback entries / meetings) the rate must be
+  /// computed over before the quest can complete. Without this, a Cube's very
+  /// first meeting attendance is trivially "100%". Null means the service falls
+  /// back to a per-difficulty default. Unused by count-based criteria types
+  /// (missions_completed, etc.), where criteria_value already is the count.
+  min_sample_size     Int?
   is_timed            Boolean     @default(false)
   expires_at          DateTime?
   created_at          DateTime    @default(now())

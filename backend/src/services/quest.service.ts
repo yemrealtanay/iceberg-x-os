@@ -2,6 +2,28 @@ import prisma from './prisma';
 import { BadgeRarity, MissionStatus } from '@prisma/client';
 
 /**
+ * Fallback minimum sample size for "rate" criteria (average_score,
+ * meeting_attendance) when a quest does not specify `min_sample_size`.
+ *
+ * A rate computed from one data point is meaningless — a Cube's very first
+ * meeting is trivially 100% attendance, and a single scorecard trivially
+ * "is" the average. Higher-rarity rewards should demand more evidence, not
+ * less, so the default scales with difficulty.
+ */
+const DEFAULT_MIN_SAMPLE_SIZE: Record<BadgeRarity, number> = {
+  [BadgeRarity.Common]: 3,
+  [BadgeRarity.Rare]: 5,
+  [BadgeRarity.Epic]: 10
+};
+
+function resolveMinSampleSize(quest: { min_sample_size: number | null; difficulty: BadgeRarity }): number {
+  if (quest.min_sample_size !== null && quest.min_sample_size !== undefined) {
+    return Math.max(1, quest.min_sample_size);
+  }
+  return DEFAULT_MIN_SAMPLE_SIZE[quest.difficulty] ?? DEFAULT_MIN_SAMPLE_SIZE[BadgeRarity.Common];
+}
+
+/**
  * Tracks and updates a user's login streak.
  * Run this on every successful login.
  */
@@ -112,7 +134,11 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
     });
 
     if (profile) {
-      // Enforce minimum completed missions before average score can satisfy the quest
+      // Enforce a minimum number of completed missions before an average score
+      // can satisfy the quest — otherwise one great scorecard on one project
+      // "is" a 4.7 average and instantly earns an Epic badge. The minimum
+      // scales with the quest's own difficulty (see resolveMinSampleSize),
+      // not a value hardcoded to today's specific quest thresholds.
       const completedMissionsCount = await prisma.mission.count({
         where: {
           status: { in: ['completed', 'reviewed', 'promoted_to_product_backlog'] },
@@ -126,12 +152,7 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
         }
       });
 
-      let minMissionsRequired = 1;
-      if (quest.criteria_value >= 4.7) {
-        minMissionsRequired = 5;
-      } else if (quest.criteria_value >= 4.2) {
-        minMissionsRequired = 2;
-      }
+      const minMissionsRequired = resolveMinSampleSize(quest);
 
       if (completedMissionsCount < minMissionsRequired) {
         newValue = 0;
@@ -183,8 +204,13 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
     const attendances = await prisma.meetingAttendance.findMany({
       where: { cube_id: cubeProfileId }
     });
-    
-    if (attendances.length > 0) {
+
+    // A rate needs a real sample: with no floor, a Cube's first-ever logged
+    // meeting (attended = true) is 1/1 = 100% and completes the quest on the
+    // spot. The minimum scales with quest difficulty (see resolveMinSampleSize).
+    const minMeetingsRequired = resolveMinSampleSize(quest);
+
+    if (attendances.length >= minMeetingsRequired) {
       const attended = attendances.filter(a => a.attended).length;
       newValue = parseFloat(((attended / attendances.length) * 100).toFixed(1));
     } else {
@@ -197,20 +223,21 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
       select: { github_url: true, linkedin_url: true, skills: true }
     });
     if (profile) {
-      const hasGithub = !!profile.github_url;
-      const hasLinkedin = !!profile.linkedin_url;
-      const hasSkills = (profile.skills || []).length >= 3;
-      const isComplete = hasGithub && hasLinkedin && hasSkills;
-
-      if (quest.criteria_value > 1) {
-        let completedParts = 0;
-        if (hasGithub) completedParts++;
-        if (hasLinkedin) completedParts++;
-        if (hasSkills) completedParts++;
-        newValue = Math.round((completedParts / 3) * quest.criteria_value);
-      } else {
-        newValue = isComplete ? 1 : 0;
-      }
+      // current_value is simply how many of the 3 profile parts are done.
+      // criteria_value is then "how many parts are required" (e.g. 2 of 3),
+      // compared directly by the completion check below.
+      //
+      // The previous version scaled this into a 0..criteria_value range via
+      // Math.round((completedParts / 3) * criteria_value), which for
+      // criteria_value = 2 meant completing 2 of 3 parts produced
+      // round(2/3 * 2) = round(1.33) = 1 — one short of the target of 2 — so
+      // the quest could only complete once ALL 3 parts were done, regardless
+      // of what criteria_value actually said.
+      let completedParts = 0;
+      if (profile.github_url) completedParts++;
+      if (profile.linkedin_url) completedParts++;
+      if ((profile.skills || []).length >= 3) completedParts++;
+      newValue = completedParts;
     } else {
       newValue = 0;
     }

@@ -14,7 +14,7 @@ const router = Router();
 // Create Quest (Admin only)
 router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
   try {
-    const { title, description, difficulty, criteria_type, criteria_value, is_timed, expires_at, reward_badge_ids, dependency_quest_id } = req.body;
+    const { title, description, difficulty, criteria_type, criteria_value, min_sample_size, is_timed, expires_at, reward_badge_ids, dependency_quest_id } = req.body;
 
     if (!title || !description || !criteria_type || criteria_value === undefined) {
       throw badRequest('Missing required quest fields: title, description, criteria_type, and criteria_value are required.');
@@ -38,6 +38,24 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
       throw badRequest(`Difficulty/Rarity must be one of: ${Object.values(BadgeRarity).join(', ')}.`);
     }
 
+    // Only meaningful for "rate" criteria — a count-based quest's target IS the
+    // count, it has no separate sample size. Reject it elsewhere so a typo in
+    // the admin form can't silently do nothing.
+    const RATE_CRITERIA_TYPES = ['average_score', 'meeting_attendance'];
+    let minSampleSize: number | null = null;
+    if (min_sample_size !== undefined && min_sample_size !== null && min_sample_size !== '') {
+      if (!RATE_CRITERIA_TYPES.includes(criteria_type)) {
+        throw badRequest(
+          `min_sample_size only applies to rate-based criteria (${RATE_CRITERIA_TYPES.join(', ')}).`
+        );
+      }
+      const parsed = Number(min_sample_size);
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
+        throw badRequest('min_sample_size must be a whole number of at least 1.');
+      }
+      minSampleSize = parsed;
+    }
+
     const badgeIds: string[] = Array.isArray(reward_badge_ids) ? reward_badge_ids : [];
 
     const quest = await prisma.quest.create({
@@ -47,6 +65,7 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
         difficulty: rarity,
         criteria_type,
         criteria_value: Number(criteria_value),
+        min_sample_size: minSampleSize,
         is_timed: is_timed === true,
         expires_at: expires_at ? new Date(expires_at) : null,
         dependency_quest_id: dependency_quest_id || null,

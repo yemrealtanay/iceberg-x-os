@@ -3,6 +3,17 @@ import { api } from '../utils/api';
 import { Trophy, Plus, Check, Clock, User, Sparkles, Calendar, RefreshCw, Send, CheckSquare, Trash, Search, Filter, CheckCircle } from 'lucide-react';
 import { getBadgeIcon } from '../utils/badgeIcons';
 
+// Criteria types that express a rate (a score average, an attendance
+// percentage) rather than a raw count. Only these can specify a minimum
+// sample size — for a count-based criteria the target value already IS the
+// count, so there's nothing separate to floor.
+const RATE_CRITERIA_TYPES = ['average_score', 'meeting_attendance'];
+
+// Mirrors DEFAULT_MIN_SAMPLE_SIZE in backend/src/services/quest.service.ts.
+// Shown as a placeholder so an admin sees what happens if they leave the
+// field blank, rather than guessing.
+const DEFAULT_MIN_SAMPLE_SIZE: Record<string, number> = { Common: 3, Rare: 5, Epic: 10 };
+
 export const AdminQuests: React.FC = () => {
   const [quests, setQuests] = useState<any[]>([]);
   const [badges, setBadges] = useState<any[]>([]);
@@ -15,6 +26,7 @@ export const AdminQuests: React.FC = () => {
   const [difficulty, setDifficulty] = useState('Common');
   const [criteriaType, setCriteriaType] = useState('missions_completed');
   const [criteriaValue, setCriteriaValue] = useState('');
+  const [minSampleSize, setMinSampleSize] = useState('');
   const [isTimed, setIsTimed] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>([]);
@@ -75,6 +87,9 @@ export const AdminQuests: React.FC = () => {
         difficulty,
         criteria_type: criteriaType,
         criteria_value: Number(criteriaValue),
+        min_sample_size: RATE_CRITERIA_TYPES.includes(criteriaType) && minSampleSize
+          ? Number(minSampleSize)
+          : null,
         is_timed: isTimed,
         expires_at: isTimed && expiresAt ? expiresAt : null,
         reward_badge_ids: selectedBadgeIds,
@@ -88,6 +103,7 @@ export const AdminQuests: React.FC = () => {
       setDifficulty('Common');
       setCriteriaType('missions_completed');
       setCriteriaValue('');
+      setMinSampleSize('');
       setIsTimed(false);
       setExpiresAt('');
       setSelectedBadgeIds([]);
@@ -333,7 +349,7 @@ export const AdminQuests: React.FC = () => {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Goal Target Value</label>
-                <input 
+                <input
                   type="number"
                   step="any"
                   required
@@ -344,6 +360,30 @@ export const AdminQuests: React.FC = () => {
                   className="w-full px-3 py-2.5 border border-gray-150 bg-gray-50 focus:bg-white focus:border-magenta rounded-xl text-xs font-semibold outline-none transition"
                 />
               </div>
+
+              {RATE_CRITERIA_TYPES.includes(criteriaType) && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">
+                    Minimum Sample Size
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    placeholder={`Default for ${difficulty}: ${DEFAULT_MIN_SAMPLE_SIZE[difficulty] ?? 3}`}
+                    value={minSampleSize}
+                    onChange={e => setMinSampleSize(e.target.value)}
+                    disabled={formSubmitting}
+                    className="w-full px-3 py-2.5 border border-gray-150 bg-gray-50 focus:bg-white focus:border-magenta rounded-xl text-xs font-semibold outline-none transition"
+                  />
+                  <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                    {criteriaType === 'meeting_attendance'
+                      ? 'How many logged meetings the attendance rate must be computed over. Without a floor, a Cube\'s very first meeting is trivially 100%.'
+                      : 'How many completed missions the scorecard average must be computed over. Without a floor, one great scorecard "is" the average.'}
+                    {' '}Leave blank to use the difficulty default shown above.
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Prerequisite Quest (To Unlock This)</label>
@@ -448,6 +488,14 @@ export const AdminQuests: React.FC = () => {
                             <span className="text-[10px] font-extrabold bg-slate-50 border border-slate-200 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-wide">
                               {q.criteria_type.replace(/_/g, ' ')} ({q.criteria_value})
                             </span>
+                            {RATE_CRITERIA_TYPES.includes(q.criteria_type) && (
+                              <span
+                                className="text-[10px] font-extrabold bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-md uppercase tracking-wide"
+                                title="Minimum meetings/missions the rate must be computed over before this quest can complete"
+                              >
+                                min sample: {q.min_sample_size ?? `${DEFAULT_MIN_SAMPLE_SIZE[q.difficulty] ?? 3} (default)`}
+                              </span>
+                            )}
                             {q.is_timed && q.expires_at && (
                               <span className="text-[9px] font-bold bg-red-50 border border-red-200 text-red-600 px-1.5 py-0.5 rounded-md flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
