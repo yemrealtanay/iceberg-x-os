@@ -7,6 +7,7 @@ import { requireAuth, isMentorOrAdmin, AuthenticatedRequest } from '../middlewar
 import { badRequest, sendError } from '../utils/http';
 import { syncTeamMembers, detachTeamsFromMission, normalizeMembers } from '../services/team.service';
 import { assertCubesAreActive } from '../services/cubeStatus.service';
+import { recalculateQuestsForCubes } from '../services/quest.service';
 
 const router = Router();
 
@@ -35,6 +36,11 @@ router.post('/teams', requireAuth, isMentorOrAdmin, async (req: AuthenticatedReq
 
       return { team, detachedTeams };
     });
+
+    // A newly rostered Cube may now satisfy "missions_assigned".
+    recalculateQuestsForCubes(members.map(m => m.cubeProfileId)).catch(err =>
+      console.error(`Quest recalculation failed for team ${result.team.id}:`, err)
+    );
 
     return res.status(201).json({ ...result.team, detachedTeams: result.detachedTeams });
   } catch (error: any) {
@@ -70,6 +76,10 @@ router.post('/missions/:id/teams', requireAuth, isMentorOrAdmin, async (req: Aut
 
       return { team, detachedTeams };
     });
+
+    recalculateQuestsForCubes(members.map(m => m.cubeProfileId)).catch(err =>
+      console.error(`Quest recalculation failed for team ${result.team.id}:`, err)
+    );
 
     return res.status(201).json({ ...result.team, detachedTeams: result.detachedTeams });
   } catch (error: any) {
@@ -132,6 +142,12 @@ router.put('/teams/:id', requireAuth, isMentorOrAdmin, async (req: Authenticated
 
       return detached;
     });
+
+    if (hasMembers) {
+      recalculateQuestsForCubes(members.map(m => m.cubeProfileId)).catch(err =>
+        console.error(`Quest recalculation failed for team ${id}:`, err)
+      );
+    }
 
     const updatedTeam = await prisma.missionTeam.findUnique({
       where: { id },

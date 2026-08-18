@@ -49,6 +49,22 @@ export const CubeDashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
+  // A quest can complete from something that happens entirely off this page —
+  // a mentor completing the mission, logging a scorecard, or closing a
+  // meeting the Cube attended. Those now trigger a server-side recalculation
+  // (see backend/src/services/quest.service.ts), but if this tab was already
+  // open when it happened, its in-memory state doesn't know. Refetch when the
+  // tab regains focus so "completed elsewhere" shows up without a manual F5.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchDashboardData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateContent) return;
@@ -93,6 +109,13 @@ export const CubeDashboard: React.FC = () => {
       setTimeout(() => {
         setTestimonialSuccess(false);
       }, 3000);
+
+      // Submitting a testimonial can complete a "write_testimonial" quest and
+      // award its badge server-side, in the same request. Without this, the
+      // Cube stays on this page and sees the pre-submit quest/badge state
+      // until they manually refresh — the badge exists in the database, the
+      // screen just hasn't asked for it yet.
+      fetchDashboardData();
     } catch (err: any) {
       setTestimonialError(err.message || 'Failed to submit testimonial');
     } finally {

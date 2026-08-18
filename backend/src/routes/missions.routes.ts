@@ -9,6 +9,7 @@ import { badRequest, conflict, notFound, sendError } from '../utils/http';
 import { createBulkNotification } from '../services/notification.service';
 import { syncTeamMembers, detachTeamsFromMission } from '../services/team.service';
 import { assertCubesAreActive } from '../services/cubeStatus.service';
+import { recalculateQuestsForMissionTeams } from '../services/quest.service';
 import {
   allowedNextStatuses,
   assertInitialStatus,
@@ -263,6 +264,15 @@ router.put('/missions/:id', requireAuth, isMentorOrAdmin, async (req: Authentica
       data: updateData
     });
 
+    // A status change may now satisfy a "missions_completed" quest for
+    // everyone on the team — recompute rather than waiting for the Cube to
+    // coincidentally trigger a recheck through an unrelated action.
+    if (status) {
+      recalculateQuestsForMissionTeams(id).catch(err =>
+        console.error(`Quest recalculation failed for mission ${id}:`, err)
+      );
+    }
+
     return res.json({ ...updated, allowedNextStatuses: allowedNextStatuses(updated.status) });
   } catch (error: any) {
     return sendError(res, error);
@@ -458,6 +468,10 @@ router.post('/missions/:missionId/approve', requireAuth, isMentorOrAdmin, async 
       data: { status: nextStatus }
     });
 
+    recalculateQuestsForMissionTeams(missionId).catch(err =>
+      console.error(`Quest recalculation failed for mission ${missionId}:`, err)
+    );
+
     return res.json({
       success: true,
       mission: updatedMission
@@ -491,6 +505,9 @@ router.post('/missions/:id/resolve', requireAuth, isMentorOrAdmin, async (req: A
         where: { id },
         data: { status: nextStatus }
       });
+      recalculateQuestsForMissionTeams(id).catch(err =>
+        console.error(`Quest recalculation failed for mission ${id}:`, err)
+      );
       return res.json({ success: true, message: 'Mission completed and archived successfully.' });
     }
 
@@ -541,6 +558,13 @@ router.post('/missions/:id/resolve', requireAuth, isMentorOrAdmin, async (req: A
         }
         return null;
       });
+
+      // Covers both a status change (missions_completed) and a roster change
+      // (missions_assigned); recalculateQuestsForMissionTeams re-reads the
+      // team from the database, so it sees whichever of the two happened.
+      recalculateQuestsForMissionTeams(id).catch(err =>
+        console.error(`Quest recalculation failed for mission ${id}:`, err)
+      );
 
       return res.json({
         success: true,

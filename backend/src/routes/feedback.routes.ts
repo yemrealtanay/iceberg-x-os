@@ -7,6 +7,7 @@ import { requireAuth, isAdmin, isMentorOrAdmin, AuthenticatedRequest } from '../
 import { MIN_SCORE, MAX_SCORE } from '../config/constants';
 import { badRequest, conflict, forbidden, sendError, parseScore } from '../utils/http';
 import { createSingleNotification } from '../services/notification.service';
+import { recalculateAllQuestsForCube } from '../services/quest.service';
 import { CubeLevel, RecommendedNextStep } from '@prisma/client';
 
 const router = Router();
@@ -143,6 +144,20 @@ router.post('/feedback', requireAuth, isMentorOrAdmin, async (req: Authenticated
     }
 
     await createSingleNotification(cube_id, "A mentor graded your scorecard.");
+
+    // A new or updated score may now satisfy an "average_score" quest.
+    // cube_id here is the User id; quest tracking runs against CubeProfile.id.
+    if (target?.cube_profile) {
+      const profile = await prisma.cubeProfile.findUnique({
+        where: { user_id: cube_id },
+        select: { id: true }
+      });
+      if (profile) {
+        recalculateAllQuestsForCube(profile.id).catch(err =>
+          console.error(`Quest recalculation failed for cube ${profile.id}:`, err)
+        );
+      }
+    }
 
     return res.status(201).json(feedback);
   } catch (error: any) {

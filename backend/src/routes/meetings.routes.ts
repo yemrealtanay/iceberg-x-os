@@ -7,6 +7,7 @@ import { requireAuth, isMentorOrAdmin, AuthenticatedRequest } from '../middlewar
 import { forbidden, notFound, sendError } from '../utils/http';
 import { createBulkNotification } from '../services/notification.service';
 import { assertCubesAreActive } from '../services/cubeStatus.service';
+import { recalculateQuestsForCubes } from '../services/quest.service';
 
 const router = Router();
 
@@ -216,6 +217,12 @@ router.post('/meetings/:id/complete', requireAuth, isMentorOrAdmin, async (req, 
 
       return updatedMeeting;
     });
+
+    // Closing the meeting may now satisfy a "meeting_attendance" quest for
+    // everyone whose attendance was just logged.
+    recalculateQuestsForCubes(attendance.map((a: any) => a.cube_id)).catch(err =>
+      console.error(`Quest recalculation failed for meeting ${id}:`, err)
+    );
 
     return res.json(result);
   } catch (error: any) {

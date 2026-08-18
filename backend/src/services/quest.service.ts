@@ -360,6 +360,41 @@ export async function recalculateAllQuestsForCube(cubeProfileId: string): Promis
 }
 
 /**
+ * Re-evaluates quests for several Cubes at once. Best-effort: one Cube's
+ * failure does not stop the others, and the caller's own action (completing a
+ * mission, logging a scorecard, closing a meeting) must never fail because a
+ * quest recalculation had a problem.
+ */
+export async function recalculateQuestsForCubes(cubeProfileIds: string[]): Promise<void> {
+  const uniqueIds = [...new Set(cubeProfileIds.filter(Boolean))];
+  for (const id of uniqueIds) {
+    try {
+      await recalculateAllQuestsForCube(id);
+    } catch (err) {
+      console.error(`Failed to recalculate quests for cube ${id}:`, err);
+    }
+  }
+}
+
+/**
+ * Re-evaluates quests for every Cube on a mission's team.
+ *
+ * Used wherever a mission's status changes (it may now satisfy
+ * "missions_completed") so the quest completes the moment the mentor actually
+ * completes the mission — not later, coincidentally, when the Cube happens to
+ * log in, write a testimonial, or edit their profile (the only things that
+ * used to trigger a recheck).
+ */
+export async function recalculateQuestsForMissionTeams(missionId: string): Promise<void> {
+  const teams = await prisma.missionTeam.findMany({
+    where: { mission_id: missionId },
+    select: { members: { select: { cube_id: true } } }
+  });
+  const cubeIds = teams.flatMap(t => t.members.map(m => m.cube_id));
+  await recalculateQuestsForCubes(cubeIds);
+}
+
+/**
  * Assigns a quest to a list of Cube profile IDs.
  * Immediately computes initial progress.
  */

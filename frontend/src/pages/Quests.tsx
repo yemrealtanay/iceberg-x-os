@@ -25,6 +25,21 @@ export const Quests: React.FC = () => {
     fetchQuests();
   }, []);
 
+  // A quest can complete from something that happens entirely off this page
+  // (a mentor completing the mission, logging a scorecard, closing a meeting).
+  // The server recalculates immediately when that happens, but a tab that was
+  // already open here doesn't know. Refetch on regaining focus so it shows up
+  // without a manual refresh.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchQuests();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
