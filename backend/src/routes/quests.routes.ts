@@ -38,6 +38,20 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
       throw badRequest(`Difficulty/Rarity must be one of: ${Object.values(BadgeRarity).join(', ')}.`);
     }
 
+    // The service only ever counts 3 parts for this criteria (GitHub URL,
+    // LinkedIn URL, 3+ skills — see quest.service.ts), so current_value can
+    // never exceed 3. A target above that was silently accepted before and
+    // made the quest mathematically impossible to complete.
+    if (criteria_type === 'profile_completion') {
+      const parsedTarget = Number(criteria_value);
+      if (!Number.isInteger(parsedTarget) || parsedTarget < 1 || parsedTarget > 3) {
+        throw badRequest(
+          'For "profile_completion" quests, Goal Target Value must be a whole number from 1 to 3 ' +
+          '(GitHub URL, LinkedIn URL, and 3+ skills are the only parts tracked).'
+        );
+      }
+    }
+
     // Only meaningful for "rate" criteria — a count-based quest's target IS the
     // count, it has no separate sample size. Reject it elsewhere so a typo in
     // the admin form can't silently do nothing.
