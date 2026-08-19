@@ -171,9 +171,29 @@ router.post('/admin/quests/assign', requireAuth, isAdmin, async (req, res) => {
       return res.json({ success: true, message: 'No active Cubes found to assign.' });
     }
 
-    await assignQuestToCubes(questId, idsToAssign);
+    const result = await assignQuestToCubes(questId, idsToAssign);
 
-    return res.json({ success: true, message: `Quest successfully assigned to ${idsToAssign.length} Cube(s).` });
+    // Assignment evaluates progress immediately, so a Cube whose profile /
+    // mission history / scorecards already satisfy the quest completes right
+    // here — no separate "verify" step needed for that case. The message
+    // says so explicitly instead of just "assigned to N", which previously
+    // gave no visibility into how many completed on the spot or failed.
+    const parts = [`${result.newlyAssigned} newly assigned`];
+    if (result.completedImmediately > 0) {
+      parts.push(`${result.completedImmediately} completed immediately (badge awarded)`);
+    }
+    if (result.alreadyAssigned > 0) {
+      parts.push(`${result.alreadyAssigned} already had this quest (skipped)`);
+    }
+    if (result.failed.length > 0) {
+      parts.push(`${result.failed.length} failed to evaluate — use "Force calculation" to retry`);
+    }
+
+    return res.json({
+      success: true,
+      message: `Quest assignment complete: ${parts.join(', ')}.`,
+      ...result
+    });
   } catch (error: any) {
     return sendError(res, error);
   }

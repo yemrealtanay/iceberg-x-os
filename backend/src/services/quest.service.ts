@@ -394,31 +394,69 @@ export async function recalculateQuestsForMissionTeams(missionId: string): Promi
   await recalculateQuestsForCubes(cubeIds);
 }
 
+export interface AssignQuestResult {
+  /** Cubes that had no CubeQuest row yet and were assigned just now. */
+  newlyAssigned: number;
+  /** Cubes that already had this quest — left untouched, not re-evaluated. */
+  alreadyAssigned: number;
+  /**
+   * Of the newly assigned, how many already satisfied the criteria at the
+   * moment of assignment (e.g. their profile was already complete) and were
+   * completed — badge included — without them doing anything further.
+   */
+  completedImmediately: number;
+  /**
+   * Cubes whose initial evaluation threw. Previously this was swallowed with
+   * only a console.error, so an admin who assigned a quest to 24 Cubes had no
+   * way to know if 3 of them silently failed to evaluate — the response
+   * always just said "assigned to 24 Cube(s)".
+   */
+  failed: { cubeProfileId: string; error: string }[];
+}
+
 /**
- * Assigns a quest to a list of Cube profile IDs.
- * Immediately computes initial progress.
+ * Assigns a quest to a list of Cube profile IDs, skipping anyone already
+ * assigned, and immediately evaluates progress for everyone newly assigned —
+ * so a Cube whose profile (or mission history, or scorecards) already
+ * satisfies the quest completes it on the spot. There is no separate "verify"
+ * step to remember to run afterwards for that case.
  */
-export async function assignQuestToCubes(questId: string, cubeProfileIds: string[]): Promise<void> {
+export async function assignQuestToCubes(questId: string, cubeProfileIds: string[]): Promise<AssignQuestResult> {
+  const result: AssignQuestResult = {
+    newlyAssigned: 0,
+    alreadyAssigned: 0,
+    completedImmediately: 0,
+    failed: []
+  };
+
   for (const id of cubeProfileIds) {
     // Avoid double assignments
     const existing = await prisma.cubeQuest.findUnique({
       where: { cube_id_quest_id: { cube_id: id, quest_id: questId } }
     });
 
-    if (!existing) {
-      await prisma.cubeQuest.create({
-        data: {
-          cube_id: id,
-          quest_id: questId
-        }
-      });
-      
-      // Calculate initial progress
-      try {
-        await verifyQuestProgress(id, questId);
-      } catch (err) {
-        console.error(`Failed initial quest eval for ${id}:`, err);
+    if (existing) {
+      result.alreadyAssigned++;
+      continue;
+    }
+
+    await prisma.cubeQuest.create({
+      data: {
+        cube_id: id,
+        quest_id: questId
       }
+    });
+    result.newlyAssigned++;
+
+    // Calculate initial progress
+    try {
+      const evaluated = await verifyQuestProgress(id, questId);
+      if (evaluated?.is_completed) result.completedImmediately++;
+    } catch (err) {
+      console.error(`Failed initial quest eval for ${id}:`, err);
+      result.failed.push({ cubeProfileId: id, error: err instanceof Error ? err.message : String(err) });
     }
   }
+
+  return result;
 }

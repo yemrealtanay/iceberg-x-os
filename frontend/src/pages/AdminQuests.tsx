@@ -140,13 +140,17 @@ export const AdminQuests: React.FC = () => {
     setAssignSubmitting(true);
 
     try {
-      await api.post('/admin/quests/assign', {
+      const res = await api.post('/admin/quests/assign', {
         questId: assigningQuestId,
         target: assignTarget,
         cubeProfileIds: assignTarget === 'specific' ? assignCubeIds : undefined
       });
 
-      alert('Quest assigned successfully!');
+      // Assigning evaluates progress immediately, so a Cube whose profile /
+      // missions / scorecards already satisfy the quest completes right away
+      // — surface that breakdown instead of a flat "assigned successfully",
+      // so it's clear no separate verify step is needed for that case.
+      alert(res.message || 'Quest assigned successfully!');
       setAssigningQuestId(null);
       setAssignCubeIds([]);
       fetchData();
