@@ -223,21 +223,31 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
       select: { github_url: true, linkedin_url: true, skills: true }
     });
     if (profile) {
-      // current_value is simply how many of the 3 profile parts are done.
-      // criteria_value is then "how many parts are required" (e.g. 2 of 3),
-      // compared directly by the completion check below.
-      //
-      // The previous version scaled this into a 0..criteria_value range via
-      // Math.round((completedParts / 3) * criteria_value), which for
-      // criteria_value = 2 meant completing 2 of 3 parts produced
-      // round(2/3 * 2) = round(1.33) = 1 — one short of the target of 2 — so
-      // the quest could only complete once ALL 3 parts were done, regardless
-      // of what criteria_value actually said.
       let completedParts = 0;
       if (profile.github_url) completedParts++;
       if (profile.linkedin_url) completedParts++;
       if ((profile.skills || []).length >= 3) completedParts++;
-      newValue = completedParts;
+
+      // Two quest authoring styles exist in the wild and both have to keep
+      // working:
+      //
+      //  - "N of 3 parts" (criteria_value is 1, 2, or 3): current_value is the
+      //    raw part count, compared directly.
+      //  - "percentage" (criteria_value is e.g. 100, meaning "100% done"):
+      //    current_value is completedParts scaled to that same 0..100-ish
+      //    range, so 3/3 parts reaches exactly criteria_value.
+      //
+      // A quest with criteria_value = 100 already existed in production under
+      // the old formula (Math.round((completedParts/3)*criteria_value)) before
+      // this file simplified profile_completion to a flat part count. That
+      // change silently broke it — current_value topped out at 3, so
+      // `3 >= 100` was never true again and nobody could complete it from
+      // that point on, even with every part filled in. Detecting the style
+      // from criteria_value's magnitude keeps both working without an admin
+      // having to edit the quest (there is no edit endpoint).
+      newValue = quest.criteria_value > 3
+        ? Math.round((completedParts / 3) * quest.criteria_value)
+        : completedParts;
     } else {
       newValue = 0;
     }

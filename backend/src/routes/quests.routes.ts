@@ -38,16 +38,19 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
       throw badRequest(`Difficulty/Rarity must be one of: ${Object.values(BadgeRarity).join(', ')}.`);
     }
 
-    // The service only ever counts 3 parts for this criteria (GitHub URL,
-    // LinkedIn URL, 3+ skills — see quest.service.ts), so current_value can
-    // never exceed 3. A target above that was silently accepted before and
-    // made the quest mathematically impossible to complete.
+    // The service only ever tracks 3 parts for this criteria (GitHub URL,
+    // LinkedIn URL, 3+ skills — see quest.service.ts). Two authoring styles
+    // are both valid: a target of 1-3 ("require this many parts"), or a
+    // target above 3 up to 100 ("require this % complete", e.g. 100 for "all
+    // 3 parts"). Anything outside 1-100, or a non-whole number, can never be
+    // satisfied and was previously accepted silently.
     if (criteria_type === 'profile_completion') {
       const parsedTarget = Number(criteria_value);
-      if (!Number.isInteger(parsedTarget) || parsedTarget < 1 || parsedTarget > 3) {
+      if (!Number.isInteger(parsedTarget) || parsedTarget < 1 || parsedTarget > 100) {
         throw badRequest(
-          'For "profile_completion" quests, Goal Target Value must be a whole number from 1 to 3 ' +
-          '(GitHub URL, LinkedIn URL, and 3+ skills are the only parts tracked).'
+          'For "profile_completion" quests, Goal Target Value must be a whole number: either 1-3 ' +
+          '(require that many of GitHub URL / LinkedIn URL / 3+ skills), or a percentage up to 100 ' +
+          '(e.g. 100 to require all 3 parts).'
         );
       }
     }
