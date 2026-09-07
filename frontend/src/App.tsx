@@ -51,6 +51,10 @@ function App() {
           {/* Public Shareable Cube / Alumni Profile Route */}
           <Route path="/x/:cubeNumber" element={<PublicProfile />} />
 
+          {/* Standalone Certificate & PDF Print Routes (Zero Layout / Standalone Document) */}
+          <Route path="/offboarding/certificate/:cubeId" element={<Certificate />} />
+          <Route path="/certificate/:cubeId" element={<Certificate />} />
+
           {/* Public one-time invite acceptance */}
           <Route path="/invite/:token" element={<AcceptInvite />} />
 
@@ -163,7 +167,6 @@ function App() {
                 </RouteGuard>
               }
             />
-            <Route path="offboarding/certificate/:cubeId" element={<Certificate />} />
 
             {/* Demo Days Scheduling (Admins & Mentors) */}
             <Route

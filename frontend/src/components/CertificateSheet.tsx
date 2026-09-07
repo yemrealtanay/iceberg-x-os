@@ -242,7 +242,7 @@ export const CertificateSheet: React.FC<CertificateSheetProps> = ({
             {[
               { name: 'Mark Burgess', role: 'CEO' },
               { name: 'Yusuf Tokgöz', role: 'CTO' },
-              { name: mentorName || 'Ahmet Onur Solmaz', role: 'HEAD OF ENGINEERING' },
+              { name: 'Ahmet Onur Solmaz', role: 'HEAD OF ENGINEERING' },
             ].map((sig, idx) => (
               <div key={idx} className="min-w-[95px]">
                 <div

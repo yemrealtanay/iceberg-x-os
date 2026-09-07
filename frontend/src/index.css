@@ -242,3 +242,10 @@ body {
 .markdown-body a:hover {
   color: #ff4da6;
 }
+
+/* Global Print Isolation Rules */
+@media print {
+  nav, footer, aside, .no-print {
+    display: none !important;
+  }
+}

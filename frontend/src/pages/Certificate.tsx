@@ -32,12 +32,32 @@ export const Certificate: React.FC = () => {
   useEffect(() => {
     const fetchCertificateData = async () => {
       try {
-        const [cubeRes, statsRes] = await Promise.all([
-          api.get(`/cubes/${cubeId}`),
-          api.get(`/offboarding/stats/${cubeId}`).catch(() => null),
-        ]);
-        setData(cubeRes);
-        if (statsRes) setStats(statsRes);
+        let profileObj: any = null;
+        let statsObj: any = null;
+
+        try {
+          // Public endpoint works for both authenticated & unauthenticated visitors
+          const pubRes = await api.get(`/cubes/public/${cubeId}`);
+          if (pubRes?.profile) {
+            profileObj = pubRes.profile;
+            statsObj = pubRes.stats;
+          }
+        } catch {
+          // Fallback to internal endpoints if needed
+          const [cubeRes, statsRes] = await Promise.all([
+            api.get(`/cubes/${cubeId}`),
+            api.get(`/offboarding/stats/${cubeId}`).catch(() => null),
+          ]);
+          profileObj = cubeRes?.profile || cubeRes;
+          statsObj = statsRes;
+        }
+
+        if (!profileObj) {
+          throw new Error('Certificate data not found');
+        }
+
+        setData({ profile: profileObj });
+        if (statsObj) setStats(statsObj);
       } catch (err: any) {
         setError(err.message || 'Failed to load certificate data');
       } finally {
@@ -144,15 +164,15 @@ export const Certificate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-900 py-8 px-4 flex flex-col items-center">
+    <div className="certificate-screen-wrapper min-h-screen bg-stone-900 py-8 px-4 flex flex-col items-center">
       {/* Top Actions Bar (Hidden during print) */}
       <div className="w-full max-w-[1120px] flex justify-between items-center mb-6 no-print">
         <Link
-          to="/offboarding"
+          to={`/x/${profile.cube_number}`}
           className="flex items-center gap-2 text-xs font-bold text-stone-400 hover:text-stone-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Offboarding</span>
+          <span>Back to Profile</span>
         </Link>
         <div className="flex items-center gap-3">
           <button
@@ -166,13 +186,13 @@ export const Certificate: React.FC = () => {
       </div>
 
       {/* Printable Sheet Container */}
-      <div className="w-full flex flex-col items-center gap-8">
+      <div className="certificate-print-container w-full flex flex-col items-center gap-8">
         
         {/* =========================================================================
             PAGE 1: CERTIFICATE
            ========================================================================= */}
         <section
-          className={`certificate-page w-full max-w-[1120px] aspect-[297/210] p-[38px] box-border relative overflow-hidden select-text ${
+          className={`certificate-page certificate-page-1 w-full max-w-[1120px] aspect-[297/210] p-[38px] box-border relative overflow-hidden select-text ${
             isAchievement
               ? 'bg-[#0E0D0B] text-[#F6F1E7]'
               : 'bg-[#FBF8F3] text-[#14161A]'
@@ -352,7 +372,7 @@ export const Certificate: React.FC = () => {
                 {[
                   { name: 'Mark Burgess', role: 'CEO' },
                   { name: 'Yusuf Tokgöz', role: 'CTO' },
-                  { name: record.mentor_name || 'Ahmet Onur Solmaz', role: 'HEAD OF ENGINEERING' },
+                  { name: 'Ahmet Onur Solmaz', role: 'HEAD OF ENGINEERING' },
                 ].map((sig, idx) => (
                   <div key={idx} className="min-w-[105px]">
                     <div
@@ -424,7 +444,7 @@ export const Certificate: React.FC = () => {
             PAGE 2: APPENDIX (QUEST & BADGE RECORD)
            ========================================================================= */}
         <section
-          className={`certificate-page w-full max-w-[1120px] aspect-[297/210] p-[38px] box-border relative overflow-hidden select-text ${
+          className={`certificate-page certificate-page-2 w-full max-w-[1120px] aspect-[297/210] p-[38px] box-border relative overflow-hidden select-text ${
             isAchievement
               ? 'bg-[#0E0D0B] text-[#F6F1E7]'
               : 'bg-[#FBF8F3] text-[#14161A]'
@@ -658,46 +678,80 @@ export const Certificate: React.FC = () => {
 
       </div>
 
-      {/* Global Print Stylesheet specifically for multi-page A4 Landscape */}
+      {/* Dedicated Print Stylesheet for exactly 2-page A4 Landscape */}
       <style>{`
         @page {
-          size: A4 landscape;
+          size: 297mm 210mm;
           margin: 0 !important;
         }
         @media print {
+          *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box !important;
+          }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            width: 297mm !important;
             background: #ffffff !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            overflow: visible !important;
           }
-          .no-print {
+          #root {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 297mm !important;
+          }
+          .no-print, nav, header, footer, aside {
             display: none !important;
+          }
+          .certificate-screen-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            height: auto !important;
+            background: transparent !important;
+            display: block !important;
+            width: 297mm !important;
+          }
+          .certificate-print-container {
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 0 !important;
+            display: block !important;
+            width: 297mm !important;
           }
           .certificate-page {
             width: 297mm !important;
-            height: 210mm !important;
+            height: 209.5mm !important;
             max-width: 297mm !important;
-            max-height: 210mm !important;
+            max-height: 209.5mm !important;
             min-width: 297mm !important;
-            min-height: 210mm !important;
+            min-height: 209.5mm !important;
             margin: 0 !important;
             padding: 38px !important;
+            box-sizing: border-box !important;
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
+            overflow: hidden !important;
+            position: relative !important;
+          }
+          .certificate-page-1 {
             page-break-after: always !important;
             break-after: page !important;
+            page-break-before: avoid !important;
+            break-before: avoid !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            overflow: hidden !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
-          .certificate-page:last-child {
-            page-break-after: auto !important;
-            break-after: auto !important;
+          .certificate-page-2 {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `}</style>

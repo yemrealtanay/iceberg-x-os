@@ -62,7 +62,7 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-dark flex flex-col font-sans">
       {/* Navigation Header */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm no-print">
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 min-h-20">
             <div className="flex items-center min-w-0">
@@ -271,7 +271,7 @@ export const Layout: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#111111] text-white/60 border-t border-white/5 py-12 sm:py-16">
+      <footer className="bg-[#111111] text-white/60 border-t border-white/5 py-12 sm:py-16 no-print">
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_1fr] gap-8 lg:gap-12 items-center">
             <div className="flex flex-col gap-4">
