@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Award, FileText, ArrowRight, Check, X, ShieldAlert, Sparkles, Languages, Clock } from 'lucide-react';
+import {
+  GraduationCap,
+  Award,
+  FileText,
+  ArrowRight,
+  Check,
+  X,
+  ShieldAlert,
+  Search,
+  Printer,
+  RotateCcw,
+  Mail,
+  Copy,
+  ExternalLink,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { certificateTypesFor, getLevelMeta } from '../utils/cubeStatus';
+import { certificateTypesFor } from '../utils/cubeStatus';
 
 export const Offboarding: React.FC = () => {
   const { user } = useAuth();
@@ -13,27 +27,31 @@ export const Offboarding: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Selection & Preview State
+  // Search filter
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Selection & Configuration
   const [selectedCube, setSelectedCube] = useState<any | null>(null);
+  const [targetLevel, setTargetLevel] = useState<string>('Alumni');
   const [certType, setCertType] = useState<'success' | 'participation'>('success');
   const [mentorName, setMentorName] = useState(user?.name || '');
-  const [targetLevel, setTargetLevel] = useState<string>('Alumni');
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [stats, setStats] = useState<{ completedMissions: number; badgesEarned: number; attendanceRate: number | null } | null>(null);
+  const [stats, setStats] = useState<{
+    completedMissions: number;
+    badgesEarned: number;
+    attendanceRate: number | null;
+  } | null>(null);
 
-  // Email Text Drafts (Editable)
+  // Email Drafts
   const [emailTr, setEmailTr] = useState('');
   const [emailEn, setEmailEn] = useState('');
-  const [activeLangTab, setActiveLangTab] = useState<'tr' | 'en'>('tr');
+  const [activeLangTab, setActiveLangTab] = useState<'en' | 'tr'>('en');
   const [submitting, setSubmitting] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
-  // View Modal for already offboarded alumni email
-  const [viewingAlumni, setViewingAlumni] = useState<any | null>(null);
-
-  // Enlarge Preview Modal state
+  // Modals
   const [showLargePreview, setShowLargePreview] = useState(false);
-
-  // Revert Offboarding Modal state
+  const [viewingAlumni, setViewingAlumni] = useState<any | null>(null);
   const [revertingAlumni, setRevertingAlumni] = useState<any | null>(null);
   const [revertLevel, setRevertLevel] = useState<string>('Cube');
   const [revertSubmitting, setRevertSubmitting] = useState(false);
@@ -41,15 +59,15 @@ export const Offboarding: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Eligible = anyone without a certificate yet, at any level. A Former Cube
-      // is listed here directly; they no longer have to be mislabelled as
-      // Alumni just to become selectable.
       const [eligible, offboarded] = await Promise.all([
         api.get('/offboarding/eligible'),
-        api.get('/offboarding/alumni')
+        api.get('/offboarding/alumni'),
       ]);
       setCubes(eligible);
       setAlumni(offboarded);
+      if (eligible.length > 0 && !selectedCube) {
+        setSelectedCube(eligible[0]);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch offboarding data');
     } finally {
@@ -61,9 +79,7 @@ export const Offboarding: React.FC = () => {
     fetchData();
   }, []);
 
-  // The target level decides which certificate is legitimate: a Former Cube
-  // stopped partway, so a certificate of success would not be true. Snap the
-  // selection back if the level no longer permits it.
+  // Sync available cert types with target level
   const availableCertTypes = certificateTypesFor(targetLevel);
   useEffect(() => {
     if (!availableCertTypes.includes(certType)) {
@@ -71,18 +87,18 @@ export const Offboarding: React.FC = () => {
     }
   }, [targetLevel]);
 
-  // Prefill mentor name when a Cube is selected
+  // Sync mentor name when Cube selected
   useEffect(() => {
     if (selectedCube) {
       if (selectedCube.assigned_mentor?.name) {
         setMentorName(selectedCube.assigned_mentor.name);
       } else {
-        setMentorName(user?.name || '');
+        setMentorName(user?.name || 'Ahmet Onur Solmaz');
       }
     }
   }, [selectedCube, user]);
 
-  // Calculate stats and generate drafts when Cube or Cert Type changes
+  // Load stats and generate dynamic email drafts
   useEffect(() => {
     if (!selectedCube) {
       setStats(null);
@@ -96,95 +112,88 @@ export const Offboarding: React.FC = () => {
       try {
         let completedMissions = 0;
         let badgesEarned = 0;
-        // null means the Cube has no meeting history yet — the line is then
-        // left out of the certificate email rather than claiming 100%.
         let attendanceRate: number | null = null;
 
-        if (certType === 'success') {
-          // Fetch stats from backend
-          const statsRes = await api.get(`/offboarding/stats/${selectedCube.id}`);
-          completedMissions = statsRes.completedMissions;
-          badgesEarned = statsRes.badgesEarned;
-          attendanceRate = statsRes.attendanceRate;
+        const statsRes = await api.get(`/offboarding/stats/${selectedCube.id}`).catch(() => null);
+        if (statsRes) {
+          completedMissions = statsRes.completedMissions ?? 0;
+          badgesEarned = statsRes.badgesEarned ?? 0;
+          attendanceRate = statsRes.attendanceRate ?? null;
           setStats(statsRes);
-        } else {
-          setStats(null);
         }
 
-        const attendanceLineTr = attendanceRate !== null
-          ? `\n- Toplantılara katılım oranınız %${attendanceRate} olarak gerçekleşti.`
-          : '';
-        const attendanceLineEn = attendanceRate !== null
-          ? `\n- Your meeting attendance rate was ${attendanceRate}%.`
-          : '';
-
-        // Generate email texts
         const cubeNo = selectedCube.cube_number;
-        const studentName = selectedCube.user.name;
+        const studentName = selectedCube.user?.name || 'Cube Fellow';
+        const currentYear = new Date().getFullYear();
+        const estimatedCertNo = `ICE-${currentYear}-${cubeNo.padStart(6, '0')}`;
+        const attendanceLineEn = attendanceRate !== null ? `• Attended ${attendanceRate}% of invited meetings.\n` : '';
+        const attendanceLineTr = attendanceRate !== null ? `• Toplantılara katılım oranınız %${attendanceRate} olarak gerçekleşti.\n` : '';
 
         if (certType === 'success') {
+          setEmailEn(
+`Dear ${studentName},
+
+You have successfully completed your fellowship journey as Cube #${cubeNo} in the Iceberg Digital Technology Fellowship, and have now transitioned to Alumni status.
+
+Over the course of the programme you:
+• Completed ${completedMissions} mission milestones.
+• Earned ${badgesEarned} technical and competency badges.
+${attendanceLineEn}
+Your Certificate of Achievement (${estimatedCertNo}) has been issued and can be shared publicly from your profile.
+
+Once a Cube, always a Cube.
+
+Best regards,
+Iceberg Digital Team`
+          );
+
           setEmailTr(
 `Sayın ${studentName},
 
 Iceberg Digital Teknoloji Fellowship programındaki Cube #${cubeNo} kodlu staj programınızı başarıyla tamamlayarak Alumni statüsüne geçmiş bulunuyorsunuz.
 
-Stajınız boyunca:
-- ${completedMissions} adet görevi başarıyla tamamladınız.
-- ${badgesEarned} adet teknik ve yetkinlik rozeti kazandınız.${attendanceLineTr}
+Programınız boyunca:
+• ${completedMissions} görev adımını başarıyla tamamladınız.
+• ${badgesEarned} teknik ve yetkinlik rozeti kazandınız.
+${attendanceLineTr}
+Başarı sertifikanız (${estimatedCertNo}) hazırlanmış olup profilinizden herkese açık olarak paylaşılabilir.
 
-Gösterdiğiniz üstün performans ve katkılarınız için teşekkür eder, kariyerinizde başarılar dileriz. Başarı sertifikanız sisteminize eklenmiştir.
-
-Gelecekteki yollarınız açık olsun!
+Once a Cube, always a Cube.
 
 Saygılarımızla,
 Iceberg Digital Ekibi`
           );
-
+        } else {
           setEmailEn(
 `Dear ${studentName},
 
-You have successfully completed your internship program as Cube #${cubeNo} in the Iceberg Digital Technology Fellowship and transitioned to Alumni status.
+Thank you for participating in the Iceberg Digital Technology Fellowship programme as Cube #${cubeNo}.
 
-During your internship:
-- You successfully completed ${completedMissions} missions.
-- You earned ${badgesEarned} technical and competency badges.${attendanceLineEn}
+During your time in the fellowship you worked on engineering challenges and contributed to our technology team. Your Certificate of Participation (${estimatedCertNo}) has been issued and can be viewed on your profile.
 
-Thank you for your outstanding performance and contributions. We wish you the best in your future career. Your Certificate of Success has been added to your profile.
+We wish you all the best in your career.
 
-We wish you a bright future!
+Once a Cube, always a Cube.
 
 Best regards,
 Iceberg Digital Team`
           );
-        } else {
+
           setEmailTr(
 `Sayın ${studentName},
 
 Iceberg Digital Teknoloji Fellowship programımıza Cube #${cubeNo} olarak katılım gösterdiğiniz için teşekkür ederiz.
 
-Programımıza katılımınız ve sağladığınız katkılar için teşekkür ederiz. Katılım sertifikanız sisteminize eklenmiştir.
+Program sürecindeki katkılarınız için teşekkür eder, kariyerinizde başarılar dileriz. Katılım sertifikanız (${estimatedCertNo}) profilinize eklenmiştir.
 
-Kariyerinizde başarılar dileriz.
+Once a Cube, always a Cube.
 
 Saygılarımızla,
 Iceberg Digital Ekibi`
           );
-
-          setEmailEn(
-`Dear ${studentName},
-
-Thank you for participating in the Iceberg Digital Technology Fellowship program as Cube #${cubeNo}.
-
-We appreciate your participation and contributions to our program. Your Certificate of Participation has been added to your profile.
-
-We wish you success in your future career.
-
-Best regards,
-Iceberg Digital Team`
-          );
         }
       } catch (err: any) {
-        console.error('Failed to load stats:', err);
+        console.error('Failed to load stats for offboarding:', err);
       } finally {
         setPreviewLoading(false);
       }
@@ -193,26 +202,11 @@ Iceberg Digital Team`
     loadStatsAndDrafts();
   }, [selectedCube, certType]);
 
-  const handleConfirmRevert = async () => {
-    if (!revertingAlumni) return;
-    setRevertSubmitting(true);
-    try {
-      await api.post('/offboarding/revert', {
-        cubeProfileId: revertingAlumni.id,
-        targetLevel: revertLevel
-      });
-      alert(`Offboarding successfully reverted. Cube restored as ${revertLevel}.`);
-      setRevertingAlumni(null);
-      fetchData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to revert offboarding');
-    } finally {
-      setRevertSubmitting(false);
-    }
-  };
-
   const handleConfirmOffboarding = async () => {
-    if (!selectedCube || !mentorName || !emailTr || !emailEn) return;
+    if (!selectedCube || !mentorName || !emailTr || !emailEn) {
+      alert('Please ensure mentor name and email templates are complete.');
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post('/offboarding', {
@@ -221,779 +215,747 @@ Iceberg Digital Team`
         mentorName,
         emailTextTr: emailTr,
         emailTextEn: emailEn,
-        targetLevel
+        targetLevel,
       });
-      alert(`Cube offboarded successfully and transitioned to ${targetLevel}!`);
+      alert(`Cube #${selectedCube.cube_number} has been successfully offboarded!`);
       setSelectedCube(null);
-      fetchData();
+      await fetchData();
     } catch (err: any) {
-      alert(err.message || 'Failed to complete offboarding');
+      alert(err.message || 'Failed to offboard Cube');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleConfirmRevert = async () => {
+    if (!revertingAlumni) return;
+    setRevertSubmitting(true);
+    try {
+      await api.post('/offboarding/revert', {
+        cubeProfileId: revertingAlumni.id,
+        targetLevel: revertLevel,
+      });
+      alert(`Offboarding successfully reverted. Cube restored as ${revertLevel}.`);
+      setRevertingAlumni(null);
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to revert offboarding');
+    } finally {
+      setRevertSubmitting(false);
+    }
+  };
+
+  const filteredQueue = cubes.filter((c) => {
+    const q = searchQuery.toLowerCase();
+    const cubeNum = (c.cube_number || '').toLowerCase();
+    const name = (c.user?.name || '').toLowerCase();
+    const cohort = (c.cohort || '').toLowerCase();
+    return cubeNum.includes(q) || name.includes(q) || cohort.includes(q);
+  });
+
+  const estimatedCertNo = selectedCube
+    ? `ICE-${new Date().getFullYear()}-${selectedCube.cube_number.padStart(6, '0')}`
+    : 'ICE-2026-000000';
+
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-magenta border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-2xl flex items-center gap-2">
-        <ShieldAlert className="w-5 h-5" />
-        <span>{error}</span>
+      <div className="flex h-[70vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#E5007D] border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 py-8 flex flex-col gap-10">
-      
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
-          <GraduationCap className="w-8 h-8 text-magenta" />
-          <span>Offboarding & Alumni Management</span>
-        </h1>
-        <p className="text-gray-500 mt-1.5 text-sm">
-          Transition Cubes to Alumni, preview and generate fellowship certificates, and customize Cube outreach emails.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* Left Column: Active Cubes List */}
-        <div className="lg:col-span-1 bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
-          <h3 className="font-extrabold text-base text-gray-900 border-b border-gray-50 pb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-magenta" />
-            <span>Active Cubes for Offboarding</span>
-            <span className="ml-auto text-xs bg-magenta/10 text-magenta px-2 py-0.5 rounded-full font-bold">
-              {cubes.length}
-            </span>
-          </h3>
-
-          {cubes.length === 0 ? (
-            <p className="text-gray-400 text-xs py-8 text-center italic">No active Cubes available for offboarding.</p>
-          ) : (
-            <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
-              {cubes.map((cube) => (
-                <button
-                  key={cube.id}
-                  onClick={() => {
-                    setSelectedCube(cube);
-                    setCertType('success');
-                  }}
-                  className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                    selectedCube?.id === cube.id
-                      ? 'border-magenta bg-magenta/5 shadow-sm'
-                      : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-full bg-magenta/5 border border-magenta/15 flex items-center justify-center font-bold text-magenta text-xs">
-                    #{cube.cube_number}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-gray-900 truncate">{cube.user.name}</p>
-                    <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">{cube.cohort}</p>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-magenta transition-colors" />
-                </button>
-              ))}
+    <div className="min-h-screen bg-[#F4F5F7] text-[#11151C] font-sans pb-16">
+      <main className="max-w-[1400px] mx-auto px-6">
+        {/* Page Header */}
+        <div className="flex items-end justify-between gap-6 pt-8 pb-5 border-b border-[#E7E9EE]">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight m-0">
+              Offboarding &amp; Alumni
+            </h1>
+            <p className="text-sm text-[#6B7480] mt-1.5 mb-0 max-w-xl">
+              Graduate a Cube, issue its certificate, and send the outreach email — in one pass.
+            </p>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <div className="font-mono text-2xl font-semibold text-[#11151C]">{cubes.length}</div>
+              <div className="text-[10px] font-bold tracking-wider text-[#8A93A0]">IN QUEUE</div>
             </div>
-          )}
+            <div className="w-[1px] h-8 bg-[#E1E4EA]" />
+            <div className="text-right">
+              <div className="font-mono text-2xl font-semibold text-[#E5007D]">{alumni.length}</div>
+              <div className="text-[10px] font-bold tracking-wider text-[#8A93A0]">ALUMNI</div>
+            </div>
+          </div>
         </div>
 
-        {/* Right 2 Columns: Live Preview and Accept Controls */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {selectedCube ? (
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-6 animate-fadeIn">
-              
-              {/* Selected Cube Banner */}
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-magenta text-white font-black flex items-center justify-center text-sm shadow-md shadow-magenta/15">
+        {/* 2-Column Split: Queue (Left) & Configuration Workspace (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-6 mt-6 items-start">
+          
+          {/* Left Column: Offboarding Queue Sidebar */}
+          <aside className="bg-white border border-[#E7E9EE] rounded-2xl overflow-hidden sticky top-6">
+            <div className="p-4 border-b border-[#EEF0F3]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-extrabold tracking-wider text-[#8A93A0]">
+                  OFFBOARDING QUEUE
+                </span>
+                <span className="font-mono text-xs text-[#9AA2AE]">{cubes.length}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 h-10 bg-[#F4F5F7] rounded-xl">
+                <Search className="w-4 h-4 text-[#9AA2AE]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search Cube or name…"
+                  className="border-none outline-none bg-transparent text-xs text-[#11151C] w-full font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="max-h-[560px] overflow-y-auto divide-y divide-[#F1F3F6]">
+              {filteredQueue.map((c) => {
+                const isSelected = selectedCube?.id === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCube(c)}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 border-none text-left cursor-pointer transition-colors ${
+                      isSelected ? 'bg-[#FFF5FA]' : 'bg-transparent hover:bg-[#F8F9FB]'
+                    }`}
+                  >
+                    <span
+                      className={`w-9 h-9 flex-none rounded-full flex items-center justify-center font-mono text-xs font-semibold ${
+                        isSelected ? 'bg-[#E5007D] text-white' : 'bg-[#F4F5F7] text-[#6B7480]'
+                      }`}
+                    >
+                      #{c.cube_number}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-bold text-[#11151C] truncate">
+                        {c.user?.name || `Cube #${c.cube_number}`}
+                      </span>
+                      <span className="block text-[10.5px] font-bold tracking-wide text-[#9AA2AE] mt-0.5 uppercase truncate">
+                        {c.cohort || 'Fellowship'}
+                      </span>
+                    </span>
+                    <span
+                      className={`text-sm font-bold flex-none ${
+                        isSelected ? 'text-[#E5007D]' : 'text-[#C9CED8]'
+                      }`}
+                    >
+                      →
+                    </span>
+                  </button>
+                );
+              })}
+              {filteredQueue.length === 0 && (
+                <div className="p-8 text-center text-xs text-gray-400 font-medium">
+                  No Cubes match your search.
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Right Column: Configuration & Actions */}
+          <section className="flex flex-col gap-6 min-w-0">
+            {selectedCube ? (
+              <div className="bg-white border border-[#E7E9EE] rounded-2xl overflow-hidden shadow-sm">
+                
+                {/* Selected Candidate Header Banner */}
+                <div className="flex items-center gap-4 p-5 bg-[#FCFCFD] border-b border-[#EEF0F3] flex-wrap">
+                  <div className="w-11 h-11 rounded-full bg-[#E5007D] text-white flex items-center justify-center font-mono text-sm font-bold flex-none shadow-md shadow-[#E5007D]/20">
                     #{selectedCube.cube_number}
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-lg font-extrabold tracking-tight">
+                      {selectedCube.user?.name}
+                    </div>
+                    <div className="text-xs text-[#6B7480] mt-0.5">
+                      {selectedCube.cohort || 'Founding Cohort'} · joined {new Date(selectedCube.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center h-7 px-3 rounded-lg bg-[#F4F5F7] text-xs font-bold text-[#4A5361]">
+                      {stats?.completedMissions ?? 0} missions
+                    </span>
+                    <span className="inline-flex items-center h-7 px-3 rounded-lg bg-[#F4F5F7] text-xs font-bold text-[#4A5361]">
+                      {stats?.badgesEarned ?? 0} badges
+                    </span>
+                    <span className="inline-flex items-center h-7 px-3 rounded-lg bg-[#FDE7F3] text-xs font-bold text-[#B80064]">
+                      {stats?.attendanceRate !== null && stats?.attendanceRate !== undefined ? `${stats.attendanceRate}%` : '100%'} attendance
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3-Step Configuration Row */}
+                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-[#EEF0F3]">
+                  
+                  {/* Step 1: Target Status */}
                   <div>
-                    <h4 className="text-sm font-extrabold text-gray-900">{selectedCube.user.name}</h4>
-                    <p className="text-xs text-gray-500 font-semibold">{selectedCube.cohort} • {selectedCube.university || 'No university'}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-4 h-4 rounded-full bg-[#11151C] text-white text-[10px] font-bold flex items-center justify-center">
+                        1
+                      </span>
+                      <span className="text-[11px] font-extrabold tracking-wider text-[#4A5361]">
+                        TARGET STATUS
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={targetLevel}
+                        onChange={(e) => setTargetLevel(e.target.value)}
+                        className="w-full h-11 px-3.5 pr-8 border border-[#E1E4EA] rounded-xl bg-white text-xs font-bold text-[#11151C] cursor-pointer appearance-none outline-none focus:border-[#E5007D]"
+                      >
+                        <option value="Alumni">Alumni — completed programme</option>
+                        <option value="Iceberger">Iceberger — hired into team</option>
+                        <option value="Former_Cube">Former Cube — left early</option>
+                      </select>
+                      <span className="absolute right-3.5 top-3.5 text-gray-400 pointer-events-none text-xs">
+                        ▾
+                      </span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-[#8A93A0] mt-2 mb-0">
+                      Graduating Cubes receive an achievement or participation certificate.
+                    </p>
+                  </div>
+
+                  {/* Step 2: Certificate Type */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-4 h-4 rounded-full bg-[#11151C] text-white text-[10px] font-bold flex items-center justify-center">
+                        2
+                      </span>
+                      <span className="text-[11px] font-extrabold tracking-wider text-[#4A5361]">
+                        CERTIFICATE TYPE
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setCertType('success')}
+                        disabled={!availableCertTypes.includes('success')}
+                        className={`p-2.5 rounded-xl text-left border cursor-pointer transition-all ${
+                          certType === 'success'
+                            ? 'border-[#E5007D] bg-[#FFF5FA]'
+                            : 'border-[#E1E4EA] bg-white hover:border-gray-300'
+                        } ${!availableCertTypes.includes('success') ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      >
+                        <span className="block text-xs font-bold text-[#11151C]">Achievement</span>
+                        <span className="block text-[10px] text-[#6B7480] mt-1 leading-snug">
+                          Outstanding · gold
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCertType('participation')}
+                        className={`p-2.5 rounded-xl text-left border cursor-pointer transition-all ${
+                          certType === 'participation'
+                            ? 'border-[#E5007D] bg-[#FFF5FA]'
+                            : 'border-[#E1E4EA] bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="block text-xs font-bold text-[#11151C]">Participation</span>
+                        <span className="block text-[10px] text-[#6B7480] mt-1 leading-snug">
+                          Programme · light
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Programme Mentor */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-4 h-4 rounded-full bg-[#11151C] text-white text-[10px] font-bold flex items-center justify-center">
+                        3
+                      </span>
+                      <span className="text-[11px] font-extrabold tracking-wider text-[#4A5361]">
+                        PROGRAMME MENTOR
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={mentorName}
+                      onChange={(e) => setMentorName(e.target.value)}
+                      placeholder="e.g. Ahmet Onur Solmaz"
+                      className="w-full h-11 px-3.5 border border-[#E1E4EA] rounded-xl text-xs font-bold text-[#11151C] outline-none focus:border-[#E5007D]"
+                    />
+                    <p className="text-[11px] leading-relaxed text-[#8A93A0] mt-2 mb-0">
+                      Printed under the Cube's name and on the signature row.
+                    </p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setSelectedCube(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1.5 hover:bg-white rounded-lg transition"
-                >
-                  <X size={16} />
-                </button>
-              </div>
 
-              {/* Step 1: Configuration Fields.
-                  Target level comes first because it decides which certificate
-                  is even possible. */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Yeni Statü (Target Level) *</label>
-                  <select
-                    value={targetLevel}
-                    onChange={(e) => setTargetLevel(e.target.value)}
-                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px] cursor-pointer"
-                  >
-                    <option value="Alumni">Alumni — programı tamamladı</option>
-                    <option value="Former_Cube">Former Cube — programı yarıda bıraktı</option>
-                  </select>
-                  <p className="text-[10px] text-gray-400 font-semibold pl-1 leading-relaxed">
-                    {targetLevel === 'Former_Cube'
-                      ? 'Yarıda bırakan bir Cube yalnızca katılım sertifikası alabilir.'
-                      : 'Mezun olan bir Cube katılım veya başarı sertifikası alabilir.'}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Certificate Type *</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      disabled={!availableCertTypes.includes('success')}
-                      title={
-                        availableCertTypes.includes('success')
-                          ? undefined
-                          : 'Programı yarıda bırakan bir Cube başarı sertifikası alamaz.'
-                      }
-                      onClick={() => setCertType('success')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
-                        certType === 'success'
-                          ? 'border-magenta bg-magenta/5 text-magenta'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-600'
-                      }`}
-                    >
-                      <Award className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">Başarı Sertifikası</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCertType('participation')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                        certType === 'participation'
-                          ? 'border-magenta bg-magenta/5 text-magenta'
-                          : 'border-gray-200 hover:bg-gray-50 text-gray-600'
-                      }`}
-                    >
-                      <FileText className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">Katılım Sertifikası</span>
-                    </button>
+                {/* Live Preview Dual Section */}
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-[11px] font-extrabold tracking-wider text-[#4A5361]">
+                      LIVE PREVIEW
+                    </span>
+                    <span className="flex-1 h-[1px] bg-[#EEF0F3]" />
                   </div>
-                </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Program Mentor Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={mentorName}
-                    onChange={(e) => setMentorName(e.target.value)}
-                    placeholder="Mentor Adı Soyadı"
-                    className="border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:ring-2 focus:ring-magenta/20 focus:outline-none bg-white h-[38px]"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 pt-6 flex flex-col gap-5">
-                <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                  <h4 className="font-extrabold text-sm text-gray-900 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-magenta" />
-                    <span>Offboarding Live Previews</span>
-                  </h4>
-                </div>
-
-                {previewLoading ? (
-                  <div className="flex flex-col h-48 items-center justify-center gap-2">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-magenta border-t-transparent"></div>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Generating Preview...</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                    {/* Visual Certificate Card Preview */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-center pl-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Certificate Preview</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    
+                    {/* Left Sub-card: Live Mini Certificate */}
+                    <div className="border border-[#E7E9EE] rounded-2xl overflow-hidden flex flex-col">
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-[#FCFCFD] border-b border-[#EEF0F3]">
+                        <span className="text-[10.5px] font-extrabold tracking-wider text-[#8A93A0] uppercase">
+                          {certType === 'success' ? 'ACHIEVEMENT CERTIFICATE' : 'PARTICIPATION CERTIFICATE'}
+                        </span>
                         <button
                           type="button"
                           onClick={() => setShowLargePreview(true)}
-                          className="text-[9px] font-extrabold text-magenta hover:underline"
+                          className="text-xs font-bold text-[#E5007D] hover:underline bg-transparent border-none cursor-pointer"
                         >
-                          Ön İzlemeyi Büyüt (Enlarge)
+                          Enlarge ↗
                         </button>
                       </div>
-                      <div 
-                        onClick={() => setShowLargePreview(true)}
-                        className="border border-gray-100 rounded-xl overflow-hidden shadow-sm relative group bg-slate-100 flex items-center justify-center p-4 min-h-[220px] cursor-pointer"
-                      >
-                        
-                        {certType === 'success' ? (
-                          /* Dark mode success preview card */
-                          <div className="w-full max-w-[340px] aspect-[1.41] bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] text-white p-3 rounded-lg border border-amber-900/20 flex flex-col justify-between shadow-md text-[8px] relative">
-                            {/* Inner border */}
-                            <div className="absolute inset-1.5 border border-amber-400/20 pointer-events-none rounded" />
-                            
-                            <div className="flex justify-between items-start z-10">
-                              <img src="/images/iceberg-x-logo-blackbg.png" alt="Logo" className="h-3 rounded-sm object-contain" />
-                              <span className="text-[4px] text-amber-500/70 font-semibold uppercase">ELİT FELLOWSHIP</span>
-                            </div>
-                            <div className="text-center my-1 flex flex-col gap-0.5 z-10">
-                              <span className="bg-amber-400/10 text-amber-400 text-[4px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Başarı Sertifikası</span>
-                              <h5 className="font-black text-[10px] text-white tracking-wide mt-0.5">{selectedCube.user.name}</h5>
-                              <p className="text-[4.5px] text-gray-400 leading-normal max-w-[260px] mx-auto mt-0.5">
-                                Fellowship programını üstün bir performansla tamamladığını ve Cube #{selectedCube.cube_number} olarak kalıcı yerini aldığını belgeler.
-                              </p>
-                              <span className="text-[3.5px] text-amber-400 font-bold tracking-widest uppercase mt-0.5">Once a Cube, Always a Cube</span>
-                            </div>
-                            <div className="flex justify-between items-end border-t border-white/5 pt-1 text-[4px] text-gray-400 font-semibold z-10">
-                              <div className="flex gap-2">
-                                <div>
-                                  <p className="font-bold text-white text-[4px]">M. Burgess</p>
-                                  <p className="text-[2.5px] text-gray-500">CEO</p>
-                                </div>
-                                <div>
-                                  <p className="font-bold text-white text-[4px]">Y. Tokgöz</p>
-                                  <p className="text-[2.5px] text-gray-500">CTO</p>
-                                </div>
-                                <div>
-                                  <p className="font-bold text-white text-[4px]">A. O. Solmaz</p>
-                                  <p className="text-[2.5px] text-gray-500">ENG</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p>Sertifika No: ICE-2026-000{selectedCube.cube_number}</p>
-                                <p>Mentor: {mentorName}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          /* Light mode participation preview card */
-                          <div className="w-full max-w-[340px] aspect-[1.41] bg-[#F8F6F2] text-gray-800 p-3 rounded-lg border border-gray-200/60 flex flex-col justify-between shadow-md text-[8px] relative">
-                            {/* Inner border */}
-                            <div className="absolute inset-1.5 border border-magenta/20 pointer-events-none rounded" />
 
-                            <div className="flex justify-between items-start z-10">
-                              <img src="/images/iceberg-x-logo-blackbg.png" alt="Logo" className="h-3 rounded-sm object-contain" />
-                              <span className="text-[4px] text-gray-400 font-semibold uppercase">STAJ PROGRAMI</span>
-                            </div>
-                            <div className="text-center my-1 flex flex-col gap-0.5 z-10">
-                              <span className="bg-magenta/5 text-magenta text-[4px] px-1.5 py-0.5 rounded-full font-bold w-max mx-auto uppercase">Katılım Sertifikası</span>
-                              <h5 className="font-black text-[10px] text-gray-900 mt-0.5">{selectedCube.user.name}</h5>
-                              <p className="text-[4.5px] text-gray-500 leading-normal max-w-[260px] mx-auto mt-0.5">
-                                Teknoloji staj programına Cube #{selectedCube.cube_number} olarak katılım gösterdiğini belgeler.
-                              </p>
-                            </div>
-                            <div className="flex justify-between items-end border-t border-gray-100 pt-1 text-[4px] text-gray-500 font-semibold z-10">
-                              <div className="flex gap-2">
-                                <div>
-                                  <p className="font-bold text-gray-900 text-[4px]">M. Burgess</p>
-                                  <p className="text-[2.5px] text-gray-400">CEO</p>
-                                </div>
-                                <div>
-                                  <p className="font-bold text-gray-900 text-[4px]">Y. Tokgöz</p>
-                                  <p className="text-[2.5px] text-gray-400">CTO</p>
-                                </div>
-                                <div>
-                                  <p className="font-bold text-gray-900 text-[4px]">A. O. Solmaz</p>
-                                  <p className="text-[2.5px] text-gray-400">ENG</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p>Sertifika No: ICE-2026-000{selectedCube.cube_number}</p>
-                                <p>Mentor: {mentorName}</p>
-                              </div>
-                            </div>
+                      <div className="p-4 bg-[#F7F8FA] flex items-center justify-center">
+                        <div
+                          className={`w-full aspect-[11/8.5] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden shadow-sm ${
+                            certType === 'success'
+                              ? 'bg-[radial-gradient(120%_90%_at_50%_0%,_#1A1712_0%,_#0E0D0B_62%)] border border-amber-500/40 text-[#F6F1E7]'
+                              : 'bg-gradient-to-b from-white to-[#FBF8F3] border border-[#E5007D]/30 text-[#14161A]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <img
+                              src={certType === 'success' ? '/images/iceberg-x-lockup-light.png' : '/images/iceberg-x-lockup.png'}
+                              alt=""
+                              className="h-3 w-auto"
+                            />
+                            <span
+                              className="text-[5.5px] font-bold tracking-widest uppercase"
+                              style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
+                            >
+                              {certType === 'success' ? 'ELITE TECHNOLOGY FELLOWSHIP' : 'INTERNSHIP · TECHNOLOGY FELLOWSHIP'}
+                            </span>
                           </div>
-                        )}
 
-                        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="bg-white/90 text-gray-900 border border-gray-200 text-[9px] font-bold px-3 py-1.5 rounded-xl shadow-subtle uppercase tracking-wider">
-                            Ön İzlemeyi Büyüt
-                          </span>
+                          <div className="flex-1 flex flex-col items-center justify-center text-center my-auto">
+                            <span
+                              className="text-[6px] font-extrabold tracking-wider"
+                              style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
+                            >
+                              {certType === 'success' ? 'CERTIFICATE OF ACHIEVEMENT' : 'CERTIFICATE OF PARTICIPATION'}
+                            </span>
+                            <span
+                              className="font-serif text-xl leading-tight mt-1"
+                              style={{ color: certType === 'success' ? '#FFFCF6' : '#14161A' }}
+                            >
+                              {certType === 'success' ? 'Certificate of Achievement' : 'Certificate of Participation'}
+                            </span>
+                            <span
+                              className="text-sm font-extrabold mt-1.5 pb-0.5 border-b max-w-[80%] truncate"
+                              style={{
+                                color: certType === 'success' ? '#FFFFFF' : '#0E1116',
+                                borderColor: certType === 'success' ? 'rgba(201,150,43,0.6)' : 'rgba(229,0,125,0.45)',
+                              }}
+                            >
+                              {selectedCube.user?.name}
+                            </span>
+                            <span
+                              className="text-[6px] font-bold tracking-wider mt-1 text-[#8C8578] font-sans"
+                            >
+                              CUBE #{selectedCube.cube_number} · MENTOR: {(mentorName || '').toUpperCase()}
+                            </span>
+                          </div>
+
+                          <div
+                            className="flex items-end justify-between pt-1.5 border-t text-[6px]"
+                            style={{
+                              borderColor: certType === 'success' ? 'rgba(255,255,255,0.09)' : '#EAE4DA',
+                              color: certType === 'success' ? '#8C8578' : '#8A93A0',
+                            }}
+                          >
+                            <span className="font-bold">M. Burgess · Y. Tokgöz · {mentorName}</span>
+                            <span className="font-mono text-[#98917F]">{estimatedCertNo}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Email Text Draft Tabbed Editor */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between pl-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Outreach Draft</span>
-                        <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-100">
-                          <button
-                            type="button"
-                            onClick={() => setActiveLangTab('tr')}
-                            className={`px-2 py-0.5 text-[9px] font-bold rounded-md transition flex items-center gap-0.5 ${
-                              activeLangTab === 'tr' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-                            }`}
-                          >
-                            <Languages className="w-2.5 h-2.5" />
-                            <span>TR</span>
-                          </button>
+                    {/* Right Sub-card: Outreach Email Editor */}
+                    <div className="border border-[#E7E9EE] rounded-2xl overflow-hidden flex flex-col">
+                      <div className="flex items-center justify-between px-4 py-2 bg-[#FCFCFD] border-b border-[#EEF0F3]">
+                        <span className="text-[10.5px] font-extrabold tracking-wider text-[#8A93A0]">
+                          OUTREACH EMAIL
+                        </span>
+                        <div className="flex bg-[#F1F3F6] p-0.5 rounded-lg">
                           <button
                             type="button"
                             onClick={() => setActiveLangTab('en')}
-                            className={`px-2 py-0.5 text-[9px] font-bold rounded-md transition flex items-center gap-0.5 ${
-                              activeLangTab === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                            className={`h-6 px-3 border-none rounded-md text-xs font-bold cursor-pointer transition-colors ${
+                              activeLangTab === 'en'
+                                ? 'bg-white text-[#11151C] shadow-sm'
+                                : 'bg-transparent text-[#8A93A0]'
                             }`}
                           >
-                            <Languages className="w-2.5 h-2.5" />
-                            <span>EN</span>
+                            EN
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveLangTab('tr')}
+                            className={`h-6 px-3 border-none rounded-md text-xs font-bold cursor-pointer transition-colors ${
+                              activeLangTab === 'tr'
+                                ? 'bg-white text-[#11151C] shadow-sm'
+                                : 'bg-transparent text-[#8A93A0]'
+                            }`}
+                          >
+                            TR
                           </button>
                         </div>
                       </div>
-                      
-                      {activeLangTab === 'tr' ? (
+
+                      <div className="p-3 bg-white flex-1 flex flex-col">
                         <textarea
-                          rows={11}
-                          value={emailTr}
-                          onChange={(e) => setEmailTr(e.target.value)}
-                          className="w-full border border-gray-200 rounded-xl p-3.5 text-xs font-semibold text-gray-800 leading-relaxed outline-none focus:border-magenta bg-white resize-none"
+                          rows={9}
+                          value={activeLangTab === 'en' ? emailEn : emailTr}
+                          onChange={(e) =>
+                            activeLangTab === 'en' ? setEmailEn(e.target.value) : setEmailTr(e.target.value)
+                          }
+                          className="w-full flex-1 p-2.5 border border-[#E1E4EA] rounded-xl text-xs leading-relaxed text-[#3D4652] outline-none font-sans resize-none focus:border-[#E5007D]"
                         />
-                      ) : (
-                        <textarea
-                          rows={11}
-                          value={emailEn}
-                          onChange={(e) => setEmailEn(e.target.value)}
-                          className="w-full border border-gray-200 rounded-xl p-3.5 text-xs font-semibold text-gray-800 leading-relaxed outline-none focus:border-magenta bg-white resize-none"
-                        />
-                      )}
+                      </div>
+
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-[#FCFCFD] border-t border-[#EEF0F3] text-xs">
+                        <span className="text-[#9AA2AE] truncate">
+                          To: {selectedCube.user?.email || 'candidate@example.com'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const text = activeLangTab === 'en' ? emailEn : emailTr;
+                            navigator.clipboard.writeText(text);
+                            setCopiedEmail(true);
+                            setTimeout(() => setCopiedEmail(false), 2000);
+                          }}
+                          className="text-[#E5007D] font-bold hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>{copiedEmail ? 'Copied ✓' : 'Copy Text'}</span>
+                        </button>
+                      </div>
                     </div>
-
                   </div>
-                )}
+                </div>
+
+                {/* Action Bar Footer */}
+                <div className="flex items-center justify-between gap-4 p-5 bg-[#FCFCFD] border-t border-[#EEF0F3] flex-wrap">
+                  <span className="text-xs text-[#6B7480]">
+                    Certificate <strong className="font-mono text-[#11151C] font-semibold">{estimatedCertNo}</strong> will be generated.
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCube(null)}
+                      className="h-10 px-4 border border-[#E1E4EA] rounded-xl bg-white text-xs font-bold text-[#4A5361] hover:border-gray-400 cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={handleConfirmOffboarding}
+                      className="h-10 px-5 border-none rounded-xl bg-[#E5007D] hover:bg-[#C90070] text-white text-xs font-bold cursor-pointer transition-all shadow-md shadow-[#E5007D]/25 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {submitting ? 'Offboarding...' : '✓ Accept & Offboard'}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="bg-white border border-[#E7E9EE] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400">
+                <GraduationCap className="w-10 h-10 text-gray-300" />
+                <div className="text-sm font-bold text-gray-600">No Cube Selected</div>
+                <p className="text-xs text-gray-400 max-w-sm m-0">
+                  Select a candidate from the queue on the left to review their metrics and issue their certificate.
+                </p>
+              </div>
+            )}
+
+            {/* Alumni Records Table */}
+            <div className="bg-white border border-[#E7E9EE] rounded-2xl overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between p-5 border-b border-[#EEF0F3]">
+                <h3 className="text-base font-extrabold tracking-tight m-0">Alumni Records</h3>
+                <span className="font-mono text-xs text-[#9AA2AE]">{alumni.length} issued</span>
               </div>
 
-              {/* Confirm Actions */}
-              <div className="flex items-center justify-end gap-3 border-t border-gray-50 pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCube(null)}
-                  disabled={submitting}
-                  className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-xs hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmOffboarding}
-                  disabled={submitting || previewLoading}
-                  className="px-5 py-2.5 rounded-xl bg-magenta text-white font-bold text-xs hover:bg-magenta-hover transition flex items-center gap-1.5 shadow-md shadow-magenta/15"
-                >
-                  {submitting ? (
-                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <Check className="w-4 h-4" />
-                  )}
-                  <span>Accept & Offboard</span>
-                </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#FCFCFD] border-b border-[#EEF0F3] text-[10px] font-extrabold tracking-wider text-[#9AA2AE] uppercase">
+                      <th className="py-3 px-5">CUBE</th>
+                      <th className="py-3 px-5">NAME</th>
+                      <th className="py-3 px-5">LEFT AS</th>
+                      <th className="py-3 px-5">CERTIFICATE NO</th>
+                      <th className="py-3 px-5">TYPE</th>
+                      <th className="py-3 px-5">MENTOR</th>
+                      <th className="py-3 px-5">DATE</th>
+                      <th className="py-3 px-5 text-right">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F1F3F6]">
+                    {alumni.map((a) => {
+                      const rec = a.offboarding_record;
+                      const isAch = rec?.type === 'success' || rec?.type === 'achievement';
+                      const dateStr = rec?.issue_date
+                        ? new Date(rec.issue_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : '-';
+                      return (
+                        <tr key={a.id} className="hover:bg-[#FCFCFD] transition-colors">
+                          <td className="py-3.5 px-5 font-mono font-bold text-[#E5007D]">
+                            #{a.cube_number}
+                          </td>
+                          <td className="py-3.5 px-5 font-bold text-[#11151C]">
+                            <Link to={`/x/${a.cube_number}`} className="hover:text-[#E5007D] transition-colors">
+                              {a.user?.name}
+                            </Link>
+                          </td>
+                          <td className="py-3.5 px-5">
+                            <span className="inline-flex items-center h-6 px-2.5 rounded-md text-[10.5px] font-bold bg-[#E6F6F7] text-[#0E7C86]">
+                              {a.current_level}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-5 font-mono text-[#6B7480]">
+                            {rec?.certificate_no || '-'}
+                          </td>
+                          <td className="py-3.5 px-5">
+                            <span
+                              className={`inline-flex items-center h-6 px-2.5 rounded-md text-[10.5px] font-bold ${
+                                isAch ? 'bg-[#FDF1DF] text-[#B26A00]' : 'bg-[#F1F3F6] text-[#4A5361]'
+                              }`}
+                            >
+                              {isAch ? 'Achievement' : 'Participation'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-5 text-[#4A5361]">
+                            {rec?.mentor_name || '-'}
+                          </td>
+                          <td className="py-3.5 px-5 text-[#8A93A0]">
+                            {dateStr}
+                          </td>
+                          <td className="py-3.5 px-5 text-right">
+                            <div className="inline-flex items-center gap-1.5 justify-end">
+                              <button
+                                type="button"
+                                onClick={() => setViewingAlumni(a)}
+                                title="View Outreach Email"
+                                className="h-7 px-2.5 border border-[#E1E4EA] rounded-lg bg-white text-[11px] font-bold text-[#4A5361] hover:border-gray-400 cursor-pointer transition-colors"
+                              >
+                                Email
+                              </button>
+                              <Link
+                                to={`/offboarding/certificate/${a.id}?download=true`}
+                                target="_blank"
+                                title="Print / Download PDF"
+                                className="inline-flex items-center h-7 px-2.5 border border-[#FBD3E7] rounded-lg bg-[#FFF5FA] text-[11px] font-bold text-[#B80064] hover:bg-[#FDE7F3] transition-colors"
+                              >
+                                Print
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => setRevertingAlumni(a)}
+                                title="Revert Offboarding Status"
+                                className="h-7 px-2 border border-[#E1E4EA] rounded-lg bg-white text-[11px] font-bold text-[#8A93A0] hover:text-red-600 hover:border-red-300 cursor-pointer transition-colors"
+                              >
+                                Revert
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {alumni.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-gray-400 text-xs font-semibold">
+                          No alumni records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
+            </div>
 
-            </div>
-          ) : (
-            <div className="h-[400px] border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-white shadow-subtle">
-              <GraduationCap className="w-12 h-12 text-gray-300 mb-2" />
-              <h4 className="font-extrabold text-sm text-gray-800">No Cube Selected</h4>
-              <p className="text-xs text-gray-400 mt-1 max-w-[280px]">
-                Please select any active Cube from the left panel to preview their certificate and start the offboarding flow.
-              </p>
-            </div>
-          )}
+          </section>
         </div>
+      </main>
 
-      </div>
-
-      {/* Section 2: Alumni Log */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
-        <h3 className="font-extrabold text-base text-gray-900 border-b border-gray-50 pb-3 flex items-center gap-2">
-          <GraduationCap className="w-5 h-5 text-gray-400" />
-          <span>Alumni Directory & Records Log</span>
-          <span className="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">
-            {alumni.length}
-          </span>
-        </h3>
-
-        {alumni.length === 0 ? (
-          <p className="text-gray-400 text-xs py-8 text-center italic">No Alumni records logged yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-semibold text-gray-600">
-              <thead>
-                <tr className="border-b border-gray-100 text-gray-400 uppercase text-[9px] tracking-wider font-bold">
-                  <th className="py-3 px-4">Cube #</th>
-                  <th className="py-3 px-4">Name</th>
-                  <th className="py-3 px-4">Left As</th>
-                  <th className="py-3 px-4">Certificate No</th>
-                  <th className="py-3 px-4">Certificate Type</th>
-                  <th className="py-3 px-4">Mentor</th>
-                  <th className="py-3 px-4">Offboard Date</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {alumni.map((a) => (
-                  <tr key={a.id} className="hover:bg-gray-50/50 transition">
-                    <td className="py-3.5 px-4 font-bold text-magenta">#{a.cube_number}</td>
-                    <td className="py-3.5 px-4">
-                      <Link to={`/cubes/${a.id}`} className="font-bold text-gray-800 hover:text-magenta transition">
-                        {a.user.name}
-                      </Link>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getLevelMeta(a.current_level).badge}`}>
-                        {getLevelMeta(a.current_level).label}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-[10px] text-gray-700">
-                      {a.offboarding_record?.certificate_no}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        a.offboarding_record?.type === 'success'
-                          ? 'bg-amber-50 text-amber-700 border-amber-100'
-                          : 'bg-gray-50 text-gray-600 border-gray-100'
-                      }`}>
-                        {a.offboarding_record?.type === 'success' ? 'Başarı Sertifikası' : 'Katılım Sertifikası'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-800 font-bold">{a.offboarding_record?.mentor_name}</td>
-                    <td className="py-3.5 px-4 text-gray-400">
-                      {new Date(a.offboarding_record?.issue_date || a.updated_at).toLocaleDateString('tr-TR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </td>
-                    <td className="py-3.5 px-4 text-right flex justify-end gap-2">
-                      <button
-                        onClick={() => setViewingAlumni(a)}
-                        className="px-2.5 py-1.5 text-[10px] font-extrabold text-gray-600 hover:text-magenta bg-slate-50 hover:bg-slate-100 border border-gray-200/60 rounded-lg transition"
-                      >
-                        Email text
-                      </button>
-                      <Link
-                        to={`/offboarding/certificate/${a.id}`}
-                        target="_blank"
-                        className="px-2.5 py-1.5 text-[10px] font-extrabold text-magenta bg-magenta/5 hover:bg-magenta/10 border border-magenta/15 rounded-lg transition"
-                      >
-                        Print Cert
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setRevertLevel('Cube');
-                          setRevertingAlumni(a);
-                        }}
-                        className="px-2.5 py-1.5 text-[10px] font-extrabold text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 border border-red-100 rounded-lg transition"
-                      >
-                        Revert
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Modal: View Alumni Emails */}
-      {viewingAlumni && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl w-full max-w-xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
-              <div>
-                <h3 className="font-extrabold text-gray-900 text-sm">Outreach Email Record</h3>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Alumni: {viewingAlumni.user.name} (#{viewingAlumni.cube_number})</p>
-              </div>
-              <button 
-                onClick={() => setViewingAlumni(null)} 
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
+      {/* Enlarge Certificate Modal */}
+      {showLargePreview && selectedCube && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-stone-900 border border-stone-800 rounded-2xl max-w-4xl w-full p-6 relative flex flex-col gap-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-800 text-stone-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                Full Certificate Preview · Cube #{selectedCube.cube_number}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowLargePreview(false)}
+                className="text-stone-400 hover:text-white border-none bg-transparent cursor-pointer p-1"
               >
-                <X size={18} />
+                <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="p-6 flex flex-col gap-4">
-              <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-100 w-max">
-                <button
-                  type="button"
-                  onClick={() => setActiveLangTab('tr')}
-                  className={`px-3 py-1 text-[9px] font-bold rounded-md transition flex items-center gap-0.5 ${
-                    activeLangTab === 'tr' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-                  }`}
+            <div className="p-4 bg-stone-950 rounded-xl overflow-hidden flex items-center justify-center">
+              <div
+                className={`w-full aspect-[297/210] rounded-xl p-8 flex flex-col justify-between relative overflow-hidden ${
+                  certType === 'success'
+                    ? 'bg-[radial-gradient(120%_90%_at_50%_0%,_#1A1712_0%,_#0E0D0B_62%)] border border-amber-500/40 text-[#F6F1E7]'
+                    : 'bg-gradient-to-b from-white to-[#FBF8F3] border border-[#E5007D]/30 text-[#14161A]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <img
+                    src={certType === 'success' ? '/images/iceberg-x-lockup-light.png' : '/images/iceberg-x-lockup.png'}
+                    alt=""
+                    className="h-6 w-auto"
+                  />
+                  <span
+                    className="text-[8px] font-bold tracking-[0.2em]"
+                    style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
+                  >
+                    {certType === 'success' ? 'ELITE TECHNOLOGY FELLOWSHIP' : 'INTERNSHIP · TECHNOLOGY FELLOWSHIP'}
+                  </span>
+                </div>
+                <div className="text-center my-auto py-2">
+                  <div
+                    className="text-[9px] font-extrabold tracking-widest uppercase mb-1"
+                    style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
+                  >
+                    {certType === 'success' ? 'CERTIFICATE OF ACHIEVEMENT' : 'CERTIFICATE OF PARTICIPATION'}
+                  </div>
+                  <h2
+                    className="font-serif text-4xl leading-tight m-0"
+                    style={{ color: certType === 'success' ? '#FFFCF6' : '#14161A' }}
+                  >
+                    {certType === 'success' ? 'Certificate of Achievement' : 'Certificate of Participation'}
+                  </h2>
+                  <div className="text-[9px] tracking-widest text-[#8C8578] mt-3">PROUDLY PRESENTED TO</div>
+                  <div
+                    className="text-2xl font-extrabold mt-1 pb-1 border-b inline-block px-4"
+                    style={{
+                      borderColor: certType === 'success' ? 'rgba(201,150,43,0.6)' : 'rgba(229,0,125,0.45)',
+                    }}
+                  >
+                    {selectedCube.user?.name}
+                  </div>
+                  <div className="text-[10px] text-[#8C8578] font-bold mt-2">
+                    CUBE #{selectedCube.cube_number} · MENTOR: {(mentorName || '').toUpperCase()}
+                  </div>
+                </div>
+                <div
+                  className="flex items-end justify-between pt-3 border-t text-[8px]"
+                  style={{
+                    borderColor: certType === 'success' ? 'rgba(255,255,255,0.09)' : '#EAE4DA',
+                    color: certType === 'success' ? '#8C8578' : '#8A93A0',
+                  }}
                 >
-                  <span>TURKISH</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveLangTab('en')}
-                  className={`px-3 py-1 text-[9px] font-bold rounded-md transition flex items-center gap-0.5 ${
-                    activeLangTab === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-                  }`}
-                >
-                  <span>ENGLISH</span>
-                </button>
-              </div>
-
-              <div className="bg-slate-50 border border-gray-100 p-4 rounded-xl max-h-[350px] overflow-y-auto">
-                <pre className="text-xs font-semibold text-gray-800 leading-relaxed font-sans whitespace-pre-wrap">
-                  {activeLangTab === 'tr' ? viewingAlumni.offboarding_record?.email_text_tr : viewingAlumni.offboarding_record?.email_text_en}
-                </pre>
+                  <span className="font-bold">M. Burgess · Y. Tokgöz · {mentorName}</span>
+                  <span className="font-mono text-[#98917F]">{estimatedCertNo}</span>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 flex justify-end">
+      {/* View Outreach Email Modal */}
+      {viewingAlumni && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 flex flex-col gap-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <span className="text-sm font-bold text-gray-900">
+                Outreach Email · {viewingAlumni.user?.name} (#{viewingAlumni.cube_number})
+              </span>
               <button
                 type="button"
                 onClick={() => setViewingAlumni(null)}
-                className="px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition"
+                className="text-gray-400 hover:text-gray-900 border-none bg-transparent cursor-pointer p-1"
               >
-                Close
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl text-xs leading-relaxed text-gray-700 whitespace-pre-line max-h-80 overflow-y-auto font-sans">
+              {viewingAlumni.offboarding_record?.email_text_en || viewingAlumni.offboarding_record?.email_text_tr || 'No email draft stored.'}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = viewingAlumni.offboarding_record?.email_text_en || viewingAlumni.offboarding_record?.email_text_tr || '';
+                  navigator.clipboard.writeText(text);
+                  alert('Email copied to clipboard!');
+                }}
+                className="h-9 px-4 bg-[#11151C] hover:bg-black text-white text-xs font-bold rounded-xl cursor-pointer transition-colors"
+              >
+                Copy to Clipboard
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Revert Offboarding */}
+      {/* Revert Offboarding Modal */}
       {revertingAlumni && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-gray-100 overflow-hidden">
-            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
-              <div>
-                <h3 className="font-extrabold text-gray-900 text-sm">Revert Offboarding</h3>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Alumni: {revertingAlumni.user.name}</p>
-              </div>
-              <button 
-                onClick={() => setRevertingAlumni(null)} 
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-6 flex flex-col gap-4">
-              <p className="text-xs text-gray-600 leading-relaxed font-semibold">
-                Are you sure you want to delete this Cube's offboarding record and restore them to the active directory? Please select their restored status:
-              </p>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider pl-1">Restored Status *</label>
-                <select
-                  value={revertLevel}
-                  onChange={(e) => setRevertLevel(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 bg-white outline-none focus:border-magenta cursor-pointer"
-                >
-                  <option value="Cube">Cube</option>
-                  <option value="Senior_Cube">Senior Cube</option>
-                  <option value="Iceberger">Iceberger</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 flex justify-end gap-3">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 flex flex-col gap-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <span className="text-sm font-bold text-gray-900">
+                Revert Offboarding Status
+              </span>
               <button
                 type="button"
                 onClick={() => setRevertingAlumni(null)}
-                disabled={revertSubmitting}
-                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-100 hover:text-gray-900 transition"
+                className="text-gray-400 hover:text-gray-900 border-none bg-transparent cursor-pointer p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed m-0">
+              Reverting will delete the certificate for <strong className="text-gray-900">{revertingAlumni.user?.name} (Cube #{revertingAlumni.cube_number})</strong> and restore them to an active programme level.
+            </p>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Restore level to:
+              </label>
+              <select
+                value={revertLevel}
+                onChange={(e) => setRevertLevel(e.target.value)}
+                className="w-full h-10 px-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none"
+              >
+                <option value="Cube">Cube (Fellow)</option>
+                <option value="Senior_Cube">Senior Cube</option>
+                <option value="Iceberger">Iceberger</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setRevertingAlumni(null)}
+                className="h-9 px-4 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleConfirmRevert}
                 disabled={revertSubmitting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md shadow-red-600/10"
+                onClick={handleConfirmRevert}
+                className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors disabled:opacity-50"
               >
-                {revertSubmitting ? (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                ) : (
-                  <span>Confirm Revert</span>
-                )}
+                {revertSubmitting ? 'Reverting...' : 'Confirm Revert'}
               </button>
             </div>
           </div>
         </div>
       )}
-      
-      {/* Modal: Large Certificate Preview */}
-      {showLargePreview && selectedCube && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-gray-100 overflow-hidden relative">
-            <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-b border-gray-100">
-              <div>
-                <h3 className="font-extrabold text-gray-900 text-sm">Certificate High-Res Preview</h3>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Cube: {selectedCube.user.name} (#{selectedCube.cube_number})</p>
-              </div>
-              <button 
-                onClick={() => setShowLargePreview(false)} 
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-6 bg-slate-100 flex items-center justify-center overflow-auto min-h-[460px]">
-              {/* Scale down the container to fit nicely on screen while keeping aspect ratio and high res */}
-              <div className="relative overflow-hidden rounded-2xl border shadow-lg bg-white w-[561px] h-[397px] md:w-[842px] md:h-[596px] shrink-0">
-                <div className={`w-[1122px] h-[794px] transform scale-[0.5] md:scale-[0.75] origin-top-left select-text relative transition-all ${
-                  certType === 'success' 
-                    ? 'bg-gradient-to-br from-[#120F0D] via-[#1C1612] to-[#2C221A] border-amber-900/20 text-white' 
-                    : 'bg-[#F8F6F2] border-gray-200/50 text-gray-800'
-                  }`}
-                >
-                  {/* Inner Border Frame */}
-                  <div className={`absolute inset-8 border-2 pointer-events-none rounded-xl ${
-                    certType === 'success' ? 'border-amber-400/20' : 'border-magenta/20'
-                  }`} />
-
-                  {/* Large stylized watermarked background logo */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
-                    <img src="/images/iceberg-x-logo-whitebg.png" alt="" className="w-[500px] h-[500px] object-contain" />
-                  </div>
-
-                  {/* Header Row */}
-                  <div className="absolute top-12 left-14 right-14 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <img src="/images/iceberg-x-logo-blackbg.png" alt="Logo" className="h-8 rounded-lg object-contain shadow-sm" />
-                    </div>
-                    <span className={`text-[9px] font-extrabold tracking-widest uppercase ${certType === 'success' ? 'text-amber-500/70' : 'text-gray-400'}`}>
-                      {certType === 'success' ? "ELİT TEKNOLOJİ FELLOWSHIP'İ" : "STAJ PROGRAMI • TEKNOLOJİ FELLOWSHIP'İ"}
-                    </span>
-                  </div>
-
-                  {/* Main Content Area */}
-                  <div className="h-full flex flex-col justify-center items-center px-16 text-center pt-8">
-                    
-                    {/* Pill Category Label */}
-                    <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                      certType === 'success' 
-                        ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' 
-                        : 'bg-magenta/5 text-magenta border border-magenta/15'
-                    }`}>
-                      {certType === 'success' ? 'BAŞARI SERTİFİKASI' : 'STAJ SERTİFİKASI'}
-                    </span>
-
-                    {/* Certificate Title */}
-                    <h2 className={`font-black tracking-wide leading-none mt-5 text-[42px] ${certType === 'success' ? 'text-white' : 'text-gray-900'}`}>
-                      {certType === 'success' ? 'Başarı Sertifikası' : 'Katılım Sertifikası'}
-                    </h2>
-
-                    {/* Subtitle */}
-                    <p className={`text-[9px] font-extrabold tracking-widest uppercase mt-4 ${certType === 'success' ? 'text-amber-500/60' : 'text-gray-400'}`}>
-                      {certType === 'success' ? 'AŞAĞIDAKİ KİŞİYE ONURLA VERİLMİŞTİR' : 'AŞAĞIDAKİ KİŞİYE VERİLMİŞTİR'}
-                    </p>
-
-                    {/* Recipient Name */}
-                    <h1 className={`font-extrabold leading-none mt-3.5 pb-2 border-b-2 max-w-xl text-[44px] tracking-tight ${
-                      certType === 'success' ? 'text-white border-amber-400/20' : 'text-gray-900 border-magenta/20'
-                    }`}>
-                      {selectedCube.user.name}
-                    </h1>
-
-                    {/* Description Text */}
-                    <p className={`text-[13px] leading-relaxed max-w-[650px] mt-6 font-medium ${certType === 'success' ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {certType === 'success' ? (
-                        <>
-                          Iceberg Digital teknoloji fellowship programını üstün bir performansla tamamladığını ve<br />
-                          <span className="font-bold text-white">Cube #{selectedCube.cube_number}</span> olarak kalıcı yerini aldığını belgeler.
-                        </>
-                      ) : (
-                        <>
-                          Iceberg Digital teknoloji staj programına <span className="font-bold text-gray-900">Cube #{selectedCube.cube_number}</span> olarak katılım gösterdiğini belgeler.
-                        </>
-                      )}
-                    </p>
-
-                    {/* Tagline / Sub-slogan */}
-                    {certType === 'success' && (
-                      <p className="text-[10px] text-amber-400 font-extrabold tracking-widest uppercase mt-4">
-                        Once a Cube, Always a Cube
-                      </p>
-                    )}
-
-                    {/* Cube Identifier Badges */}
-                    <div className="flex gap-4 mt-8">
-                      <div className={`px-4 py-2 border rounded-xl flex flex-col justify-center items-center min-w-[90px] ${
-                        certType === 'success' ? 'bg-amber-400/5 border-amber-400/20 text-amber-400' : 'bg-magenta/5 border-magenta/15 text-magenta'
-                      }`}>
-                        <span className="text-[7px] text-gray-400 uppercase font-semibold">CUBE ID</span>
-                        <span className={`text-[12px] font-bold mt-0.5 ${certType === 'success' ? 'text-amber-400' : 'text-magenta'}`}>#{selectedCube.cube_number}</span>
-                      </div>
-                      <div className={`px-4 py-2 border rounded-xl flex flex-col justify-center items-center min-w-[140px] ${
-                        certType === 'success' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-gray-200 text-gray-800'
-                      }`}>
-                        <span className="text-[7px] text-gray-400 uppercase font-semibold">PROGRAM MENTORU</span>
-                        <span className={`text-[12px] font-bold mt-0.5 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>{mentorName}</span>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Footer Rows (Signatures & Verification Info) */}
-                  <div className="absolute bottom-12 left-14 right-14 flex justify-between items-end">
-                    
-                    {/* Signatures */}
-                    <div className="flex gap-6">
-                      <div className="flex flex-col text-left">
-                        <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className={`text-[9px] font-bold mt-1 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>Mark Burgess</p>
-                        <p className="text-[6px] text-gray-400 uppercase font-semibold">KURUCU & CEO</p>
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className={`text-[9px] font-bold mt-1 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>Yusuf Tokgöz</p>
-                        <p className="text-[6px] text-gray-400 uppercase font-semibold">CTO</p>
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <div className="h-6 w-24 border-b border-gray-400/20"></div>
-                        <p className={`text-[9px] font-bold mt-1 ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>Ahmet Onur Solmaz</p>
-                        <p className="text-[6px] text-gray-400 uppercase font-semibold">HEAD OF ENGINEERING</p>
-                      </div>
-                    </div>
-
-                    <p className="text-[6px] text-gray-400 font-extrabold tracking-widest uppercase absolute left-1/2 -translate-x-1/2 bottom-0">
-                      BUILDING THE NEXT GENERATION OF INNOVATORS
-                    </p>
-
-                    {/* Certificate Metadata and Verification Code QR */}
-                    <div className="flex items-center gap-4">
-                      <div className="text-right text-[8px] text-gray-400 leading-tight font-semibold">
-                        <p>Sertifika No: <span className={`font-bold ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>ICE-2026-000{selectedCube.cube_number}</span></p>
-                        <p>Veriş Tarihi: <span className={`font-bold ${certType === 'success' ? 'text-white' : 'text-gray-800'}`}>{new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</span></p>
-                      </div>
-                      <div className="bg-white p-1 rounded-lg border border-gray-200 flex flex-col items-center justify-center shadow-sm">
-                        <div className="w-12 h-12 bg-gray-100 flex items-center justify-center text-[5px] text-gray-400 border border-dashed rounded">QR Code</div>
-                        <span className="text-[4px] font-bold tracking-wider text-gray-500 uppercase mt-0.5">DOĞRULA</span>
-                      </div>
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-
-            <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowLargePreview(false)}
-                className="px-4 py-2 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition"
-              >
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

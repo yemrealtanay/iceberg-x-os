@@ -32,6 +32,8 @@ import { AcceptInvite } from './pages/AcceptInvite';
 import { Quests } from './pages/Quests';
 import { AdminQuests } from './pages/AdminQuests';
 
+import { PublicProfile } from './pages/PublicProfile';
+
 function App() {
   return (
     <AuthProvider>
@@ -45,6 +47,9 @@ function App() {
 
           {/* Public Certificate Verification Route */}
           <Route path="/verify/:certNo" element={<VerifyCertificate />} />
+
+          {/* Public Shareable Cube / Alumni Profile Route */}
+          <Route path="/x/:cubeNumber" element={<PublicProfile />} />
 
           {/* Public one-time invite acceptance */}
           <Route path="/invite/:token" element={<AcceptInvite />} />

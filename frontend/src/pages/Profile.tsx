@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X } from 'lucide-react';
+import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X, ExternalLink } from 'lucide-react';
 import { BadgeDisc, RarityPill } from '../components/BadgeMedal';
 import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 import ReactMarkdown from 'react-markdown';
@@ -597,16 +597,26 @@ export const Profile: React.FC = () => {
             <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mt-1">
               {profile.current_level.replace('_', ' ')}
             </p>
-            {profile.offboarding_record && (
+            <div className="flex flex-col gap-2 mt-3 w-full">
+              {profile.offboarding_record && (
+                <Link
+                  to={`/offboarding/certificate/${profile.id}`}
+                  target="_blank"
+                  className="w-full py-2 bg-gradient-to-r from-magenta to-pink-600 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-magenta/15 hover:opacity-95 transition-opacity"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>View Offboarding Certificate</span>
+                </Link>
+              )}
               <Link
-                to={`/offboarding/certificate/${profile.id}`}
+                to={`/x/${profile.cube_number}`}
                 target="_blank"
-                className="mt-3 w-full py-2 bg-gradient-to-r from-magenta to-pink-600 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-magenta/15 hover:opacity-95 transition-opacity"
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-gray-700 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 border border-gray-200 transition-colors"
               >
-                <GraduationCap className="w-4 h-4" />
-                <span>View Offboarding Certificate</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>View Public Profile ↗</span>
               </Link>
-            )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2.5 border-t border-gray-50 pt-4 text-xs text-gray-500 font-medium">

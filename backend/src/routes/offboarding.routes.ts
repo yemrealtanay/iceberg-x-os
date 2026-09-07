@@ -280,6 +280,7 @@ router.get('/offboarding/verify/:certNo', async (req, res) => {
     return res.json({
       certificate_no: record.certificate_no,
       type: record.type,
+      cube_id: record.cube_id,
       cube_name: record.cube.user.name,
       cube_number: record.cube.cube_number,
       mentor_name: record.mentor_name,

@@ -558,6 +558,150 @@ router.delete('/cubes/:id/notes/:noteId', requireAuth, isMentorOrAdmin, async (r
   }
 });
 
+// Public Cube Profile (accessible without authentication for /x/:cubeNumber and /verify/:certNo)
+router.get('/cubes/public/:identifier', async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const cleanId = (identifier || '').replace(/^#/, '').trim();
+    const paddedNumber = parseCubeNumber(cleanId);
+
+    const profile = await prisma.cubeProfile.findFirst({
+      where: {
+        OR: [
+          ...(paddedNumber ? [{ cube_number: paddedNumber }] : []),
+          { cube_number: cleanId },
+          { id: cleanId }
+        ]
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true
+          }
+        },
+        assigned_mentor: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        cube_badges: {
+          include: {
+            badge: true,
+            mission: {
+              select: {
+                id: true,
+                title: true
+              }
+            },
+            awarded_by: {
+              select: {
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            awarded_at: 'desc'
+          }
+        },
+        team_memberships: {
+          include: {
+            team: {
+              include: {
+                mission: true
+              }
+            }
+          }
+        },
+        offboarding_record: true,
+        cube_quests: {
+          where: { is_completed: true },
+          include: {
+            quest: {
+              include: {
+                rewards: true
+              }
+            }
+          },
+          orderBy: {
+            completed_at: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Cube profile not found' });
+    }
+
+    // Calculate meeting attendance
+    const invitedMeetings = await prisma.meeting.findMany({
+      where: { is_completed: true, invited_cube_ids: { has: profile.id } },
+      select: { id: true }
+    });
+    const attendance = await prisma.meetingAttendance.findMany({
+      where: { cube_id: profile.id },
+      select: { meeting_id: true, attended: true }
+    });
+    const meetingIds = new Set<string>([
+      ...invitedMeetings.map(m => m.id),
+      ...attendance.map(a => a.meeting_id)
+    ]);
+    const attendedMeetingIds = new Set(
+      attendance.filter(a => a.attended).map(a => a.meeting_id)
+    );
+    const totalMeetings = meetingIds.size;
+    const attendedMeetings = attendedMeetingIds.size;
+    const attendanceRate = totalMeetings > 0
+      ? Math.round((attendedMeetings / totalMeetings) * 100)
+      : null;
+
+    // Mission contributions
+    const missionContributions = profile.team_memberships.map((m: any) => ({
+      missionId: m.team?.mission?.id,
+      title: m.team?.mission?.title || 'Mission Contribution',
+      category: m.team?.mission?.category || 'General',
+      role: m.role || 'Contributor',
+      isSubmitted: m.is_submitted,
+      status: m.team?.mission?.status
+    }));
+
+    return res.json({
+      profile: {
+        id: profile.id,
+        cube_number: profile.cube_number,
+        cohort: profile.cohort,
+        university: profile.university,
+        department: profile.department,
+        github_url: profile.github_url,
+        gitlab_url: profile.gitlab_url,
+        linkedin_url: profile.linkedin_url,
+        skills: profile.skills,
+        interests: profile.interests,
+        current_level: profile.current_level,
+        avatar_url: profile.avatar_url,
+        is_founding_cube: profile.is_founding_cube,
+        user: profile.user,
+        assigned_mentor: profile.assigned_mentor,
+        offboarding_record: profile.offboarding_record,
+        cube_badges: profile.cube_badges,
+        cube_quests: profile.cube_quests
+      },
+      stats: {
+        questsCompleted: profile.cube_quests.length,
+        badgesEarned: profile.cube_badges.length,
+        missionContributions: missionContributions.length,
+        attendanceRate
+      },
+      missions: missionContributions
+    });
+  } catch (error: any) {
+    return sendError(res, error);
+  }
+});
+
 // Get detailed Cube Profile Page
 router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {

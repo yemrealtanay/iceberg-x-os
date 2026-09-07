@@ -33,7 +33,9 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        mono: ['"IBM Plex Mono"', 'monospace'],
       },
       boxShadow: {
         premium: '0 24px 60px -20px rgba(17, 17, 17, 0.08)',
