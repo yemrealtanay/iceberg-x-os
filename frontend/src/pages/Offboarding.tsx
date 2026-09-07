@@ -56,6 +56,7 @@ export const Offboarding: React.FC = () => {
   const [revertingAlumni, setRevertingAlumni] = useState<any | null>(null);
   const [revertLevel, setRevertLevel] = useState<string>('Cube');
   const [revertSubmitting, setRevertSubmitting] = useState(false);
+  const [selectedCubeBadges, setSelectedCubeBadges] = useState<any[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -103,6 +104,7 @@ export const Offboarding: React.FC = () => {
   useEffect(() => {
     if (!selectedCube) {
       setStats(null);
+      setSelectedCubeBadges([]);
       setEmailTr('');
       setEmailEn('');
       return;
@@ -115,12 +117,27 @@ export const Offboarding: React.FC = () => {
         let badgesEarned = 0;
         let attendanceRate: number | null = null;
 
-        const statsRes = await api.get(`/offboarding/stats/${selectedCube.id}`).catch(() => null);
+        const [statsRes, pubRes] = await Promise.all([
+          api.get(`/offboarding/stats/${selectedCube.id}`).catch(() => null),
+          api.get(`/cubes/public/${selectedCube.id}`).catch(() => null),
+        ]);
+
         if (statsRes) {
           completedMissions = statsRes.completedMissions ?? 0;
           badgesEarned = statsRes.badgesEarned ?? 0;
           attendanceRate = statsRes.attendanceRate ?? null;
           setStats(statsRes);
+        }
+
+        if (pubRes?.profile?.cube_badges) {
+          setSelectedCubeBadges(
+            pubRes.profile.cube_badges.map((b: any) => ({
+              id: b.id,
+              name: b.badge?.name || 'Badge',
+            }))
+          );
+        } else {
+          setSelectedCubeBadges([]);
         }
 
         const cubeNo = selectedCube.cube_number;
@@ -524,12 +541,12 @@ Iceberg Digital Ekibi`
                           type={certType}
                           certificateNo={estimatedCertNo}
                           stats={{
-                            questsCount: stats?.completedMissions ?? 0,
-                            badgesCount: stats?.badgesEarned ?? 0,
+                            questsCount: stats?.questsCompleted ?? 0,
+                            badgesCount: stats?.badgesEarned ?? selectedCubeBadges.length,
                             missionContributionsCount: stats?.completedMissions ?? 0,
                             attendanceRate: stats?.attendanceRate,
                           }}
-                          badges={[]}
+                          badges={selectedCubeBadges}
                         />
                       </div>
                     </div>
@@ -766,12 +783,12 @@ Iceberg Digital Ekibi`
                 type={certType}
                 certificateNo={estimatedCertNo}
                 stats={{
-                  questsCount: stats?.completedMissions ?? 0,
-                  badgesCount: stats?.badgesEarned ?? 0,
+                  questsCount: stats?.questsCompleted ?? 0,
+                  badgesCount: stats?.badgesEarned ?? selectedCubeBadges.length,
                   missionContributionsCount: stats?.completedMissions ?? 0,
                   attendanceRate: stats?.attendanceRate,
                 }}
-                badges={[]}
+                badges={selectedCubeBadges}
               />
             </div>
           </div>

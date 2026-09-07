@@ -114,21 +114,24 @@ export const Certificate: React.FC = () => {
   const verificationUrl = `${window.location.origin}/verify/${record.certificate_no}`;
   const qrCodeImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}`;
 
-  // Completed quests
+  // Completed quests (unified with PublicProfile logic)
   const quests = (profile.cube_quests || [])
-    .filter((cq: any) => cq.is_completed && cq.quest)
-    .map((cq: any) => ({
-      id: cq.id,
-      title: cq.quest.title,
-      rarity: (cq.quest.rarity || 'COMMON').toUpperCase(),
-      criteria: cq.quest.criteria || cq.quest.description || 'Completed successfully',
-      date: new Date(cq.completed_at || cq.created_at).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      }),
-      badge: cq.quest.rewards?.[0]?.name ? `Badge: ${cq.quest.rewards[0].name}` : 'Quest Accomplished',
-    }));
+    .filter((cq: any) => cq.is_completed !== false && (cq.quest || cq.title))
+    .map((cq: any) => {
+      const q = cq.quest || cq;
+      return {
+        id: cq.id || q.id,
+        title: q.title || 'Fellowship Quest',
+        rarity: (q.difficulty || q.rarity || 'COMMON').toUpperCase(),
+        criteria: q.criteria || q.description || 'Completed successfully',
+        date: new Date(cq.completed_at || cq.created_at || Date.now()).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }),
+        badge: q.rewards?.[0]?.name ? `Badge: ${q.rewards[0].name}` : 'Quest Accomplished',
+      };
+    });
 
   // Badges earned
   const badges = (profile.cube_badges || []).map((cb: any) => ({
@@ -145,8 +148,8 @@ export const Certificate: React.FC = () => {
     }),
   }));
 
-  const questsCount = quests.length;
-  const badgesCount = badges.length;
+  const questsCount = stats?.questsCompleted ?? (profile.cube_quests?.length || quests.length);
+  const badgesCount = stats?.badgesEarned ?? badges.length;
   const missionContributionsCount = stats?.completedMissions ?? (profile.team_memberships?.length || 0);
   const attendanceRateVal = stats?.attendanceRate !== null && stats?.attendanceRate !== undefined
     ? `${stats.attendanceRate}%`

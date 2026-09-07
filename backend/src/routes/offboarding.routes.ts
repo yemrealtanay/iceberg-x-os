@@ -48,6 +48,13 @@ router.get('/offboarding/stats/:cubeId', requireAuth, isMentorOrAdmin, async (re
       where: { cube_id: cubeId }
     });
 
+    const questsCompletedCount = await prisma.cubeQuest.count({
+      where: {
+        cube_id: cubeId,
+        is_completed: true
+      }
+    });
+
     // Denominator is every completed meeting the Cube was invited to, not just
     // the ones that happen to have an attendance row. A meeting closed without
     // a record for this Cube used to be invisible and inflate the rate.
@@ -79,6 +86,7 @@ router.get('/offboarding/stats/:cubeId', requireAuth, isMentorOrAdmin, async (re
     return res.json({
       completedMissions: completedMissionsCount,
       badgesEarned: badgesCount,
+      questsCompleted: questsCompletedCount,
       attendanceRate,
       totalMeetings,
       attendedMeetings

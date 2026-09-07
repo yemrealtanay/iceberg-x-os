@@ -570,7 +570,8 @@ router.get('/cubes/public/:identifier', async (req, res) => {
         OR: [
           ...(paddedNumber ? [{ cube_number: paddedNumber }] : []),
           { cube_number: cleanId },
-          { id: cleanId }
+          { id: cleanId },
+          { user_id: cleanId }
         ]
       },
       include: {
