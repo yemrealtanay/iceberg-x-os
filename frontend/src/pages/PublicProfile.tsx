@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../utils/api';
-import { ShieldCheck, ShieldAlert, Award, Calendar, Clock, ExternalLink, Check, Copy, Share2 } from 'lucide-react';
-
-const RARITY_THEME: Record<string, { color: string; bg: string; icon: string }> = {
-  COMMON: { color: '#4A5361', bg: '#F1F3F6', icon: 'linear-gradient(150deg, #5B6472, #3D4652)' },
-  RARE: { color: '#1E5CB8', bg: '#E8F0FD', icon: 'linear-gradient(150deg, #3BA7F0, #1E5CB8)' },
-  EPIC: { color: '#6D28D9', bg: '#F3E9FE', icon: 'linear-gradient(150deg, #E5007D, #6D28D9)' },
-};
+import { ShieldCheck, ShieldAlert, Award, Calendar, Clock, ExternalLink, Check, Copy, Share2, CheckCircle, GraduationCap, Code2, Sparkles } from 'lucide-react';
+import { ScaledCertificatePreview } from '../components/CertificateSheet';
+import { BadgeDisc, RarityPill, BadgeSparks } from '../components/BadgeMedal';
+import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 
 export const PublicProfile: React.FC = () => {
   const { cubeNumber, certNo } = useParams<{ cubeNumber?: string; certNo?: string }>();
@@ -165,18 +162,10 @@ export const PublicProfile: React.FC = () => {
           />
 
           <div className="relative flex flex-wrap items-end gap-6 p-8 pb-6">
-            {/* Avatar */}
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={name}
-                className="w-24 h-24 flex-none rounded-[26px] object-cover shadow-xl border-2 border-white/10"
-              />
-            ) : (
-              <div className="w-24 h-24 flex-none rounded-[26px] bg-gradient-to-br from-[#E5007D] to-[#7A0B58] flex items-center justify-center text-3xl font-extrabold tracking-tight shadow-xl shadow-[#E5007D]/25">
-                {getInitials(name)}
-              </div>
-            )}
+            {/* Styled Initials Avatar */}
+            <div className="w-24 h-24 flex-none rounded-[26px] bg-gradient-to-br from-[#E5007D] to-[#7A0B58] flex items-center justify-center text-3xl font-extrabold tracking-tight shadow-xl shadow-[#E5007D]/25">
+              {getInitials(name)}
+            </div>
 
             {/* Candidate Info */}
             <div className="flex-1 min-w-[260px]">
@@ -205,6 +194,37 @@ export const PublicProfile: React.FC = () => {
                 across software engineering and innovation, mentored by{' '}
                 <strong className="text-white font-bold">{mentorName}</strong>.
               </p>
+
+              {(profile.university || profile.department || profile.github_url || profile.linkedin_url) && (
+                <div className="flex flex-wrap items-center gap-3 mt-3">
+                  {(profile.university || profile.department) && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#B7BDC7] font-medium">
+                      <GraduationCap className="w-4 h-4 text-[#FF7CC0]" />
+                      <span>{[profile.department, profile.university].filter(Boolean).join(' · ')}</span>
+                    </span>
+                  )}
+                  {profile.github_url && (
+                    <a
+                      href={profile.github_url.startsWith('http') ? profile.github_url : `https://${profile.github_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[#B7BDC7] hover:text-white transition-colors"
+                    >
+                      <span>GitHub ↗</span>
+                    </a>
+                  )}
+                  {profile.linkedin_url && (
+                    <a
+                      href={profile.linkedin_url.startsWith('http') ? profile.linkedin_url : `https://${profile.linkedin_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[#B7BDC7] hover:text-white transition-colors"
+                    >
+                      <span>LinkedIn ↗</span>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Social Sharing Actions */}
@@ -256,110 +276,155 @@ export const PublicProfile: React.FC = () => {
 
         {/* Badges Earned Section */}
         <section className="mt-7">
-          <div className="flex items-baseline justify-between gap-4 mb-3.5">
-            <h2 className="text-xl font-extrabold tracking-tight m-0">Badges Earned</h2>
+          <div className="flex items-baseline justify-between gap-4 mb-4">
+            <h2 className="text-xl font-extrabold tracking-tight m-0 flex items-center gap-2">
+              <Award className="w-5 h-5 text-[#E5007D]" />
+              <span>Badges & Accomplishments</span>
+            </h2>
             <span className="text-xs font-semibold text-[#8A93A0]">
-              {badgesCount} badges {rareBadgesCount > 0 && `· ${rareBadgesCount} rare`}
+              {badgesCount} badge{badgesCount === 1 ? '' : 's'} {rareBadgesCount > 0 && `· ${rareBadgesCount} rare / epic`}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-            {(profile.cube_badges || []).map((cb: any) => {
-              const rarity = (cb.badge?.rarity || 'COMMON').toUpperCase();
-              const rTheme = RARITY_THEME[rarity] || RARITY_THEME.COMMON;
-              const dateStr = new Date(cb.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              });
-              return (
-                <article
-                  key={cb.id}
-                  className="flex flex-col p-4 bg-white border border-[#E7E9EE] rounded-2xl hover:shadow-md hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-center gap-3">
+          {profile.cube_badges && profile.cube_badges.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {[...profile.cube_badges]
+                .sort((a: any, b: any) => compareByRarity(a.badge?.rarity, b.badge?.rarity))
+                .map((award: any) => {
+                  const meta = getRarityMeta(award.badge?.rarity);
+                  const isEpic = meta.key === 'Epic';
+
+                  return (
                     <div
-                      className="w-10 h-10 flex-none rounded-xl flex items-center justify-center font-serif text-lg text-white"
-                      style={{ background: rTheme.icon }}
+                      key={award.id}
+                      className={`group relative ${meta.frame} transition-transform duration-300 hover:scale-[1.02]`}
+                      title={award.reason || award.badge?.name}
                     >
-                      {(cb.badge?.name || 'B')[0]}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold tracking-tight truncate">
-                        {cb.badge?.name}
+                      {isEpic && <span className="badge-sheen" />}
+                      {isEpic && <BadgeSparks />}
+                      <div className={`relative ${meta.surface} p-4 flex flex-col items-center text-center gap-2.5 h-full justify-between`}>
+                        <div className="flex flex-col items-center text-center gap-2 w-full">
+                          <BadgeDisc icon={award.badge?.icon} rarity={award.badge?.rarity} size="md" />
+                          <div className="w-full">
+                            <h4 className={`font-bold text-xs leading-tight line-clamp-1 ${meta.title}`}>
+                              {award.badge?.name}
+                            </h4>
+                            <p className={`text-[9px] mt-1 uppercase tracking-wider line-clamp-1 ${meta.muted}`}>
+                              {award.mission ? award.mission.title : 'General Award'}
+                            </p>
+                          </div>
+                          <RarityPill rarity={award.badge?.rarity} />
+                        </div>
+                        {award.reason ? (
+                          <p className={`text-[10px] font-semibold line-clamp-2 italic ${meta.body}`}>
+                            "{award.reason}"
+                          </p>
+                        ) : (
+                          <p className={`text-[10px] font-medium line-clamp-2 ${meta.body}`}>
+                            {award.badge?.description || 'Fellowship achievement'}
+                          </p>
+                        )}
+                        <div className={`w-full pt-2 border-t text-[9.5px] font-mono ${meta.divider} ${meta.muted}`}>
+                          {new Date(award.awarded_at || award.created_at).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
                       </div>
-                      <span
-                        className="inline-flex items-center h-5 px-2 mt-1 rounded text-[9.5px] font-black tracking-wider"
-                        style={{ color: rTheme.color, background: rTheme.bg }}
-                      >
-                        {rarity}
-                      </span>
                     </div>
-                  </div>
-                  <p className="text-xs leading-relaxed text-[#6B7480] line-clamp-2 mt-3 mb-0">
-                    {cb.mission?.title
-                      ? `Mission contribution: ${cb.mission.title}`
-                      : cb.badge?.description || 'Fellowship achievement'}
-                  </p>
-                  <div className="mt-3 pt-2.5 border-t border-[#F1F3F6] font-mono text-[10.5px] text-[#9AA2AE]">
-                    {dateStr}
-                  </div>
-                </article>
-              );
-            })}
-            {badgesCount === 0 && (
-              <div className="col-span-full py-8 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs font-semibold">
-                No badges earned yet.
-              </div>
-            )}
-          </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs font-semibold">
+              No badges awarded yet.
+            </div>
+          )}
         </section>
 
         {/* Dual Grid: Completed Quests & Certificate Showcase */}
         <section className="mt-7 grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
           {/* Completed Quests Column */}
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight mb-3.5">Completed Quests</h2>
-            <div className="bg-white border border-[#E7E9EE] rounded-2xl overflow-hidden divide-y divide-[#F1F3F6]">
-              {(profile.cube_quests || []).map((cq: any) => {
-                const q = cq.quest;
-                const dateStr = new Date(cq.completed_at || cq.created_at).toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                });
-                return (
-                  <div key={cq.id} className="flex gap-3 p-4">
-                    <div className="w-5 h-5 flex-none rounded-full bg-[#E9F7EE] text-[#12A150] flex items-center justify-center text-xs font-extrabold mt-0.5">
-                      ✓
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-sm font-bold tracking-tight text-[#11151C] truncate">
-                          {q?.title || 'Fellowship Quest'}
-                        </span>
-                        <span className="font-mono text-[10px] text-[#9AA2AE] flex-none">
-                          {dateStr}
-                        </span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-[#6B7480] line-clamp-2 mt-1 mb-0">
-                        {q?.criteria || q?.description || 'Successfully completed fellowship milestone.'}
-                      </p>
-                      {q?.rewards?.[0]?.name && (
-                        <div className="text-[11px] font-bold text-[#E5007D] mt-1.5">
-                          ↳ unlocked Badge: {q.rewards[0].name}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {questsCount === 0 && (
-                <div className="p-8 text-center text-gray-400 text-xs font-semibold">
-                  No completed quests recorded yet.
-                </div>
-              )}
+            <div className="flex items-baseline justify-between gap-4 mb-3.5">
+              <h2 className="text-xl font-extrabold tracking-tight m-0 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
+                <span>Completed Quests</span>
+              </h2>
+              <span className="text-xs font-semibold text-[#8A93A0]">
+                {questsCount} quest{questsCount === 1 ? '' : 's'}
+              </span>
             </div>
+
+            {profile.cube_quests && profile.cube_quests.length > 0 ? (
+              <div className="flex flex-col gap-3.5">
+                {profile.cube_quests.map((cq: any) => {
+                  const isEpic = cq.quest?.difficulty === 'Epic';
+                  const isRare = cq.quest?.difficulty === 'Rare';
+                  const borderClass = isEpic
+                    ? 'border-[#E5007D]/40 shadow-sm shadow-[#E5007D]/5 bg-slate-950 text-white'
+                    : isRare
+                    ? 'border-sky-200 bg-sky-50/20'
+                    : 'border-slate-200/80 bg-white';
+
+                  const badgeMeta = isEpic
+                    ? 'bg-[#E5007D] text-white'
+                    : isRare
+                    ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200';
+
+                  return (
+                    <div
+                      key={cq.id}
+                      className={`border rounded-2xl p-4 flex flex-col justify-between gap-3 transition-transform duration-200 hover:scale-[1.01] ${borderClass}`}
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className={`font-extrabold text-sm leading-snug ${isEpic ? 'text-white' : 'text-[#11151C]'}`}>
+                            {cq.quest?.title}
+                          </h4>
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${badgeMeta}`}>
+                            {cq.quest?.difficulty}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${isEpic ? 'text-slate-300' : 'text-slate-500'} leading-relaxed`}>
+                          {cq.quest?.description}
+                        </p>
+                      </div>
+
+                      <div className={`flex items-center justify-between gap-2 border-t pt-2.5 ${isEpic ? 'border-white/10' : 'border-slate-100'}`}>
+                        <div className="flex flex-wrap gap-1.5">
+                          {cq.quest?.rewards?.map((b: any) => (
+                            <span
+                              key={b.id}
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-extrabold ${
+                                isEpic ? 'bg-slate-900 border border-slate-800 text-[#FF7CC0]' : 'bg-slate-50 border border-slate-200 text-slate-700'
+                              }`}
+                            >
+                              🏆 {b.name}
+                            </span>
+                          ))}
+                        </div>
+                        {(cq.completed_at || cq.created_at) && (
+                          <span className="text-[10px] font-mono font-medium text-slate-400">
+                            Unlocked: {new Date(cq.completed_at || cq.created_at).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs font-semibold">
+                No completed quests recorded yet.
+              </div>
+            )}
           </div>
 
           {/* Certificate Column */}
@@ -368,70 +433,26 @@ export const PublicProfile: React.FC = () => {
             <div className="bg-white border border-[#E7E9EE] rounded-2xl overflow-hidden">
               {isAlumni ? (
                 <>
-                  {/* Mini Certificate Preview */}
+                  {/* Real Certificate Preview */}
                   <div className="p-4 pb-0">
-                    <div
-                      className={`rounded-xl p-4 flex flex-col aspect-[11/8.5] relative overflow-hidden ${
-                        isAchievement
-                          ? 'bg-[radial-gradient(120%_90%_at_50%_0%,_#1A1712_0%,_#0E0D0B_62%)] border border-amber-500/40 text-[#F6F1E7]'
-                          : 'bg-gradient-to-b from-white to-[#FBF8F3] border border-[#E5007D]/30 text-[#14161A]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <img
-                          src={isAchievement ? '/images/iceberg-x-lockup-light.png' : '/images/iceberg-x-lockup.png'}
-                          alt=""
-                          className="h-3.5 w-auto"
-                        />
-                        <span
-                          className="text-[6px] font-bold tracking-[0.16em]"
-                          style={{ color: isAchievement ? '#C9962B' : '#E5007D' }}
-                        >
-                          {isAchievement ? 'ELITE TECHNOLOGY FELLOWSHIP' : 'INTERNSHIP · TECHNOLOGY FELLOWSHIP'}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 flex flex-col items-center justify-center text-center my-auto">
-                        <span
-                          className="text-[6.5px] font-extrabold tracking-[0.14em]"
-                          style={{ color: isAchievement ? '#C9962B' : '#E5007D' }}
-                        >
-                          {isAchievement ? 'CERTIFICATE OF ACHIEVEMENT' : 'CERTIFICATE OF PARTICIPATION'}
-                        </span>
-                        <span
-                          className="font-serif text-2xl leading-tight mt-1"
-                          style={{ color: isAchievement ? '#FFFCF6' : '#14161A' }}
-                        >
-                          {isAchievement ? 'Certificate of Achievement' : 'Certificate of Participation'}
-                        </span>
-                        <span
-                          className="text-base font-extrabold mt-2 pb-1 border-b"
-                          style={{
-                            color: isAchievement ? '#FFFFFF' : '#0E1116',
-                            borderColor: isAchievement ? 'rgba(201,150,43,0.6)' : 'rgba(229,0,125,0.45)',
-                          }}
-                        >
-                          {name}
-                        </span>
-                        <span
-                          className="text-[6.5px] font-bold tracking-wider mt-1.5 font-sans"
-                          style={{ color: isAchievement ? '#8C8578' : '#8A93A0' }}
-                        >
-                          CUBE #{profile.cube_number} · MENTOR: {(mentorName || '').toUpperCase()}
-                        </span>
-                      </div>
-
-                      <div
-                        className="flex items-end justify-between pt-2 border-t text-[6.5px]"
-                        style={{
-                          borderColor: isAchievement ? 'rgba(255,255,255,0.09)' : '#EAE4DA',
-                          color: isAchievement ? '#8C8578' : '#8A93A0',
-                        }}
-                      >
-                        <span className="font-bold">M. Burgess · Y. Tokgöz · {mentorName}</span>
-                        <span className="font-mono text-[#98917F]">{offboarding.certificate_no}</span>
-                      </div>
-                    </div>
+                    <ScaledCertificatePreview
+                      name={name}
+                      cubeNumber={profile.cube_number}
+                      mentorName={mentorName}
+                      type={offboarding.type}
+                      certificateNo={offboarding.certificate_no}
+                      issueDate={offboarding.issue_date}
+                      stats={{
+                        questsCount,
+                        badgesCount,
+                        missionContributionsCount,
+                        attendanceRate: stats?.attendanceRate,
+                      }}
+                      badges={(profile.cube_badges || []).map((b: any) => ({
+                        id: b.id,
+                        name: b.badge?.name || 'Badge',
+                      }))}
+                    />
                   </div>
 
                   {/* Certificate Meta & Actions */}
@@ -507,6 +528,76 @@ export const PublicProfile: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Technical Skills & Areas of Interest */}
+        <section className="mt-7 bg-white border border-[#E7E9EE] rounded-2xl p-6 shadow-subtle">
+          <div className="flex items-center gap-2 mb-5">
+            <Sparkles className="w-5 h-5 text-[#E5007D]" />
+            <h2 className="text-xl font-extrabold tracking-tight m-0 text-[#11151C]">
+              Skills &amp; Interests
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Technical Skills */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Code2 className="w-4 h-4 text-[#E5007D]" />
+                <h3 className="font-extrabold text-xs text-[#8A93A0] uppercase tracking-wider">
+                  Technical Skills
+                </h3>
+                {profile.skills && profile.skills.length > 0 && (
+                  <span className="text-[11px] font-mono font-bold text-[#8A93A0]">
+                    ({profile.skills.length})
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills && profile.skills.length > 0 ? (
+                  profile.skills.map((skill: string) => (
+                    <span
+                      key={skill}
+                      className="bg-[#E5007D]/5 border border-[#E5007D]/15 text-[#E5007D] font-bold text-xs px-3 py-1.5 rounded-xl hover:bg-[#E5007D]/10 transition-colors"
+                    >
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-xs text-[#8A93A0] italic m-0">No technical skills listed.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Areas of Interest */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-[#0E7C86]" />
+                <h3 className="font-extrabold text-xs text-[#8A93A0] uppercase tracking-wider">
+                  Areas of Interest
+                </h3>
+                {profile.interests && profile.interests.length > 0 && (
+                  <span className="text-[11px] font-mono font-bold text-[#8A93A0]">
+                    ({profile.interests.length})
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {profile.interests && profile.interests.length > 0 ? (
+                  profile.interests.map((interest: string) => (
+                    <span
+                      key={interest}
+                      className="bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs px-3 py-1.5 rounded-xl hover:bg-slate-200 transition-colors"
+                    >
+                      {interest}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-xs text-[#8A93A0] italic m-0">No areas of interest listed.</p>
+                )}
+              </div>
+            </div>
           </div>
         </section>
 

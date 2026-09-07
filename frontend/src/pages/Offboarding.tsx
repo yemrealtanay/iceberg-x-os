@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { certificateTypesFor } from '../utils/cubeStatus';
+import { ScaledCertificatePreview } from '../components/CertificateSheet';
 
 export const Offboarding: React.FC = () => {
   const { user } = useAuth();
@@ -516,67 +517,20 @@ Iceberg Digital Ekibi`
                       </div>
 
                       <div className="p-4 bg-[#F7F8FA] flex items-center justify-center">
-                        <div
-                          className={`w-full aspect-[11/8.5] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden shadow-sm ${
-                            certType === 'success'
-                              ? 'bg-[radial-gradient(120%_90%_at_50%_0%,_#1A1712_0%,_#0E0D0B_62%)] border border-amber-500/40 text-[#F6F1E7]'
-                              : 'bg-gradient-to-b from-white to-[#FBF8F3] border border-[#E5007D]/30 text-[#14161A]'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <img
-                              src={certType === 'success' ? '/images/iceberg-x-lockup-light.png' : '/images/iceberg-x-lockup.png'}
-                              alt=""
-                              className="h-3 w-auto"
-                            />
-                            <span
-                              className="text-[5.5px] font-bold tracking-widest uppercase"
-                              style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
-                            >
-                              {certType === 'success' ? 'ELITE TECHNOLOGY FELLOWSHIP' : 'INTERNSHIP · TECHNOLOGY FELLOWSHIP'}
-                            </span>
-                          </div>
-
-                          <div className="flex-1 flex flex-col items-center justify-center text-center my-auto">
-                            <span
-                              className="text-[6px] font-extrabold tracking-wider"
-                              style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
-                            >
-                              {certType === 'success' ? 'CERTIFICATE OF ACHIEVEMENT' : 'CERTIFICATE OF PARTICIPATION'}
-                            </span>
-                            <span
-                              className="font-serif text-xl leading-tight mt-1"
-                              style={{ color: certType === 'success' ? '#FFFCF6' : '#14161A' }}
-                            >
-                              {certType === 'success' ? 'Certificate of Achievement' : 'Certificate of Participation'}
-                            </span>
-                            <span
-                              className="text-sm font-extrabold mt-1.5 pb-0.5 border-b max-w-[80%] truncate"
-                              style={{
-                                color: certType === 'success' ? '#FFFFFF' : '#0E1116',
-                                borderColor: certType === 'success' ? 'rgba(201,150,43,0.6)' : 'rgba(229,0,125,0.45)',
-                              }}
-                            >
-                              {selectedCube.user?.name}
-                            </span>
-                            <span
-                              className="text-[6px] font-bold tracking-wider mt-1 text-[#8C8578] font-sans"
-                            >
-                              CUBE #{selectedCube.cube_number} · MENTOR: {(mentorName || '').toUpperCase()}
-                            </span>
-                          </div>
-
-                          <div
-                            className="flex items-end justify-between pt-1.5 border-t text-[6px]"
-                            style={{
-                              borderColor: certType === 'success' ? 'rgba(255,255,255,0.09)' : '#EAE4DA',
-                              color: certType === 'success' ? '#8C8578' : '#8A93A0',
-                            }}
-                          >
-                            <span className="font-bold">M. Burgess · Y. Tokgöz · {mentorName}</span>
-                            <span className="font-mono text-[#98917F]">{estimatedCertNo}</span>
-                          </div>
-                        </div>
+                        <ScaledCertificatePreview
+                          name={selectedCube.user?.name || ''}
+                          cubeNumber={selectedCube.cube_number}
+                          mentorName={mentorName}
+                          type={certType}
+                          certificateNo={estimatedCertNo}
+                          stats={{
+                            questsCount: stats?.completedMissions ?? 0,
+                            badgesCount: stats?.badgesEarned ?? 0,
+                            missionContributionsCount: stats?.completedMissions ?? 0,
+                            attendanceRate: stats?.attendanceRate,
+                          }}
+                          badges={[]}
+                        />
                       </div>
                     </div>
 
@@ -805,63 +759,20 @@ Iceberg Digital Ekibi`
               </button>
             </div>
             <div className="p-4 bg-stone-950 rounded-xl overflow-hidden flex items-center justify-center">
-              <div
-                className={`w-full aspect-[297/210] rounded-xl p-8 flex flex-col justify-between relative overflow-hidden ${
-                  certType === 'success'
-                    ? 'bg-[radial-gradient(120%_90%_at_50%_0%,_#1A1712_0%,_#0E0D0B_62%)] border border-amber-500/40 text-[#F6F1E7]'
-                    : 'bg-gradient-to-b from-white to-[#FBF8F3] border border-[#E5007D]/30 text-[#14161A]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <img
-                    src={certType === 'success' ? '/images/iceberg-x-lockup-light.png' : '/images/iceberg-x-lockup.png'}
-                    alt=""
-                    className="h-6 w-auto"
-                  />
-                  <span
-                    className="text-[8px] font-bold tracking-[0.2em]"
-                    style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
-                  >
-                    {certType === 'success' ? 'ELITE TECHNOLOGY FELLOWSHIP' : 'INTERNSHIP · TECHNOLOGY FELLOWSHIP'}
-                  </span>
-                </div>
-                <div className="text-center my-auto py-2">
-                  <div
-                    className="text-[9px] font-extrabold tracking-widest uppercase mb-1"
-                    style={{ color: certType === 'success' ? '#C9962B' : '#E5007D' }}
-                  >
-                    {certType === 'success' ? 'CERTIFICATE OF ACHIEVEMENT' : 'CERTIFICATE OF PARTICIPATION'}
-                  </div>
-                  <h2
-                    className="font-serif text-4xl leading-tight m-0"
-                    style={{ color: certType === 'success' ? '#FFFCF6' : '#14161A' }}
-                  >
-                    {certType === 'success' ? 'Certificate of Achievement' : 'Certificate of Participation'}
-                  </h2>
-                  <div className="text-[9px] tracking-widest text-[#8C8578] mt-3">PROUDLY PRESENTED TO</div>
-                  <div
-                    className="text-2xl font-extrabold mt-1 pb-1 border-b inline-block px-4"
-                    style={{
-                      borderColor: certType === 'success' ? 'rgba(201,150,43,0.6)' : 'rgba(229,0,125,0.45)',
-                    }}
-                  >
-                    {selectedCube.user?.name}
-                  </div>
-                  <div className="text-[10px] text-[#8C8578] font-bold mt-2">
-                    CUBE #{selectedCube.cube_number} · MENTOR: {(mentorName || '').toUpperCase()}
-                  </div>
-                </div>
-                <div
-                  className="flex items-end justify-between pt-3 border-t text-[8px]"
-                  style={{
-                    borderColor: certType === 'success' ? 'rgba(255,255,255,0.09)' : '#EAE4DA',
-                    color: certType === 'success' ? '#8C8578' : '#8A93A0',
-                  }}
-                >
-                  <span className="font-bold">M. Burgess · Y. Tokgöz · {mentorName}</span>
-                  <span className="font-mono text-[#98917F]">{estimatedCertNo}</span>
-                </div>
-              </div>
+              <ScaledCertificatePreview
+                name={selectedCube.user?.name || ''}
+                cubeNumber={selectedCube.cube_number}
+                mentorName={mentorName}
+                type={certType}
+                certificateNo={estimatedCertNo}
+                stats={{
+                  questsCount: stats?.completedMissions ?? 0,
+                  badgesCount: stats?.badgesEarned ?? 0,
+                  missionContributionsCount: stats?.completedMissions ?? 0,
+                  attendanceRate: stats?.attendanceRate,
+                }}
+                badges={[]}
+              />
             </div>
           </div>
         </div>
