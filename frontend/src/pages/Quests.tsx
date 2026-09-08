@@ -86,6 +86,13 @@ export const Quests: React.FC = () => {
         return 'Complete your Profile (Add GitHub, LinkedIn, and 3+ skills)';
       case 'write_testimonial':
         return `Submit ${value} Fellowship Testimonial(s)`;
+      case 'mission_updates_count':
+      case 'mission_updates':
+        return value === 1 ? 'Post your first Mission Update' : `Post ${value} Mission Updates`;
+      case 'daily_update_streak':
+        return `Post a Mission Update for ${value} consecutive days`;
+      case 'weekly_update_streak':
+        return `Post a Mission Update every week for ${value} consecutive weeks`;
       case 'custom':
         return `Admin Sign-off (Goal: ${value})`;
       default:
@@ -109,6 +116,13 @@ export const Quests: React.FC = () => {
         return current === 1 ? 'Completed' : 'Incomplete';
       case 'write_testimonial':
         return `${current} / ${target} testimonials`;
+      case 'mission_updates_count':
+      case 'mission_updates':
+        return `${current} / ${target} updates`;
+      case 'daily_update_streak':
+        return `${current} / ${target} consecutive days`;
+      case 'weekly_update_streak':
+        return `${current} / ${target} consecutive weeks`;
       default:
         return `${current} / ${target}`;
     }

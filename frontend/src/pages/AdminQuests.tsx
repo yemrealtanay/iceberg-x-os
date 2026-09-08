@@ -346,6 +346,9 @@ export const AdminQuests: React.FC = () => {
                     <option value="meeting_attendance">Meeting Attendance (%)</option>
                     <option value="profile_completion">Profile Completion (GitHub, LinkedIn, 3+ Skills)</option>
                     <option value="write_testimonial">Write Testimonial(s)</option>
+                    <option value="mission_updates_count">Mission Updates Count (Total Updates)</option>
+                    <option value="daily_update_streak">Daily Update Streak (Consecutive Days)</option>
+                    <option value="weekly_update_streak">Weekly Update Streak (Consecutive Weeks)</option>
                     <option value="custom">Custom (Manual Update)</option>
                   </select>
                 </div>
@@ -357,7 +360,12 @@ export const AdminQuests: React.FC = () => {
                   type="number"
                   step="any"
                   required
-                  placeholder="e.g. 3, 4.5, 7, or 90"
+                  placeholder={
+                    criteriaType === 'daily_update_streak' ? 'e.g. 30 or 90 (consecutive days)' :
+                    criteriaType === 'weekly_update_streak' ? 'e.g. 8 or 30 (consecutive weeks)' :
+                    criteriaType === 'mission_updates_count' ? 'e.g. 1 (updates count)' :
+                    'e.g. 3, 4.5, 7, or 90'
+                  }
                   value={criteriaValue}
                   onChange={e => setCriteriaValue(e.target.value)}
                   disabled={formSubmitting}
@@ -802,6 +810,14 @@ export const AdminQuests: React.FC = () => {
                                   ? (cq.current_value === 1 ? 'Completed' : 'Incomplete')
                                   : cq.quest?.criteria_type === 'average_score'
                                   ? `${cq.current_value.toFixed(2)} / ${cq.quest?.criteria_value}`
+                                  : cq.quest?.criteria_type === 'meeting_attendance'
+                                  ? `${cq.current_value.toFixed(1)}% / ${cq.quest?.criteria_value}%`
+                                  : cq.quest?.criteria_type === 'daily_update_streak'
+                                  ? `${cq.current_value} / ${cq.quest?.criteria_value} days`
+                                  : cq.quest?.criteria_type === 'weekly_update_streak'
+                                  ? `${cq.current_value} / ${cq.quest?.criteria_value} wks`
+                                  : cq.quest?.criteria_type === 'mission_updates_count' || cq.quest?.criteria_type === 'mission_updates'
+                                  ? `${cq.current_value} / ${cq.quest?.criteria_value} updates`
                                   : `${cq.current_value} / ${cq.quest?.criteria_value}`}
                               </span>
                               <span className="text-slate-400 font-bold text-[9px]">{progressPercentage.toFixed(0)}%</span>

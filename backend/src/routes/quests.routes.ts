@@ -27,9 +27,31 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
     }
 
     // Validate criteria_type
-    const validCriteriaTypes = ['missions_completed', 'missions_assigned', 'average_score', 'login_streak', 'meeting_attendance', 'custom', 'profile_completion', 'write_testimonial'];
+    const validCriteriaTypes = [
+      'missions_completed',
+      'missions_assigned',
+      'average_score',
+      'login_streak',
+      'meeting_attendance',
+      'custom',
+      'profile_completion',
+      'write_testimonial',
+      'mission_updates_count',
+      'mission_updates',
+      'daily_update_streak',
+      'weekly_update_streak'
+    ];
     if (!validCriteriaTypes.includes(criteria_type)) {
       throw badRequest(`Criteria type must be one of: ${validCriteriaTypes.join(', ')}.`);
+    }
+
+    // Validate count and streak criteria
+    const COUNT_OR_STREAK_CRITERIA = ['mission_updates_count', 'mission_updates', 'daily_update_streak', 'weekly_update_streak'];
+    if (COUNT_OR_STREAK_CRITERIA.includes(criteria_type)) {
+      const parsed = Number(criteria_value);
+      if (!Number.isInteger(parsed) || parsed < 1) {
+        throw badRequest(`For "${criteria_type}" quests, Goal Target Value must be a positive whole number of at least 1.`);
+      }
     }
 
     // Validate difficulty

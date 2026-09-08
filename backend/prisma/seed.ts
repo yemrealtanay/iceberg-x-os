@@ -670,6 +670,56 @@ async function main() {
       badgeName: 'Crown',
       badgeIcon: 'crown',
       badgeRarity: 'Epic'
+    },
+    {
+      title: 'First Pulse',
+      description: 'Post your first mission update to keep your team and mentors aligned.',
+      difficulty: 'Common',
+      criteria_type: 'mission_updates_count',
+      criteria_value: 1,
+      badgeName: 'First Pulse',
+      badgeIcon: 'activity',
+      badgeRarity: 'Common'
+    },
+    {
+      title: 'Daily Signal (30 Days)',
+      description: 'Broadcast a mission update every single day for 30 consecutive days.',
+      difficulty: 'Rare',
+      criteria_type: 'daily_update_streak',
+      criteria_value: 30,
+      badgeName: 'Daily Broadcaster',
+      badgeIcon: 'zap',
+      badgeRarity: 'Rare'
+    },
+    {
+      title: 'Unbroken Signal (90 Days)',
+      description: 'Achieve a legendary streak: post a mission update every single day for 90 consecutive days.',
+      difficulty: 'Epic',
+      criteria_type: 'daily_update_streak',
+      criteria_value: 90,
+      badgeName: 'Beacon of Iceberg',
+      badgeIcon: 'flame',
+      badgeRarity: 'Epic'
+    },
+    {
+      title: 'Weekly Momentum (8 Weeks)',
+      description: 'Post at least one mission update every week for 8 consecutive weeks.',
+      difficulty: 'Rare',
+      criteria_type: 'weekly_update_streak',
+      criteria_value: 8,
+      badgeName: 'Weekly Cadence',
+      badgeIcon: 'calendar-check',
+      badgeRarity: 'Rare'
+    },
+    {
+      title: 'Iron Rhythm (30 Weeks)',
+      description: 'Sustain a relentless 30-week unbroken streak of weekly mission progress updates.',
+      difficulty: 'Epic',
+      criteria_type: 'weekly_update_streak',
+      criteria_value: 30,
+      badgeName: 'Iron Cadence',
+      badgeIcon: 'infinity',
+      badgeRarity: 'Epic'
     }
   ];
 
@@ -745,6 +795,24 @@ async function main() {
     await prisma.quest.update({
       where: { id: eliteFellow.id },
       data: { dependency_quest_id: highAchiever.id }
+    });
+  }
+
+  const daily30 = await prisma.quest.findFirst({ where: { title: 'Daily Signal (30 Days)' } });
+  const daily90 = await prisma.quest.findFirst({ where: { title: 'Unbroken Signal (90 Days)' } });
+  if (daily30 && daily90) {
+    await prisma.quest.update({
+      where: { id: daily90.id },
+      data: { dependency_quest_id: daily30.id }
+    });
+  }
+
+  const weekly8 = await prisma.quest.findFirst({ where: { title: 'Weekly Momentum (8 Weeks)' } });
+  const weekly30 = await prisma.quest.findFirst({ where: { title: 'Iron Rhythm (30 Weeks)' } });
+  if (weekly8 && weekly30) {
+    await prisma.quest.update({
+      where: { id: weekly30.id },
+      data: { dependency_quest_id: weekly8.id }
     });
   }
 

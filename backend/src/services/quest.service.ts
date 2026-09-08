@@ -24,6 +24,137 @@ function resolveMinSampleSize(quest: { min_sample_size: number | null; difficult
 }
 
 /**
+ * Computes daily update streak stats from a list of update timestamps.
+ * Normalizes dates to UTC calendar days.
+ * Returns:
+ * - maxStreak: The highest number of consecutive calendar days with at least 1 update.
+ * - currentStreak: The active consecutive streak ending today or yesterday.
+ * - effectiveStreak: Math.max(maxStreak, currentStreak)
+ */
+export function calculateDailyStreak(dates: (Date | string)[]): { maxStreak: number; currentStreak: number; effectiveStreak: number } {
+  if (!dates || dates.length === 0) {
+    return { maxStreak: 0, currentStreak: 0, effectiveStreak: 0 };
+  }
+
+  const daySet = new Set<number>();
+  for (const d of dates) {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) continue;
+    const dayNumber = Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()) / 86400000);
+    daySet.add(dayNumber);
+  }
+
+  const sortedDays = Array.from(daySet).sort((a, b) => a - b);
+  if (sortedDays.length === 0) {
+    return { maxStreak: 0, currentStreak: 0, effectiveStreak: 0 };
+  }
+
+  let maxStreak = 0;
+  let currentRun = 0;
+  for (let i = 0; i < sortedDays.length; i++) {
+    if (i === 0 || sortedDays[i] === sortedDays[i - 1] + 1) {
+      currentRun++;
+    } else {
+      currentRun = 1;
+    }
+    if (currentRun > maxStreak) {
+      maxStreak = currentRun;
+    }
+  }
+
+  const now = new Date();
+  const todayDayNumber = Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000);
+  const lastDay = sortedDays[sortedDays.length - 1];
+
+  let currentStreak = 0;
+  if (lastDay === todayDayNumber || lastDay === todayDayNumber - 1) {
+    currentStreak = 1;
+    for (let i = sortedDays.length - 2; i >= 0; i--) {
+      if (sortedDays[i] === sortedDays[i + 1] - 1) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  return {
+    maxStreak,
+    currentStreak,
+    effectiveStreak: Math.max(maxStreak, currentStreak)
+  };
+}
+
+/**
+ * Computes weekly update streak stats from a list of update timestamps.
+ * A week is an ISO calendar week (Monday to Sunday).
+ * Returns:
+ * - maxStreak: The highest number of consecutive weeks with at least 1 update.
+ * - currentStreak: The active consecutive streak ending this week or last week.
+ * - effectiveStreak: Math.max(maxStreak, currentStreak)
+ */
+export function calculateWeeklyStreak(dates: (Date | string)[]): { maxStreak: number; currentStreak: number; effectiveStreak: number } {
+  if (!dates || dates.length === 0) {
+    return { maxStreak: 0, currentStreak: 0, effectiveStreak: 0 };
+  }
+
+  const weekSet = new Set<number>();
+  for (const d of dates) {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) continue;
+    const day = dt.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+    const diff = (day === 0 ? -6 : 1) - day;
+    const mondayUtc = Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff);
+    const weekNumber = Math.round(mondayUtc / (7 * 86400000));
+    weekSet.add(weekNumber);
+  }
+
+  const sortedWeeks = Array.from(weekSet).sort((a, b) => a - b);
+  if (sortedWeeks.length === 0) {
+    return { maxStreak: 0, currentStreak: 0, effectiveStreak: 0 };
+  }
+
+  let maxStreak = 0;
+  let currentRun = 0;
+  for (let i = 0; i < sortedWeeks.length; i++) {
+    if (i === 0 || sortedWeeks[i] === sortedWeeks[i - 1] + 1) {
+      currentRun++;
+    } else {
+      currentRun = 1;
+    }
+    if (currentRun > maxStreak) {
+      maxStreak = currentRun;
+    }
+  }
+
+  const now = new Date();
+  const nowDay = now.getUTCDay();
+  const nowDiff = (nowDay === 0 ? -6 : 1) - nowDay;
+  const thisWeekMondayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + nowDiff);
+  const thisWeekNumber = Math.round(thisWeekMondayUtc / (7 * 86400000));
+  const lastWeek = sortedWeeks[sortedWeeks.length - 1];
+
+  let currentStreak = 0;
+  if (lastWeek === thisWeekNumber || lastWeek === thisWeekNumber - 1) {
+    currentStreak = 1;
+    for (let i = sortedWeeks.length - 2; i >= 0; i--) {
+      if (sortedWeeks[i] === sortedWeeks[i + 1] - 1) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  return {
+    maxStreak,
+    currentStreak,
+    effectiveStreak: Math.max(maxStreak, currentStreak)
+  };
+}
+
+
+/**
  * Tracks and updates a user's login streak.
  * Run this on every successful login.
  */
@@ -257,6 +388,53 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
       where: { cube_id: cubeProfileId }
     });
     newValue = count;
+  }
+  else if (quest.criteria_type === 'mission_updates_count' || quest.criteria_type === 'mission_updates') {
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId },
+      select: { user_id: true }
+    });
+    if (profile) {
+      newValue = await prisma.update.count({
+        where: { cube_id: profile.user_id }
+      });
+    } else {
+      newValue = 0;
+    }
+  }
+  else if (quest.criteria_type === 'daily_update_streak') {
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId },
+      select: { user_id: true }
+    });
+    if (profile) {
+      const updates = await prisma.update.findMany({
+        where: { cube_id: profile.user_id },
+        select: { created_at: true },
+        orderBy: { created_at: 'asc' }
+      });
+      const streak = calculateDailyStreak(updates.map(u => u.created_at));
+      newValue = streak.effectiveStreak;
+    } else {
+      newValue = 0;
+    }
+  }
+  else if (quest.criteria_type === 'weekly_update_streak') {
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId },
+      select: { user_id: true }
+    });
+    if (profile) {
+      const updates = await prisma.update.findMany({
+        where: { cube_id: profile.user_id },
+        select: { created_at: true },
+        orderBy: { created_at: 'asc' }
+      });
+      const streak = calculateWeeklyStreak(updates.map(u => u.created_at));
+      newValue = streak.effectiveStreak;
+    } else {
+      newValue = 0;
+    }
   }
 
   // 2. Check if quest criteria are met

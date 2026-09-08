@@ -6,6 +6,7 @@ import prisma from '../services/prisma';
 import { requireAuth, isAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { sendError } from '../utils/http';
 import { UpdateType } from '@prisma/client';
+import { recalculateAllQuestsForCube } from '../services/quest.service';
 
 const router = Router();
 
@@ -20,6 +21,8 @@ router.post('/updates', requireAuth, async (req: AuthenticatedRequest, res) => {
 
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
+    let cubeProfileId = req.user.cubeProfileId;
+
     if (req.user.role === 'CUBE') {
       const profile = await prisma.cubeProfile.findUnique({
         where: { user_id: req.user.id }
@@ -27,6 +30,7 @@ router.post('/updates', requireAuth, async (req: AuthenticatedRequest, res) => {
       if (!profile) {
         return res.status(403).json({ error: 'Cube profile not found' });
       }
+      cubeProfileId = profile.id;
 
       const isAssigned = await prisma.missionTeamMember.findFirst({
         where: {
@@ -52,6 +56,19 @@ router.post('/updates', requireAuth, async (req: AuthenticatedRequest, res) => {
       }
     });
 
+    // Re-evaluate update-related quests asynchronously
+    if (cubeProfileId) {
+      recalculateAllQuestsForCube(cubeProfileId).catch(err => {
+        console.error('Failed to recalculate quests after update creation:', err);
+      });
+    } else {
+      prisma.cubeProfile.findUnique({ where: { user_id: req.user.id }, select: { id: true } })
+        .then(p => {
+          if (p) recalculateAllQuestsForCube(p.id).catch(() => {});
+        })
+        .catch(() => {});
+    }
+
     return res.status(201).json(newUpdate);
   } catch (error: any) {
     return sendError(res, error);
@@ -61,7 +78,21 @@ router.post('/updates', requireAuth, async (req: AuthenticatedRequest, res) => {
 router.delete('/updates/:id', requireAuth, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    const existing = await prisma.update.findUnique({
+      where: { id },
+      select: { cube_id: true }
+    });
+
     await prisma.update.delete({ where: { id } });
+
+    if (existing?.cube_id) {
+      prisma.cubeProfile.findUnique({ where: { user_id: existing.cube_id }, select: { id: true } })
+        .then(p => {
+          if (p) recalculateAllQuestsForCube(p.id).catch(() => {});
+        })
+        .catch(() => {});
+    }
+
     return res.json({ success: true, message: 'Update deleted successfully' });
   } catch (error: any) {
     return sendError(res, error);
