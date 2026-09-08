@@ -1,17 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
-import { Check, ShieldAlert, Sparkles, Award, ArrowDown, Users, HelpCircle, Archive, Globe, Quote, Menu, X, Target, Compass, Lock } from 'lucide-react';
+import {
+  Check, ShieldAlert, Sparkles, Award, Quote, Menu, X, Target, Compass, Lock,
+  Terminal, Cpu, Code2, Zap, Layers, Boxes, ChevronRight, ArrowDown,
+} from 'lucide-react';
+// The WebGL layer drags in three / drei / postprocessing — roughly a megabyte of
+// JS that nothing above the fold needs in order to render. Loading it lazily
+// keeps the first paint (and phones on a slow connection) fast; each scene fades
+// in on its own once the chunk lands.
+const SceneBackground = lazy(() =>
+  import('./welcome/SceneBackground').then((m) => ({ default: m.SceneBackground })),
+);
+const HeroScene = lazy(() => import('./welcome/HeroScene').then((m) => ({ default: m.HeroScene })));
+const QuestPlatformer = lazy(() =>
+  import('./welcome/QuestPlatformer').then((m) => ({ default: m.QuestPlatformer })),
+);
+const NetworkOrb = lazy(() => import('./welcome/NetworkOrb').then((m) => ({ default: m.NetworkOrb })));
+import { TiltCard } from './welcome/TiltCard';
+import { InViewMount } from './welcome/InViewMount';
+import { useReducedMotion } from './welcome/useReducedMotion';
+import { useGlobalScroll } from './welcome/scroll';
+import { useScrollAssembly } from './welcome/assembly';
+import { useQuality } from './welcome/quality';
+import { CursorReticle, WarpOverlay } from './welcome/Hud';
+
+/* ============================================================================
+   ICEBERG//OS  —  immersive dark landing.
+   A near-black canvas with a live WebGL world behind it, HUD chrome, monospace
+   telemetry and neon magenta / cyan accents. Every word of copy and the whole
+   colour palette are carried over unchanged from the previous version — only
+   the layout, structure and motion are new.
+   ========================================================================== */
+
+const NAV_LINKS = [
+  { href: '#what', label: 'Programme' },
+  { href: '#work', label: 'Missions' },
+  { href: '#pipeline', label: 'Pipeline' },
+  { href: '#journey', label: 'Journey' },
+  { href: '#fellowship', label: 'Fellowship' },
+];
+
+/** Monospace section marker: `// 03 ── WORKSTREAMS ●` */
+const SectionTag: React.FC<{ index: string; label: string }> = ({ index, label }) => (
+  <div
+    data-fly="floor"
+    className="os-mono flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.34em] text-cyan-300/70"
+  >
+    <span className="text-[#ff4da6]">{index}</span>
+    <span className="h-px w-10 bg-white/15" />
+    <span>{label}</span>
+    <span className="os-blink h-1.5 w-1.5 rounded-full bg-[#e6007e] shadow-[0_0_10px_#e6007e]" />
+  </div>
+);
+
+const Section: React.FC<{
+  id?: string;
+  className?: string;
+  children: React.ReactNode;
+  wide?: boolean;
+}> = ({ id, className = '', children, wide = false }) => (
+  <section id={id} className={`os-hairline os-grid-bg relative py-24 sm:py-28 ${className}`}>
+    <span className="os-sweep" data-fly="trace" aria-hidden="true" />
+    <div className={`os-stage relative z-10 mx-auto px-6 ${wide ? 'max-w-[1320px]' : 'max-w-[1180px]'}`}>
+      {children}
+    </div>
+  </section>
+);
 
 export const Welcome: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+
+  const reducedMotion = useReducedMotion();
+  const quality = useQuality();
+  useGlobalScroll();
 
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
+  const [scrollPct, setScrollPct] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
 
   // Form State
   const [name, setName] = useState('');
@@ -22,7 +96,7 @@ export const Welcome: React.FC = () => {
   const [whyJoin, setWhyJoin] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
-  
+
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -32,21 +106,25 @@ export const Welcome: React.FC = () => {
 
   useEffect(() => {
     api.get('/testimonials')
-      .then(res => setTestimonials(res))
-      .catch(err => console.error('Failed to load testimonials:', err));
+      .then((res) => setTestimonials(res))
+      .catch((err) => console.error('Failed to load testimonials:', err));
   }, []);
 
+  // Scroll-driven 3D assembly: every [data-fly] element flies in from depth and
+  // is bound continuously to the scroll position, so the page builds itself as
+  // you descend rather than popping in once. Re-scans when testimonials land.
+  useScrollAssembly(!reducedMotion, [testimonials.length]);
+
   useEffect(() => {
-    // Loader timeout
     const loaderTimer = setTimeout(() => setLoading(false), 650);
-
-    // Scroll listener
     const handleScroll = () => {
-      setScrollY(window.scrollY);
-      setScrolled(window.scrollY > 30);
+      const y = window.scrollY;
+      setScrolled(y > 30);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollPct(max > 0 ? Math.min(100, (y / max) * 100) : 0);
     };
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-
     return () => {
       clearTimeout(loaderTimer);
       window.removeEventListener('scroll', handleScroll);
@@ -57,7 +135,6 @@ export const Welcome: React.FC = () => {
     e.preventDefault();
     setFormSubmitting(true);
     setFormError(null);
-
     try {
       await api.post('/applications', {
         name,
@@ -78,158 +155,386 @@ export const Welcome: React.FC = () => {
   };
 
   const welcomeStyles = `
-    .welcome-body {
-      background: #f6f6f8;
-      color: #111111;
-      font-family: 'Inter', system-ui, sans-serif;
-      overflow-x: hidden;
+    /* The base colour lives on the document, not on .os-body: the fixed WebGL
+       world is a -z-10 child of .os-body, so an opaque background there would
+       paint straight over the grid floor and hide the whole scene. */
+    html, body { background: #07060b; overflow-x: clip; }
+    .os-body {
+      background: transparent;
+      color: #e8e6f0;
+      font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+      overflow-x: clip;
       line-height: 1.7;
     }
-    .hero-bg {
-      background:
-        radial-gradient(1100px 600px at 78% 8%, rgba(255, 77, 166, 0.13), transparent 60%),
-        radial-gradient(900px 500px at 8% 90%, rgba(224, 242, 254, 0.7), transparent 55%),
-        #f6f6f8;
-    }
-    .welcome-grad-text {
-      background: linear-gradient(120deg, #e6007e 0%, #ff4da6 50%, #ff99cc 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .floaty-cube-1 {
-      top: 6%; left: 4%;
-      animation: floatyAnim 7s cubic-bezier(.22,1,.36,1) infinite;
-    }
-    .floaty-cube-2 {
-      top: 34%; right: 0;
-      transform: scale(1.08);
-      animation: floatyAnim2 8.5s cubic-bezier(.22,1,.36,1) infinite .6s;
-      z-index: 3;
-    }
-    .floaty-cube-3 {
-      bottom: 2%; left: 16%;
-      animation: floatyAnim 7.8s cubic-bezier(.22,1,.36,1) infinite 1.2s;
-    }
-    @keyframes floatyAnim {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-22px); }
-    }
-    @keyframes floatyAnim2 {
-      0%, 100% { transform: translateY(0) scale(1.08); }
-      50% { transform: translateY(-26px) scale(1.08); }
-    }
-    .gold-card-bg {
-      background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
-      border: 1px solid rgba(201, 162, 39, 0.4);
-      position: relative;
-    }
-    .gold-card-bg::before {
+    .os-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+
+    ::selection { background: #e6007e; color: #fff; }
+
+    /* faint blueprint grid that fades in from the top of every section */
+    .os-grid-bg::before {
       content: "";
       position: absolute;
       inset: 0;
-      border-radius: 1.5rem;
-      padding: 1px;
-      background: linear-gradient(135deg, #f3d27a, transparent 40%, transparent 60%, #c9a227);
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity: .7;
-    }
-    .gold-text {
-      background: linear-gradient(120deg, #f3d27a, #c9a227);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .vault-sec-bg {
-      background: linear-gradient(180deg, #0c0c0e, #161618);
-    }
-    .vault-sec-bg::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-      background-size: 46px 46px;
-      mask: radial-gradient(circle at 50% 40%, #000, transparent 75%);
-    }
-    .crest-spin {
-      animation: floatyAnim 6s cubic-bezier(.22,1,.36,1) infinite;
-    }
-    .scarcity-box {
-      background: linear-gradient(165deg, #1a0010, #111);
-    }
-    .form-success-icon {
-      background: linear-gradient(120deg, #e6007e 0%, #ff4da6 50%, #ff99cc 100%);
-    }
-    .brand-logo-crop {
-      width: min(480px, 100%);
-      height: clamp(130px, 14vw, 180px);
-      overflow: hidden;
-      border-radius: 22px;
-      background: #171719;
-    }
-    .brand-logo-crop img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      display: block;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 54px 54px;
+      -webkit-mask-image: radial-gradient(120% 70% at 50% 0%, #000 15%, transparent 78%);
+      mask-image: radial-gradient(120% 70% at 50% 0%, #000 15%, transparent 78%);
     }
 
-    /* TESTIMONIALS MARQUEE */
-    @keyframes marqueeLeft {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+    /* neon hairline on top of a section */
+    .os-hairline::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 50%;
+      width: min(1180px, 94%);
+      height: 1px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, transparent, rgba(230,0,126,0.7), rgba(0,240,255,0.45), transparent);
     }
-    @keyframes marqueeRight {
-      0% { transform: translateX(-50%); }
-      100% { transform: translateX(0); }
+
+    .os-panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.09);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    .animate-marquee-left {
-      display: flex;
-      width: max-content;
-      animation: marqueeLeft 45s linear infinite;
+    .os-panel-hover {
+      transition: border-color .3s ease, box-shadow .3s ease, transform .3s cubic-bezier(0.16,1,0.3,1);
     }
-    .animate-marquee-right {
-      display: flex;
-      width: max-content;
-      animation: marqueeRight 45s linear infinite;
+    .os-panel-hover:hover {
+      border-color: rgba(230,0,126,0.45);
+      box-shadow: 0 24px 70px -30px rgba(230,0,126,0.55), inset 0 0 0 1px rgba(230,0,126,0.12);
     }
-    .animate-marquee-left:hover, .animate-marquee-right:hover {
-      animation-play-state: paused;
+
+    /* corner brackets */
+    .os-bracket::before, .os-bracket::after {
+      content: "";
+      position: absolute;
+      width: 14px; height: 14px;
+      border: 1px solid rgba(0,240,255,0.55);
+      pointer-events: none;
     }
+    .os-bracket::before { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
+    .os-bracket::after { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
+
+    .grad-text {
+      background: linear-gradient(115deg, #e6007e 0%, #ff4da6 45%, #00f0ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glow-magenta { box-shadow: 0 0 0 1px rgba(230,0,126,0.3), 0 20px 60px -20px rgba(230,0,126,0.55); }
+
+    /* mouse spotlight on dark cards */
+    .os-spotlight { position: relative; overflow: hidden; }
+    .os-spotlight::before {
+      content: "";
+      position: absolute;
+      top: var(--mouse-y, -600px);
+      left: var(--mouse-x, -600px);
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(230,0,126,0.20) 0%, rgba(0,240,255,0.06) 45%, transparent 75%);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity .35s ease;
+      pointer-events: none;
+    }
+    .os-spotlight:hover::before { opacity: 1; }
+
+    /* top scroll-progress rail */
+    .os-progress {
+      position: fixed; top: 0; left: 0; height: 2px; z-index: 200;
+      background: linear-gradient(90deg, #e6007e, #ff4da6, #00f0ff);
+      box-shadow: 0 0 14px rgba(230,0,126,0.7);
+      transition: width .1s linear;
+    }
+
+    @keyframes osBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.15; } }
+    .os-blink { animation: osBlink 1.6s steps(1) infinite; }
+
+    @keyframes scanDrift {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 -1400px; }
+    }
+    .os-scanlines::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.022) 0px, rgba(255,255,255,0.022) 1px, transparent 1px, transparent 4px);
+      opacity: 0.45;
+      animation: scanDrift 40s linear infinite;
+    }
+
+    @keyframes aurora {
+      0%,100% { transform: translate3d(-4%, 0, 0) scale(1.05); opacity: .55; }
+      50% { transform: translate3d(4%, -3%, 0) scale(1.15); opacity: .8; }
+    }
+    .os-aurora { animation: aurora 14s ease-in-out infinite; }
+
+    /* ---- 3D scroll assembly ----
+       Every [data-fly] element is flown into place by src/pages/welcome/assembly.ts,
+       which writes transform and opacity each frame from the scroll position.
+       CSS only supplies the pre-JS hidden state and the "still under construction"
+       hologram skin, both driven by the --fly-p progress variable (0 → 1). */
+    .os-stage { perspective: 1300px; }
+    [data-assembly="on"] [data-fly] { opacity: 0; }
+    [data-fly] { transform-origin: 50% 60%; }
+
+    /* cyan wireframe shell + scanlines that burn off as the card seats itself */
+    [data-fly-frame] { position: relative; }
+    [data-fly-frame]::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 20;
+      opacity: calc(1 - var(--fly-p, 1));
+      border: 1px solid rgba(0,240,255,0.75);
+      box-shadow: 0 0 26px rgba(0,240,255,0.35), inset 0 0 30px rgba(230,0,126,0.18);
+      background-repeat: no-repeat;
+      background-image:
+        /* corner ticks */
+        linear-gradient(#ff4da6, #ff4da6), linear-gradient(#ff4da6, #ff4da6),
+        linear-gradient(#ff4da6, #ff4da6), linear-gradient(#ff4da6, #ff4da6),
+        /* scanlines + wash */
+        repeating-linear-gradient(0deg, rgba(0,240,255,0.10) 0 1px, transparent 1px 6px),
+        linear-gradient(180deg, rgba(0,240,255,0.10), rgba(230,0,126,0.06));
+      background-size: 18px 1px, 1px 18px, 18px 1px, 1px 18px, 100% 100%, 100% 100%;
+      background-position: 8px 8px, 8px 8px, right 8px bottom 8px, right 8px bottom 8px, 0 0, 0 0;
+    }
+
+    /* rails and section edges draw themselves out as you arrive */
+    .os-rail { transform: scaleX(var(--fly-p, 1)); transform-origin: 0 50%; }
+    .os-sweep {
+      position: absolute;
+      top: 0; left: 50%;
+      height: 1px;
+      width: min(1180px, 94%);
+      pointer-events: none;
+      transform: translateX(-50%) scaleX(var(--fly-p, 1));
+      background: linear-gradient(90deg, transparent, #e6007e 30%, #00f0ff 70%, transparent);
+      box-shadow: 0 0 18px rgba(230,0,126,0.65);
+    }
+
+    /* ---- pointer reticle ---- */
+    .os-reticle, .os-reticle-dot {
+      position: fixed; top: 0; left: 0; z-index: 300;
+      pointer-events: none; opacity: 0;
+      transition: opacity .3s ease;
+    }
+    .os-reticle {
+      width: 40px; height: 40px; border-radius: 999px;
+      border: 1px solid rgba(0,240,255,0.55);
+      box-shadow: 0 0 18px rgba(0,240,255,0.25), inset 0 0 12px rgba(230,0,126,0.2);
+      transition: opacity .3s ease, width .2s ease, height .2s ease, border-color .2s ease;
+    }
+    .os-reticle[data-hot="true"] {
+      border-color: rgba(230,0,126,0.9);
+      box-shadow: 0 0 26px rgba(230,0,126,0.5), inset 0 0 16px rgba(230,0,126,0.3);
+    }
+    .os-reticle-dot {
+      width: 5px; height: 5px; border-radius: 999px;
+      background: #ff4da6;
+      box-shadow: 0 0 10px #e6007e;
+    }
+    @media (hover: none), (pointer: coarse) {
+      .os-reticle, .os-reticle-dot { display: none; }
+    }
+
+    /* ---- hyperspace streaks while scrolling fast ---- */
+    .os-warp {
+      position: fixed; inset: 0; z-index: 55;
+      pointer-events: none; opacity: 0;
+      mix-blend-mode: screen;
+      background:
+        repeating-linear-gradient(0deg,
+          rgba(255,255,255,0) 0 14px,
+          rgba(255,77,166,0.10) 14px 15px,
+          rgba(255,255,255,0) 15px 30px),
+        radial-gradient(120% 60% at 50% 50%, transparent 35%, rgba(0,240,255,0.10) 100%);
+      transform-origin: 50% 50%;
+    }
+
+    /* ---- holographic sweep across panels on hover ----
+       Done with a background layer rather than a pseudo-element: ::after carries
+       the build skin and ::before belongs to .os-spotlight. ---- */
+    .os-panel-hover {
+      background-repeat: no-repeat;
+      background-image:
+        linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.10) 47%, rgba(0,240,255,0.14) 53%, transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+      background-size: 260% 100%, 100% 100%;
+      background-position: 170% 0, 0 0;
+      transition:
+        border-color .3s ease,
+        box-shadow .3s ease,
+        background-position .9s cubic-bezier(0.16,1,0.3,1),
+        transform .3s cubic-bezier(0.16,1,0.3,1);
+    }
+    .os-panel-hover:hover { background-position: -70% 0, 0 0; }
+
+    /* ---- chromatic glitch on the hero headline ---- */
+    @keyframes glitchShift {
+      0%, 92%, 100% { clip-path: inset(50% 0 50% 0); transform: translate(0,0); }
+      93% { clip-path: inset(12% 0 62% 0); transform: translate(-3px, 1px); }
+      95% { clip-path: inset(58% 0 20% 0); transform: translate(3px, -1px); }
+      97% { clip-path: inset(32% 0 44% 0); transform: translate(-2px, 0); }
+    }
+    .os-glitch { position: relative; }
+    .os-glitch::before, .os-glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .os-glitch::before { color: #00f0ff; animation: glitchShift 7s steps(1) infinite; opacity: .55; }
+    .os-glitch::after { color: #e6007e; animation: glitchShift 7s steps(1) infinite reverse; opacity: .5; }
+
+    .tilt-card { transition: transform .25s cubic-bezier(0.16,1,0.3,1); }
+
+    @keyframes floatDrift { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .float-drift { animation: floatDrift 7s ease-in-out infinite; }
+
+    /* ---- marquee ---- */
+    @keyframes marqueeLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @keyframes marqueeRight { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+    .animate-marquee-left { display: flex; width: max-content; animation: marqueeLeft 48s linear infinite; }
+    .animate-marquee-right { display: flex; width: max-content; animation: marqueeRight 48s linear infinite; }
+    .animate-marquee-left:hover, .animate-marquee-right:hover { animation-play-state: paused; }
     .marquee-mask {
-      position: relative;
-      overflow: hidden;
-      mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
-      -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+      position: relative; overflow: hidden;
+      -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+      mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    }
+
+    .os-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 0.85rem;
+      color: #e8e6f0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .os-input::placeholder { color: rgba(232,230,240,0.35); }
+    .os-input:focus {
+      border-color: #e6007e;
+      background: rgba(230,0,126,0.06);
+      box-shadow: 0 0 0 3px rgba(230,0,126,0.12);
+    }
+    .os-input:disabled { opacity: 0.55; }
+
+    @media (prefers-reduced-motion: reduce) {
+      [data-fly] { opacity: 1 !important; transform: none !important; }
+      [data-fly-frame]::after, .os-warp, .os-reticle, .os-reticle-dot { display: none; }
+      .os-glitch::before, .os-glitch::after { display: none; }
+      .os-panel-hover { transition: none; }
+      .float-drift, .os-blink, .os-aurora, .os-scanlines::after,
+      .animate-marquee-left, .animate-marquee-right { animation: none; }
     }
   `;
 
-  // Static items for grid builds
-  const workCategories = [
-    { type: 'ai', title: 'AI Research', desc: 'Explore and apply frontier intelligence to real problems.' },
-    { type: 'auto', title: 'Automation Experiments', desc: 'Replace manual workflows with systems that never sleep.' },
-    { type: 'api', title: 'API Integrations', desc: 'Connect the disconnected. Make tools talk to each other.' },
-    { type: 'prod', title: 'Product Concepts', desc: 'Shape ideas that could become real Iceberg products.' },
-    { type: 'ux', title: 'UX Improvements', desc: 'Refine the moments where intelligence meets people.' },
-    { type: 'tools', title: 'Internal Tools', desc: 'Build the systems the Iceberg team uses every day.' },
-    { type: 'proto', title: 'Prototype Development', desc: 'Turn a thought into something that actually runs.' },
-    { type: 'future', title: 'Future Technologies', desc: 'Work on the things that don\'t exist yet.' },
+  // ---- data (carried over verbatim) ----
+  const bentoWorkStreams = [
+    {
+      tag: 'FRONTIER AI // LAB',
+      title: 'Autonomous AI & Multi-Agent Systems',
+      desc: 'Architecting self-evaluating LLM agents, local semantic vector-stores, and tool-augmented reasoning engines for production workflows.',
+      icon: Cpu,
+      span: 'lg:col-span-2',
+      badge: 'High Priority',
+      codeSnippet: 'const agent = new FrontierAgent({ domain: "Enterprise AI" });\nawait agent.synthesize(workflowStream);',
+    },
+    {
+      tag: 'SYSTEMS // REALTIME',
+      title: 'Autonomous Automation & Cron Daemons',
+      desc: 'Replacing brittle human workflows with resilient asynchronous daemons, event-driven workers, and self-healing pipelines.',
+      icon: Zap,
+      span: 'lg:col-span-1',
+      badge: 'Active R&D',
+    },
+    {
+      tag: 'BACKEND // GO & TS',
+      title: 'High-Throughput API Integrations',
+      desc: 'Designing microsecond-latency microservices, webhook aggregators, and distributed state machines that bridge critical enterprise APIs.',
+      icon: Layers,
+      span: 'lg:col-span-1',
+      badge: 'Infra Core',
+    },
+    {
+      tag: 'PRODUCT // INCUBATION',
+      title: 'Prototype to Production Spinoffs',
+      desc: 'Transforming experimental algorithmic repositories into tested, scalable, commercial software solutions.',
+      icon: Boxes,
+      span: 'lg:col-span-1',
+      badge: 'Incubation',
+    },
+    {
+      tag: 'INTERFACE // EXPERIMENTAL',
+      title: 'Generative UX & Declarative Interfaces',
+      desc: 'Refining the exact inflection points where complex AI meets human intuition through declarative UI schema renderers and micro-interactions.',
+      icon: Code2,
+      span: 'lg:col-span-1',
+      badge: 'Frontier UI',
+    },
+    {
+      tag: 'DEVTOOLS // INTERNAL',
+      title: 'Internal Tooling & Telemetry Observability',
+      desc: 'Constructing CLI compilers, real-time telemetry dashboards, and developer ergonomics powering daily Iceberg operations.',
+      icon: Terminal,
+      span: 'lg:col-span-2',
+      badge: 'Core Tooling',
+      codeSnippet: 'git commit -m "feat(telemetry): stream vector latency to HUD"',
+    },
   ];
 
-  const journeySteps = [
-    { title: 'Cube', desc: 'Where every journey begins.' },
-    { title: 'Senior Cube', desc: 'Trusted with bigger problems and deeper ownership.', peak: true },
+  const missions = [
+    {
+      title: 'Support Intelligence Platform',
+      cat: 'AI / NLP',
+      desc: 'Engineering a semantic search and automated resolution pipeline for customer success workloads.',
+      nodes: '3 Cubes',
+      commit: '48 Commits',
+    },
+    {
+      title: 'OAuth2 / JWT MFA Integration Research',
+      cat: 'Security / Go',
+      desc: 'Researching multi-factor auth patterns and OAuth2 flows under Golang & PostgreSQL state-stores.',
+      nodes: '2 Cubes',
+      commit: '31 Commits',
+    },
+    {
+      title: 'AI-Powered Dynamic Form Schema Renderer',
+      cat: 'Frontend Eng',
+      desc: 'Designing a declarative JSON schema parser that builds production-grade responsive UI forms on the fly.',
+      nodes: '4 Cubes',
+      commit: '62 Commits',
+    },
+  ];
+
+  const pipeline = [
+    { step: '01', tag: 'PHASE // INCEPTION', title: 'Application & Async Review', desc: 'Apply online, submit your GitHub portfolio, and pass the async engineering evaluation to join.' },
+    { step: '02', tag: 'PHASE // SYNDICATE', title: 'Briefing & Teams', desc: 'Get grouped into 1-to-many teams and claim your production R&D mission blueprint.' },
+    { step: '03', tag: 'PHASE // BUILD', title: 'Ship Code & Badges', desc: 'Push timeline updates, receive mentor evaluations, and earn verified achievement badges.' },
+    { step: '04', tag: 'PHASE // DEMO', title: 'Demo Day Showcases', desc: 'Deliver functional prototype demonstrations directly to the founding engineering team.' },
+    { step: '05', tag: 'PHASE // PROGRESS', title: 'Vault & Progression', desc: 'Archive code in the Vault, gain certification, and progress to Senior Cube or spinoff incubation.' },
   ];
 
   const badges = [
-    { icon: 'build', title: 'Builder', desc: 'Created a working prototype.' },
-    { icon: 'inno', title: 'Innovator', desc: 'Created an original idea.' },
-    { icon: 'collab', title: 'Collaborator', desc: 'Exceptional teamwork.' },
-    { icon: 'path', title: 'Pathfinder', desc: 'Solved a difficult challenge.' },
-    { icon: 'pioneer', title: 'Pioneer', desc: 'Work influenced a real Iceberg product.' },
+    { title: 'Builder', desc: 'Created a working prototype.' },
+    { title: 'Innovator', desc: 'Created an original idea.' },
+    { title: 'Collaborator', desc: 'Exceptional teamwork.' },
+    { title: 'Pathfinder', desc: 'Solved a difficult challenge.' },
+    { title: 'Pioneer', desc: 'Work influenced a real Iceberg product.' },
   ];
 
   const vaultItems = [
@@ -240,10 +545,49 @@ export const Welcome: React.FC = () => {
     { num: '05', title: 'Discoveries' },
   ];
 
-  const hofCategories = [
-    { icon: 'f', title: 'Founding Cubes', desc: 'The first cohort — forever first.' },
-    { icon: 'p', title: 'Pioneer Award Winners', desc: 'Cubes whose work shaped real products.' },
-    { icon: 'm', title: 'Senior Cubes', desc: 'Experienced Cubes trusted with deeper ownership.' },
+  const quests = [
+    {
+      rarity: 'Common Quest', accent: 'magenta' as const, icon: Compass,
+      title: 'Consistency Master',
+      desc: 'Log in to the fellowship portal daily for 7 consecutive days. Form habits, review scorecards, and stay engaged.',
+      target: 'Target: 7 Days', badge: '🏆 GrowthMindset',
+    },
+    {
+      rarity: 'Rare Quest', accent: 'cyan' as const, icon: Target,
+      title: 'Reliable Contributor',
+      desc: 'Attend at least 90% of meetings and R&D synced sessions you are invited to. Value accountability.',
+      target: 'Target: 90% Attend', badge: '🏆 NoGhosting',
+    },
+    {
+      rarity: 'Epic Quest', accent: 'locked' as const, icon: Lock, locked: true,
+      title: 'Iceberg Elite Fellow',
+      desc: 'Maintain an outstanding feedback score of 4.7+ across 5 completed missions.',
+      target: 'Target: 4.7+ Avg', badge: '🏆 Crown',
+      note: '* Unlocks only after completing "High Achiever" quest',
+    },
+  ];
+
+  const journey = [
+    {
+      code: '01', stage: 'Stage 1: The Start', title: 'Cube', tone: 'base',
+      desc: 'Where every journey begins. You enter the program, learn the fundamentals, dive into R&D missions, build research prototypes, and explore modern engineering practices under mentor guidance.',
+    },
+    {
+      code: '02A', stage: 'Stage 2: Advanced Path', title: 'Senior Cube', tone: 'magenta',
+      desc: 'Demonstrated competence in technical and research domains. Trusted with larger system architectures, team collaboration leadership, and direct R&D demo delivery.',
+    },
+    {
+      code: '02B', stage: 'Stage 2: Exit Path', title: 'Former Cube', tone: 'muted',
+      desc: 'Decided to pause or stop the program. Cubes are welcome to exit gracefully while retaining access to the community and their verified badge achievements.',
+    },
+    {
+      code: '03A', stage: 'Stage 3: Corporate Path', title: 'Iceberger', tone: 'cyan',
+      desc: 'Upon graduation, join the full-time team at Iceberg Digital. Transition into consulting, software engineering, or product management roles to continue building the future.',
+    },
+    {
+      code: '03B', stage: 'Stage 3: External Path', title: 'Alumni', tone: 'base',
+      desc: 'Leave Iceberg and carry the innovative mindset elsewhere. Alumni move on to top-tier global tech giants, start their own VC-backed companies, or pursue advanced research.',
+    },
   ];
 
   const fellowshipUniversitiesRow1 = [
@@ -270,7 +614,7 @@ export const Welcome: React.FC = () => {
     { name: 'Karamanoğlu Mehmetbey Üniversitesi', location: 'Karaman, TR', logo: '/images/universities/kmu.jpg' },
   ];
 
-  // Dynamic network SVG render coordinate calculations
+  // network SVG fallback coordinates (used only under reduced-motion)
   const cx = 200;
   const cy = 200;
   const R = 140;
@@ -281,63 +625,163 @@ export const Welcome: React.FC = () => {
     pts.push([cx + Math.cos(a) * R, cy + Math.sin(a) * R]);
   }
 
+  const uniChip = (uni: { name: string; location: string; logo: string }, key: string) => (
+    <div
+      key={key}
+      className="group flex shrink-0 select-none items-center gap-3.5 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-2.5 transition-all duration-300 hover:border-[#e6007e]/50 hover:bg-white/[0.06]"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/90 p-1">
+        <img
+          src={uni.logo}
+          alt={uni.name}
+          className="max-h-full max-w-full object-contain grayscale transition-all duration-300 group-hover:grayscale-0"
+          loading="lazy"
+        />
+      </div>
+      <div className="flex flex-col text-left">
+        <span className="whitespace-nowrap text-xs font-extrabold text-slate-200 transition-colors group-hover:text-[#ff99cc]">
+          {uni.name}
+        </span>
+        <span className="os-mono text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          {uni.location}
+        </span>
+      </div>
+    </div>
+  );
+
+  const testimonialCard = (t: any, key: string) => (
+    <div
+      key={key}
+      onClick={() => setSelectedTestimonial(t)}
+      title="Click to read full testimonial"
+      className="group relative mx-3 flex w-[340px] shrink-0 cursor-pointer flex-col justify-between gap-5 overflow-hidden rounded-3xl border border-white/8 bg-white/[0.03] p-6 transition-all duration-300 hover:border-[#e6007e]/40 hover:bg-white/[0.06] sm:w-[400px]"
+    >
+      <div className="flex flex-col gap-3">
+        <Quote className="h-6 w-6 text-[#e6007e]/40" />
+        <p className="relative z-10 line-clamp-4 text-xs font-medium italic leading-relaxed text-slate-300 sm:text-sm">
+          "{t.content}"
+        </p>
+      </div>
+      <div className="flex items-center gap-3 border-t border-white/8 pt-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e6007e]/30 bg-[#e6007e]/10 text-xs font-extrabold text-[#ff99cc]">
+          {t.cube?.user?.name ? t.cube.user.name[0] : 'C'}
+        </div>
+        <div>
+          <h4 className="text-[11px] font-extrabold leading-tight text-slate-100">
+            {t.cube?.user?.name || 'Anonymous Cube'}
+          </h4>
+          <p className="os-mono mt-0.5 text-[9px] font-medium uppercase tracking-wider text-slate-500">
+            Cube #{t.cube?.cube_number || 'N/A'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="welcome-body relative min-h-screen text-slate-900 bg-[#f6f6f8] selection:bg-[#e6007e] selection:text-white">
+    <div
+      className="os-body os-scanlines relative min-h-screen"
+      data-assembly={reducedMotion ? 'off' : 'on'}
+    >
       <style dangerouslySetInnerHTML={{ __html: welcomeStyles }} />
+      {!reducedMotion && <CursorReticle />}
+      {!reducedMotion && <WarpOverlay />}
+
+      {/* scroll progress rail */}
+      <div className="os-progress" style={{ width: `${scrollPct}%` }} />
 
       {/* LOADER */}
       {loading && (
-        <div id="loader" className="fixed inset-0 z-[999] bg-[#111111] grid place-items-center transition-all duration-700">
-          <div className="w-[60px] h-[60px] rounded-[16px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] animate-pulse shadow-[0_0_50px_rgba(230,0,126,0.6)] flex items-center justify-center p-0.5 overflow-hidden">
-            <img src="/images/xicon.jpg" alt="Icon" className="w-full h-full object-cover rounded-[14px]" />
+        <div className="fixed inset-0 z-[999] grid place-items-center bg-[#07060b] transition-all duration-700">
+          <div className="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-[16px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] p-0.5 shadow-[0_0_50px_rgba(230,0,126,0.6)]">
+            <img src="/images/xicon.jpg" alt="Icon" className="h-full w-full rounded-[14px] object-cover" />
           </div>
         </div>
       )}
 
-      {/* NAV */}
-      <nav id="nav" className={`fixed top-0 left-0 right-0 z-[100] py-4 transition-all duration-500 ${scrolled ? 'bg-[#f6f6f8]/85 backdrop-blur-md border-b border-black/5 shadow-sm' : 'bg-transparent'}`}>
-        <div className="max-w-[1200px] mx-auto px-7 flex items-center justify-between gap-8">
-          <a href="#top" className="flex items-center hover:opacity-90 transition-opacity">
-            <img src="/images/xicon.jpg" alt="Iceberg X" className="w-16 h-16 rounded-[1.35rem] object-cover shadow-xl shadow-black/10 border border-gray-100 shrink-0" />
+      {/* LIVE 3D WORLD */}
+      {!reducedMotion && (
+        <Suspense fallback={null}>
+          <SceneBackground quality={quality} />
+        </Suspense>
+      )}
+
+      {/* NAV — OS top bar */}
+      <nav
+        className={`fixed left-0 right-0 top-0 z-[100] transition-all duration-500 ${
+          scrolled
+            ? 'border-b border-white/8 bg-[#07060b]/80 py-3 backdrop-blur-xl'
+            : 'border-b border-transparent bg-transparent py-5'
+        }`}
+      >
+        <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-6 px-6">
+          <a href="#top" className="flex items-center gap-3">
+            <img
+              src="/images/xicon.jpg"
+              alt="Iceberg X"
+              className="h-11 w-11 shrink-0 rounded-2xl border border-white/10 object-cover shadow-[0_0_24px_rgba(230,0,126,0.35)]"
+            />
+            <span className="os-mono hidden text-[11px] font-medium uppercase tracking-[0.3em] text-slate-400 sm:block">
+              iceberg&nbsp;x<span className="text-[#e6007e]">//</span>os
+            </span>
           </a>
-          <div className="hidden md:flex gap-6 lg:gap-8 items-center text-[0.82rem] lg:text-[0.88rem] font-bold text-slate-800 whitespace-nowrap">
-            <a href="#what" className="hover:text-[#e6007e] transition-colors leading-none">The Programme</a>
-            <a href="#cube" className="hover:text-[#e6007e] transition-colors leading-none">The Cube</a>
-            <a href="#journey" className="hover:text-[#e6007e] transition-colors leading-none">Journey</a>
-            <a href="#fellowship" className="hover:text-[#e6007e] transition-colors leading-none">Fellowship</a>
-            
+
+          <div className="os-mono hidden items-center gap-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:flex lg:gap-8">
+            {NAV_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="transition-colors hover:text-[#ff4da6]">
+                {l.label}
+              </a>
+            ))}
+            <span className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+              <span className="os-blink h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+              ONLINE
+            </span>
             {user ? (
-              <Link to="/dashboard" className="px-5 py-2.5 rounded-full bg-[#e6007e] text-white font-bold text-[0.84rem] shadow-[0_12px_30px_-8px_rgba(230,0,126,0.5)] hover:translate-y-[-3px] hover:shadow-[0_20px_44px_-10px_rgba(230,0,126,0.65)] transition-all leading-none">
+              <Link
+                to="/dashboard"
+                className="rounded-full bg-[#e6007e] px-5 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-[0_0_24px_rgba(230,0,126,0.5)] transition-transform hover:-translate-y-0.5"
+              >
                 Enter Platform
               </Link>
             ) : (
-              <Link to="/login" className="px-5 py-2.5 rounded-full bg-white text-slate-900 border border-black/5 font-bold text-[0.84rem] shadow-sm hover:translate-y-[-3px] hover:shadow-lg transition-all leading-none">
+              <Link
+                to="/login"
+                className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-100 transition-colors hover:border-[#e6007e]/50"
+              >
                 Login
               </Link>
             )}
           </div>
+
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden w-12 h-12 rounded-2xl bg-white/90 border border-black/5 shadow-sm text-slate-700 hover:text-[#e6007e] hover:bg-white transition-all flex items-center justify-center"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition-colors hover:border-[#e6007e]/50 md:hidden"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
+
         {mobileMenuOpen && (
-          <div className="md:hidden mx-4 mt-3 rounded-3xl bg-white/95 backdrop-blur-md border border-black/5 shadow-xl overflow-hidden">
-            <div className="flex flex-col p-2 text-sm font-bold text-slate-700">
-              <a href="#what" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">The Programme</a>
-              <a href="#cube" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">The Cube</a>
-              <a href="#journey" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">Journey</a>
-              <a href="#fellowship" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-slate-50 hover:text-[#e6007e] transition-colors">Fellowship</a>
+          <div className="os-panel mx-4 mt-3 overflow-hidden rounded-2xl md:hidden">
+            <div className="os-mono flex flex-col p-2 text-[12px] font-semibold uppercase tracking-wider text-slate-300">
+              {NAV_LINKS.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-xl px-4 py-3 transition-colors hover:bg-white/5 hover:text-[#ff4da6]"
+                >
+                  {l.label}
+                </a>
+              ))}
               {user ? (
-                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="mt-2 px-4 py-3 rounded-2xl bg-[#e6007e] text-white text-center shadow-sm shadow-magenta/20">
+                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="mt-2 rounded-xl bg-[#e6007e] px-4 py-3 text-center text-white">
                   Enter Platform
                 </Link>
               ) : (
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2 px-4 py-3 rounded-2xl bg-slate-950 text-white text-center shadow-sm">
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center text-slate-100">
                   Login
                 </Link>
               )}
@@ -346,647 +790,511 @@ export const Welcome: React.FC = () => {
         )}
       </nav>
 
-      {/* 1. HERO */}
-      <section className="hero-bg min-h-screen flex items-center pt-[140px] pb-[80px] overflow-hidden" id="top">
-        <div className="max-w-[1200px] mx-auto px-7 grid grid-cols-1 lg:grid-cols-2 gap-[60px] items-center w-full">
-          <div className="flex flex-col gap-6">
-            <span className="text-[#e6007e] text-[0.72rem] font-bold uppercase tracking-[0.18em]">An Elite Technology Fellowship</span>
-            <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-tight">
-              Building the Next Generation of <span className="welcome-grad-text">Innovators</span>
+      {/* ======================= 00 · HERO ======================= */}
+      <section id="top" className="os-grid-bg relative flex min-h-screen items-center overflow-hidden pb-24 pt-[160px]">
+        <div className="pointer-events-none absolute inset-0 -z-0">
+          <div className="os-aurora absolute right-[-10%] top-[-10%] h-[540px] w-[540px] rounded-full bg-[radial-gradient(circle,rgba(230,0,126,0.28),transparent_65%)] blur-2xl" />
+          <div className="os-aurora absolute bottom-[-15%] left-[-8%] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle,rgba(0,240,255,0.18),transparent_65%)] blur-2xl" style={{ animationDelay: '-6s' }} />
+        </div>
+
+        <div className="os-stage relative z-10 mx-auto grid w-full max-w-[1320px] grid-cols-1 items-center gap-[60px] px-6 lg:grid-cols-[1.05fr_1fr]">
+          <div data-fly="left" className="flex flex-col gap-7">
+            <div className="os-mono inline-flex items-center gap-2 self-start rounded-full border border-[#e6007e]/30 bg-[#e6007e]/10 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[#ff99cc]">
+              <Cpu className="h-3.5 w-3.5 animate-pulse" />
+              <span>An Elite Technology Fellowship</span>
+            </div>
+
+            <h1
+              className={`${reducedMotion ? '' : 'os-glitch'} text-[3rem] font-extrabold leading-[1.02] tracking-tight text-white sm:text-[4.4rem]`}
+              data-text="Building the Next Generation of Innovators"
+            >
+              Building the Next Generation of <span className="grad-text">Innovators</span>
             </h1>
-            <p className="text-lg text-slate-600 leading-relaxed max-w-[520px]">
-              Most internships teach you how a company works. <strong className="font-semibold text-slate-900">Our platform gives you the opportunity to prove what you're capable of building.</strong>
+
+            <p className="max-w-[520px] text-lg leading-relaxed text-slate-400">
+              Most internships teach you how a company works.{' '}
+              <strong className="font-semibold text-slate-100">
+                Our platform gives you the opportunity to prove what you're capable of building.
+              </strong>
             </p>
-            <div className="flex gap-4 mt-2">
-              <a href="#apply" className="px-7 py-3.5 rounded-full bg-[#e6007e] text-white font-semibold shadow-md shadow-magenta/30 hover:translate-y-[-3px] hover:shadow-lg transition-all">
-                Become a Cube →
+
+            <div className="mt-1 flex flex-wrap gap-4">
+              <a
+                href="#apply"
+                className="glow-magenta flex items-center gap-2 rounded-full bg-[#e6007e] px-7 py-3.5 font-semibold text-white transition-transform hover:-translate-y-1"
+              >
+                <span>Become a Cube</span>
+                <ChevronRight className="h-4 w-4" />
               </a>
-              <a href="#what" className="px-7 py-3.5 rounded-full bg-white text-slate-800 border border-black/5 font-semibold hover:translate-y-[-3px] hover:shadow-md transition-all">
-                Learn More
+              <a
+                href="#work"
+                className="rounded-full border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 transition-colors hover:border-[#00f0ff]/40"
+              >
+                Explore Missions
               </a>
             </div>
-            
-            {/* Meta */}
-            <div className="grid grid-cols-3 gap-6 mt-8 border-t border-black/5 pt-8">
-              <div>
-                <div className="text-2xl font-black text-slate-900">100%</div>
-                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mt-0.5">Builders, not observers</div>
-              </div>
-              <div>
-                <div className="text-2xl font-black text-slate-900">#0XX</div>
-                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mt-0.5">Permanent Cube number</div>
-              </div>
-              <div>
-                <div className="text-2xl font-black text-slate-900">∞</div>
-                <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mt-0.5">Once a Cube, always a Cube</div>
-              </div>
+
+            {/* telemetry readout */}
+            <div className="os-panel os-bracket relative mt-6 grid grid-cols-3 gap-4 rounded-2xl p-5">
+              {[
+                { v: '100%', l: 'Builders, not observers' },
+                { v: '#0XX', l: 'Permanent Cube number' },
+                { v: '∞', l: 'Once a Cube, always a Cube' },
+              ].map((s) => (
+                <div key={s.l} className="flex flex-col gap-1">
+                  <div className="grad-text text-2xl font-black">{s.v}</div>
+                  <div className="os-mono text-[9px] font-medium uppercase tracking-wider text-slate-500">{s.l}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Floating cards visualizer */}
-          <div className="relative h-[380px] sm:h-[460px] w-full hidden sm:block">
-            <div className="cube-glow"></div>
-            <div className="float-cube floaty-cube-1 absolute bg-white border border-black/5 rounded-3xl p-6 shadow-xl w-[210px]" style={{ transform: `translateY(${scrollY * 0.02 * -0.5}px)` }}>
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-[0.68rem] text-slate-400 uppercase tracking-widest font-bold">Active Cube</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#e6007e] shadow-md shadow-magenta/40"></span>
-              </div>
-              <div className="text-3xl font-extrabold">#<span className="text-[#e6007e]">001</span></div>
-              <div className="text-xs font-semibold text-slate-500 mt-2">Founding Cube · AI Research</div>
-            </div>
+          {/* 3D cube */}
+          <div data-fly="right" className="relative flex h-[440px] w-full items-center justify-center sm:h-[540px]">
+            <div className="absolute h-[360px] w-[360px] animate-pulse rounded-full bg-gradient-to-tr from-[#e6007e]/25 via-[#00f0ff]/15 to-transparent blur-3xl" />
+            {reducedMotion ? (
+              <div className="h-[260px] w-[260px] rounded-[2rem] border border-white/20 bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] shadow-[0_0_80px_rgba(230,0,126,0.45)]" />
+            ) : (
+              <Suspense fallback={null}>
+                <HeroScene reduced={reducedMotion} quality={quality} />
+              </Suspense>
+            )}
 
-            <div className="float-cube floaty-cube-2 absolute bg-white border border-black/5 rounded-3xl p-6 shadow-xl w-[210px]" style={{ transform: `translateY(${scrollY * 0.04 * -0.5}px)` }}>
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-[0.68rem] text-slate-400 uppercase tracking-widest font-bold">Active Cube</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#e6007e] shadow-md shadow-magenta/40"></span>
-              </div>
-              <div className="text-3xl font-extrabold">#<span className="text-[#e6007e]">014</span></div>
-              <div className="text-xs font-semibold text-slate-500 mt-2">Prototype Development</div>
+            <div className="os-mono os-panel absolute right-2 top-4 flex items-center gap-2.5 rounded-2xl px-4 py-2 text-slate-100 sm:right-6">
+              <span className="os-blink h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+              <span className="text-[11px] font-bold tracking-tight">72 Active Nodes</span>
             </div>
-
-            <div className="float-cube floaty-cube-3 absolute bg-white border border-black/5 rounded-3xl p-6 shadow-xl w-[210px]" style={{ transform: `translateY(${scrollY * 0.06 * -0.5}px)` }}>
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-[0.68rem] text-slate-400 uppercase tracking-widest font-bold">Active Cube</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#e6007e] shadow-md shadow-magenta/40"></span>
+            <div className="os-panel absolute bottom-4 left-2 flex items-center gap-2.5 rounded-2xl px-4 py-2 text-white sm:left-6">
+              <Sparkles className="h-4 w-4 text-[#ff4da6]" />
+              <div className="flex flex-col">
+                <span className="os-mono text-[9px] font-medium uppercase tracking-widest text-slate-400">Fellowship Standard</span>
+                <span className="text-xs font-black text-[#ff99cc]">100% Builders Only</span>
               </div>
-              <div className="text-3xl font-extrabold">#<span className="text-[#e6007e]">072</span></div>
-              <div className="text-xs font-semibold text-slate-500 mt-2">Automation Experiments</div>
             </div>
           </div>
         </div>
+
+        <div className="os-mono absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.4em] text-slate-600">
+          scroll to boot ↓
+        </div>
       </section>
 
-      {/* 1.5 FELLOWSHIP UNIVERSITIES / TALENT NETWORK */}
-      <section className="py-14 bg-white border-y border-black/5 relative overflow-hidden" id="universities">
-        <div className="max-w-[1200px] mx-auto px-7 mb-8 text-center flex flex-col items-center gap-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-magenta/5 border border-magenta/15 text-[0.72rem] font-black uppercase tracking-[0.16em] text-magenta">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Academic Talent Network</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+      {/* ======================= 01 · NODES ======================= */}
+      <section id="universities" className="os-hairline os-grid-bg relative overflow-hidden py-16">
+        <div className="os-stage mx-auto mb-8 flex max-w-[1180px] flex-col items-center gap-3 px-6 text-center">
+          <SectionTag index="// 01" label="Academic Talent Network" />
+          <h2 data-fly="floor" className="text-2xl font-black tracking-tight text-white sm:text-4xl">
             Where Our Cubes Come From
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl leading-relaxed">
+          <p data-fly="floor" className="max-w-xl text-xs font-medium leading-relaxed text-slate-400 sm:text-sm">
             Fellowship builders representing leading computer science, AI, and engineering faculties across national and international universities.
           </p>
         </div>
 
-        {/* Animated Marquee Tracks */}
-        <div className="flex flex-col gap-3.5 marquee-mask py-2">
-          {/* Row 1: Sliding Left */}
-          <div className="animate-marquee-left flex gap-4 items-center">
-            {[...fellowshipUniversitiesRow1, ...fellowshipUniversitiesRow1].map((uni, idx) => (
-              <div
-                key={`row1-${uni.name}-${idx}`}
-                className="group flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-[#f8f9fa] border border-slate-200/75 hover:border-magenta/40 hover:bg-white hover:shadow-lg hover:shadow-magenta/5 hover:-translate-y-0.5 transition-all duration-300 shrink-0 cursor-default select-none"
-              >
-                <div className="w-10 h-10 rounded-xl bg-white border border-slate-150 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
-                  <img
-                    src={uni.logo}
-                    alt={uni.name}
-                    className="max-w-full max-h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-extrabold text-slate-800 group-hover:text-magenta transition-colors whitespace-nowrap">
-                    {uni.name}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {uni.location}
-                  </span>
-                </div>
-              </div>
-            ))}
+        <div className="marquee-mask flex flex-col gap-3.5 py-2">
+          <div className="animate-marquee-left flex items-center gap-4">
+            {[...fellowshipUniversitiesRow1, ...fellowshipUniversitiesRow1].map((uni, idx) => uniChip(uni, `r1-${uni.name}-${idx}`))}
+          </div>
+          <div className="animate-marquee-right flex items-center gap-4">
+            {[...fellowshipUniversitiesRow2, ...fellowshipUniversitiesRow2].map((uni, idx) => uniChip(uni, `r2-${uni.name}-${idx}`))}
+          </div>
+        </div>
+      </section>
+
+      {/* ======================= 02 · DIFF (philosophy) ======================= */}
+      <Section id="what">
+        <div className="mb-14 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 02" label="The Philosophy" />
+          <h2 data-fly="floor" className="max-w-[640px] text-3xl font-black leading-tight text-white sm:text-5xl">
+            This is <span className="grad-text">not</span> a traditional internship.
+          </h2>
+          <p data-fly="floor" className="max-w-[620px] font-medium leading-relaxed text-slate-400">
+            Real research and development projects. Real commercial challenges. Real mentors. Real outcomes. Here, participants are builders — not observers.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-[1fr_auto_1fr]">
+          <div data-fly="left" className="os-panel flex flex-col gap-5 rounded-3xl p-8 sm:p-10">
+            <span className="os-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">The Old Way</span>
+            <h3 className="text-xl font-extrabold text-slate-200">Traditional Internship</h3>
+            <ul className="os-mono mt-2 flex flex-col gap-3 text-sm font-semibold text-slate-400">
+              {['Observe', 'Shadow', 'Assist', 'Learn'].map((w) => (
+                <li key={w} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md border border-white/10 text-[11px] text-slate-600">−</span>
+                  {w}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Row 2: Sliding Right */}
-          <div className="animate-marquee-right flex gap-4 items-center">
-            {[...fellowshipUniversitiesRow2, ...fellowshipUniversitiesRow2].map((uni, idx) => (
+          <div data-fly="deep" className="grid place-items-center">
+            <span className="os-mono float-drift flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm font-black text-[#ff4da6] shadow-[0_0_28px_rgba(230,0,126,0.4)]">
+              vs
+            </span>
+          </div>
+
+          <div data-fly="right" className="os-panel os-bracket relative flex flex-col gap-5 overflow-hidden rounded-3xl border-[#e6007e]/25 p-8 shadow-[0_30px_80px_-40px_rgba(230,0,126,0.6)] sm:p-10">
+            <div className="pointer-events-none absolute -right-[20%] -top-[40%] h-[120%] w-[60%] bg-[radial-gradient(circle,rgba(230,0,126,0.35),transparent_70%)] blur-2xl" />
+            <span className="os-mono relative z-10 text-[10px] uppercase tracking-[0.24em] text-[#ff99cc]">Our Approach</span>
+            <h3 className="relative z-10 text-xl font-extrabold text-white">The Fellowship</h3>
+            <ul className="os-mono relative z-10 mt-2 flex flex-col gap-3 text-sm font-semibold text-slate-200">
+              {['Build', 'Experiment', 'Prototype', 'Innovate'].map((w) => (
+                <li key={w} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#e6007e] text-[11px] text-white">+</span>
+                  {w}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </Section>
+
+      {/* ======================= 03 · WORKSTREAMS (bento) ======================= */}
+      <Section id="work" wide>
+        <div className="mb-14 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 03" label="R&D Workstreams & Domains" />
+          <h2 data-fly="floor" className="text-3xl font-black tracking-tight text-white sm:text-5xl">
+            What will you <span className="grad-text">build</span>?
+          </h2>
+          <p data-fly="floor" className="max-w-xl font-medium leading-relaxed text-slate-400">
+            Real engineering challenges with real production stakes. We don't build slide decks — we ship high-throughput systems, models, and platforms.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {bentoWorkStreams.map((stream, idx) => {
+            const Icon = stream.icon;
+            return (
               <div
-                key={`row2-${uni.name}-${idx}`}
-                className="group flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-[#f8f9fa] border border-slate-200/75 hover:border-magenta/40 hover:bg-white hover:shadow-lg hover:shadow-magenta/5 hover:-translate-y-0.5 transition-all duration-300 shrink-0 cursor-default select-none"
+                key={idx}
+                data-fly={idx % 3 === 0 ? 'left' : idx % 3 === 1 ? 'floor' : 'right'}
+                data-fly-delay={((idx % 3) * 0.08).toFixed(2)}
+                data-fly-frame
+                onMouseMove={handleCardMouseMove}
+                className={`os-panel os-panel-hover os-spotlight group flex flex-col justify-between gap-6 rounded-3xl p-7 sm:p-8 ${stream.span}`}
               >
-                <div className="w-10 h-10 rounded-xl bg-white border border-slate-150 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
-                  <img
-                    src={uni.logo}
-                    alt={uni.name}
-                    className="max-w-full max-h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
-                    loading="lazy"
-                  />
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition-colors group-hover:border-[#e6007e]/50 group-hover:text-[#ff4da6]">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="os-mono rounded-full border border-[#00f0ff]/20 bg-[#00f0ff]/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#00f0ff]/80">
+                      {stream.badge}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-col gap-2">
+                    <span className="os-mono text-[10px] font-medium uppercase tracking-widest text-slate-500">{stream.tag}</span>
+                    <h3 className="text-xl font-black leading-snug tracking-tight text-white transition-colors group-hover:text-[#ff99cc] sm:text-2xl">
+                      {stream.title}
+                    </h3>
+                    <p className="mt-1 text-xs font-medium leading-relaxed text-slate-400 sm:text-sm">{stream.desc}</p>
+                  </div>
                 </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-extrabold text-slate-800 group-hover:text-magenta transition-colors whitespace-nowrap">
-                    {uni.name}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {uni.location}
-                  </span>
+
+                {stream.codeSnippet && (
+                  <div className="os-mono relative z-10 overflow-x-auto rounded-2xl border border-white/10 bg-black/50 p-3.5 text-[11px] text-slate-300">
+                    <div className="mb-1.5 flex items-center justify-between border-b border-white/5 pb-1 text-[9px] text-slate-500">
+                      <span>terminal_preview.sh</span>
+                      <span className="text-emerald-400">EXEC</span>
+                    </div>
+                    <code className="whitespace-pre-wrap text-[#ff99cc]">{stream.codeSnippet}</code>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* live missions */}
+        <div className="mt-16 border-t border-white/8 pt-16">
+          <div data-fly="floor" className="mx-auto mb-10 flex max-w-[600px] flex-col items-center gap-2 text-center">
+            <span className="os-mono flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[#ff4da6]">
+              <span className="os-blink h-1.5 w-1.5 rounded-full bg-[#ff4da6]" />
+              Live Telemetry Feed
+            </span>
+            <h3 className="text-2xl font-extrabold text-white">Active Cohort Missions</h3>
+            <p className="text-xs font-medium leading-relaxed text-slate-400">
+              Here are actual research challenges currently being developed by active Cubes in our fellowship.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {missions.map((proj, idx) => (
+              <div
+                key={idx}
+                data-fly={idx % 3 === 0 ? 'spin-left' : idx % 3 === 1 ? 'deep' : 'spin-right'}
+                data-fly-delay={((idx % 3) * 0.09).toFixed(2)}
+                data-fly-frame
+                className="os-panel os-panel-hover flex flex-col justify-between gap-4 rounded-3xl p-6"
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="os-mono rounded-md border border-[#e6007e]/20 bg-[#e6007e]/5 px-2.5 py-0.5 text-[9px] font-bold uppercase text-[#ff99cc]">
+                      {proj.cat}
+                    </span>
+                    <span className="os-mono text-[10px] font-bold text-slate-500">{proj.nodes}</span>
+                  </div>
+                  <h4 className="mt-1 text-sm font-extrabold leading-snug text-white">{proj.title}</h4>
+                  <p className="text-[11px] font-medium leading-relaxed text-slate-400">{proj.desc}</p>
+                </div>
+                <div className="flex items-center justify-between border-t border-white/8 pt-3">
+                  <div className="os-mono flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-400">
+                    <span className="os-blink h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    Production Sprint
+                  </div>
+                  <span className="os-mono text-[10px] font-bold text-slate-500">{proj.commit}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* 2. PHILOSOPHY */}
-      <section className="py-24 bg-white border-t border-black/5" id="what">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">The Philosophy</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">This is not a traditional internship.</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Real research and development projects. Real commercial challenges. Real mentors. Real outcomes. Here, participants are builders — not observers.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            {/* Traditional Intern */}
-            <div className="bg-[#f6f6f8]/50 border border-black/5 rounded-[2rem] p-8 sm:p-10 flex flex-col gap-6">
-              <span className="text-xs uppercase tracking-wider font-extrabold text-slate-400">The Old Way</span>
-              <h3 className="text-xl font-extrabold text-slate-900">Traditional Internship</h3>
-              <ul className="flex flex-col gap-4 text-slate-700 font-semibold mt-2">
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-black/5 flex items-center justify-center text-[10px] text-slate-400">○</span> Observe</li>
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-black/5 flex items-center justify-center text-[10px] text-slate-400">○</span> Shadow</li>
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-black/5 flex items-center justify-center text-[10px] text-slate-400">○</span> Assist</li>
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-black/5 flex items-center justify-center text-[10px] text-slate-400">○</span> Learn</li>
-              </ul>
-            </div>
-
-            {/* VS */}
-            <div className="grid place-items-center text-center font-black text-xl text-[#e6007e] py-4 md:py-0">
-              <span className="w-[54px] h-[54px] rounded-full bg-white border border-black/5 flex items-center justify-center shadow-sm">vs</span>
-            </div>
-
-            {/* The Program */}
-            <div className="scarcity-box rounded-[2rem] p-8 sm:p-10 flex flex-col gap-6 text-white shadow-2xl shadow-magenta/20 relative overflow-hidden">
-              <div className="absolute top-[-40%] right-[-20%] w-[60%] h-[120%] bg-radial-gradient from-magenta/35 to-transparent blur-xl"></div>
-              <span className="text-xs uppercase tracking-wider font-extrabold text-magenta-3 relative z-10">Our Approach</span>
-              <h3 className="text-xl font-extrabold relative z-10">The Fellowship</h3>
-              <ul className="flex flex-col gap-4 text-white/90 font-semibold mt-2 relative z-10">
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-[#e6007e] flex items-center justify-center text-[10px] text-white">→</span> Build</li>
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-[#e6007e] flex items-center justify-center text-[10px] text-white">→</span> Experiment</li>
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-[#e6007e] flex items-center justify-center text-[10px] text-white">→</span> Prototype</li>
-                <li className="flex items-center gap-3"><span className="w-6 h-6 rounded-lg bg-[#e6007e] flex items-center justify-center text-[10px] text-white">→</span> Innovate</li>
-              </ul>
-            </div>
-          </div>
+      {/* ======================= 04 · LIFECYCLE (pipeline) ======================= */}
+      <Section id="pipeline" wide>
+        <div className="mb-16 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 04" label="Lifecycle Telemetry" />
+          <h2 data-fly="floor" className="text-3xl font-black tracking-tight text-white sm:text-5xl">The Fellowship Cycle</h2>
+          <p data-fly="floor" className="max-w-2xl font-medium leading-relaxed text-slate-400">
+            A transparent, high-velocity engineering trajectory — from async code verification to permanent Vault archival.
+          </p>
         </div>
-      </section>
 
-      {/* 3. THE IDENTITY / CUBE WALL */}
-      <section className="py-24 bg-[#f6f6f8]" id="cube">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">The Identity</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">Every participant becomes an Ice Cube.</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Cube numbers are permanent. They are never reused. Every Cube becomes part of our history. <strong className="font-semibold text-slate-900">Once a Cube, always a Cube.</strong></p>
-          </div>
+        <div className="relative mx-auto grid max-w-[1000px] grid-cols-1 items-stretch gap-4 md:grid-cols-5">
+          <div
+            data-fly="trace"
+            className="os-rail absolute left-[8%] right-[8%] top-1/2 hidden h-[2px] -translate-y-1/2 bg-gradient-to-r from-[#e6007e] via-[#ff4da6] to-[#00f0ff] shadow-[0_0_16px_rgba(230,0,126,0.6)] md:block"
+          />
+          {pipeline.map((c, idx) => (
+            <div
+              key={idx}
+              data-fly={idx % 2 === 0 ? 'floor' : 'drop'}
+              data-fly-delay={(idx * 0.07).toFixed(2)}
+              data-fly-frame
+              className="os-panel os-panel-hover group relative z-10 flex flex-col justify-between gap-4 rounded-3xl p-5 sm:p-6"
+            >
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="os-mono flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs font-black text-white transition-colors group-hover:border-[#e6007e]/50 group-hover:text-[#ff4da6]">
+                    {c.step}
+                  </span>
+                  <span className="h-2 w-2 rounded-full bg-white/20 transition-colors group-hover:bg-[#e6007e]" />
+                </div>
+                <span className="os-mono text-[9px] font-medium uppercase tracking-widest text-slate-500 group-hover:text-[#ff99cc]">
+                  {c.tag}
+                </span>
+                <h4 className="text-sm font-extrabold leading-snug text-white">{c.title}</h4>
+              </div>
+              <p className="text-xs font-medium leading-relaxed text-slate-400">{c.desc}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
 
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3">
-            {Array.from({ length: 24 }).map((_, idx) => {
-              const num = idx + 1;
-              const isFounding = num <= 3;
-              const cubeNumStr = String(num).padStart(3, '0');
-              return (
-                <div 
-                  key={idx}
-                  className={`aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border border-black/5 hover:translate-y-[-6px] hover:scale-105 hover:bg-gradient-to-tr hover:from-[#e6007e] hover:to-[#ff99cc] hover:text-white hover:shadow-lg hover:shadow-magenta/40 group ${isFounding ? 'border-[#f3d27a] bg-[#fffdf5]' : 'bg-white'}`}
+      {/* ======================= 05 · TRAJECTORY (journey) ======================= */}
+      <Section id="journey">
+        <div className="mb-16 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 05" label="Growth & Progression" />
+          <h2 data-fly="floor" className="text-3xl font-black tracking-tight text-white sm:text-5xl">The Cube Journey</h2>
+          <p data-fly="floor" className="max-w-2xl font-medium leading-relaxed text-slate-400">
+            This program is built to support career growth and skill progression. Explore the branching paths of a Cube.
+          </p>
+        </div>
+
+        <div className="mx-auto grid max-w-[920px] grid-cols-1 gap-5 md:grid-cols-2">
+          {journey.map((j, idx) => {
+            const toneRing =
+              j.tone === 'magenta'
+                ? 'border-[#e6007e]/40 shadow-[0_24px_70px_-40px_rgba(230,0,126,0.6)]'
+                : j.tone === 'cyan'
+                ? 'border-[#00f0ff]/40 shadow-[0_24px_70px_-40px_rgba(0,240,255,0.4)]'
+                : 'border-white/9';
+            const codeColor =
+              j.tone === 'magenta' ? 'text-[#ff4da6]' : j.tone === 'cyan' ? 'text-[#00f0ff]' : j.tone === 'muted' ? 'text-slate-500' : 'text-[#ff99cc]';
+            return (
+              <React.Fragment key={j.code}>
+                {idx === 1 && (
+                  <div className="col-span-full -my-2 flex justify-center text-[#e6007e]/50 md:col-span-2">
+                    <ArrowDown className="h-7 w-7" />
+                  </div>
+                )}
+                {idx === 3 && (
+                  <div className="col-span-full -my-2 flex justify-center text-[#e6007e]/50 md:col-span-2">
+                    <ArrowDown className="h-7 w-7" />
+                  </div>
+                )}
+                <div
+                  data-fly={idx % 2 === 0 ? 'spin-left' : 'spin-right'}
+                  data-fly-frame
+                  className={`os-panel os-panel-hover relative overflow-hidden rounded-3xl border p-8 ${toneRing} ${idx === 0 ? 'md:col-span-2' : ''}`}
                 >
-                  <span className={`text-[9px] font-bold group-hover:text-white/85 ${isFounding ? 'text-[#c9a227]' : 'text-slate-400'}`}>CUBE</span>
-                  <span className={`text-[1.15rem] font-black tracking-tight ${isFounding ? 'text-[#c9a227] group-hover:text-white' : 'text-slate-950 group-hover:text-white'}`}>#{cubeNumStr}</span>
+                  <div className={`os-mono absolute right-6 top-6 select-none text-6xl font-black opacity-10 ${codeColor}`}>{j.code}</div>
+                  <span className={`os-mono text-[10px] font-medium uppercase tracking-widest ${codeColor}`}>{j.stage}</span>
+                  <h3 className="mt-2 flex items-center gap-1.5 text-xl font-extrabold text-white">
+                    {j.title}
+                    {j.tone === 'cyan' && <Sparkles className="h-4 w-4 animate-pulse text-[#00f0ff]" />}
+                  </h3>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-slate-400">{j.desc}</p>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </Section>
+
+      {/* ======================= 06 · ACHIEVEMENTS (badges) ======================= */}
+      <Section>
+        <div className="mb-16 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 06" label="Recognition & Achievements" />
+          <h2 data-fly="floor" className="text-3xl font-black tracking-tight text-white sm:text-5xl">
+            Earn your place. Earn your <span className="grad-text">badge</span>.
+          </h2>
+          <p data-fly="floor" className="max-w-xl font-medium leading-relaxed text-slate-400">
+            Achievement is recognised, recorded, and remembered. Every badge marks something you actually did.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+          {badges.map((badge, idx) => (
+            <TiltCard
+              key={idx}
+              max={12}
+              data-fly={idx % 2 === 0 ? 'left' : 'right'}
+              data-fly-delay={((idx % 5) * 0.07).toFixed(2)}
+              data-fly-frame
+              className="os-panel os-panel-hover flex flex-col gap-3 rounded-3xl p-6 text-center"
+            >
+              <div className="float-drift mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#e6007e] via-[#ff4da6] to-[#ff99cc] text-white shadow-[0_0_30px_rgba(230,0,126,0.5)]">
+                <Award className="h-6 w-6" />
+              </div>
+              <h4 className="mt-2 text-[1.05rem] font-extrabold text-white">{badge.title}</h4>
+              <p className="os-mono text-[11px] font-medium leading-relaxed text-slate-400">{badge.desc}</p>
+            </TiltCard>
+          ))}
+        </div>
+      </Section>
+
+      {/* ======================= 07 · QUESTS (scroll platformer) ======================= */}
+      {reducedMotion ? (
+        <Section id="quests">
+          <div className="mb-16 flex flex-col items-center gap-3 text-center">
+            <SectionTag index="// 07" label="Interactive Progression" />
+            <h2 className="text-3xl font-black tracking-tight text-white sm:text-5xl">Gamified Quests &amp; Level-Ups</h2>
+            <p className="max-w-2xl font-medium leading-relaxed text-slate-400">
+              Embark on structured challenges designed to accelerate your growth. Achieve milestones, track your stats in real-time, and unlock next-tier quests.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {quests.map((q) => {
+              const Icon = q.icon;
+              return (
+                <div key={q.title} className="os-panel flex flex-col justify-between gap-5 rounded-3xl p-7">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between">
+                      <span className="os-mono rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#ff99cc]">
+                        {q.rarity}
+                      </span>
+                      {q.locked ? <Lock className="h-5 w-5 text-slate-600" /> : <Icon className="h-5 w-5 text-[#e6007e]/50" />}
+                    </div>
+                    <h4 className={`mt-3 text-[1.2rem] font-extrabold ${q.locked ? 'text-white/50' : 'text-white'}`}>{q.title}</h4>
+                    <p className={`mt-1 text-xs leading-relaxed ${q.locked ? 'text-slate-500' : 'text-slate-400'}`}>{q.desc}</p>
+                  </div>
+                  <div className="flex flex-col gap-2 border-t border-white/8 pt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="os-mono text-[10px] font-extrabold uppercase tracking-wider text-slate-500">{q.target}</span>
+                      <span className="os-mono rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-black text-[#ff99cc]">{q.badge}</span>
+                    </div>
+                    {q.note && <p className="os-mono text-[9px] font-bold italic text-[#e6007e]">{q.note}</p>}
+                  </div>
                 </div>
               );
             })}
           </div>
+        </Section>
+      ) : (
+        <Suspense fallback={<div className="h-screen" />}>
+          <QuestPlatformer />
+        </Suspense>
+      )}
+
+      {/* ======================= 08 · VAULT ======================= */}
+      <Section>
+        <div className="mb-16 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 08" label="The Archive" />
+          <h2 data-fly="floor" className="text-3xl font-black tracking-tight text-white sm:text-5xl">The Cube Vault</h2>
+          <p data-fly="floor" className="max-w-2xl font-medium leading-relaxed text-slate-400">
+            Every project becomes part of the Cube Vault — a permanent archive of everything Cubes create. Some of it may become future Iceberg products.
+          </p>
         </div>
-      </section>
 
-      {/* 4. THE INAUGURAL COHORT (LEGACY) */}
-      <section className="py-24 bg-gradient-to-b from-[#0f0c05] to-[#1a1305] text-white">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#f3d27a] text-xs uppercase font-extrabold tracking-wider">Inaugural Cohort (History)</span>
-            <h2 className="text-3xl sm:text-5xl font-black leading-none">The Founding Cubes</h2>
-            <p className="text-white/60 font-medium leading-relaxed">
-              The first cohort (Cubes #001 to #003) laid the foundation of the Iceberg X R&D portal. Their legacy is permanently archived as the Founding Cubes. This inaugural chapter is closed, and new cohorts continue to build the next generation of systems.
-            </p>
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+          {vaultItems.map((item, idx) => (
+            <TiltCard
+              key={idx}
+              max={14}
+              data-fly={idx % 2 === 0 ? 'floor' : 'deep'}
+              data-fly-delay={((idx % 5) * 0.06).toFixed(2)}
+              data-fly-frame
+              className="os-panel os-panel-hover rounded-3xl p-8"
+            >
+              <div className="os-mono text-[0.7rem] font-bold tracking-widest text-[#ff99cc]">VAULT · {item.num}</div>
+              <h4 className="mt-2 text-[1.1rem] font-bold text-white">{item.title}</h4>
+              <p className="os-mono mt-1 text-[11px] text-slate-500">Permanently archived.</p>
+            </TiltCard>
+          ))}
+        </div>
+      </Section>
+
+      {/* ======================= 09 · FELLOWSHIP ======================= */}
+      <section id="fellowship" className="os-hairline os-grid-bg relative overflow-hidden py-28 text-center">
+        <div className="pointer-events-none absolute left-1/2 top-0 h-[560px] w-[820px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(230,0,126,0.28),transparent_65%)] blur-3xl" />
+        <div className="os-stage relative z-10 mx-auto flex max-w-[1180px] flex-col items-center gap-6 px-6">
+          <SectionTag index="// 09" label="The Highest Recognition" />
+          <div className="float-drift grid h-[120px] w-[120px] place-items-center rounded-[30px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] text-white shadow-[0_0_80px_rgba(230,0,126,0.65)]">
+            <Award className="h-[56px] w-[56px]" />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((num) => (
-              <div key={num} className="gold-card-bg rounded-[2rem] p-8 sm:p-10 flex flex-col gap-4 hover:translate-y-[-8px] hover:shadow-2xl hover:shadow-[#c9a227]/25 transition-all">
-                <div className="text-[0.7rem] text-[#f3d27a] font-bold uppercase tracking-widest flex items-center gap-2">◆ Founding Cube (Legacy)</div>
-                <div className="text-4xl font-extrabold gold-text">#00{num}</div>
-                <div className="text-sm text-white/55 font-medium">
-                  {num === 1 ? 'The very first. Where it all began.' : num === 2 ? 'A permanent place in our R&D history.' : 'A status preserved for the inaugural builders.'}
-                </div>
-              </div>
+          <h2 data-fly="floor" className="mx-auto max-w-[760px] text-3xl font-black text-white sm:text-6xl">The Iceberg Fellowship</h2>
+          <p data-fly="floor" className="mx-auto max-w-[540px] text-lg font-semibold text-slate-400">Reserved for exceptional contributors. Few people achieve it.</p>
+          <p data-fly="floor" className="mx-auto -mt-3 max-w-[540px] text-lg font-semibold text-slate-400">Those who do become lifelong members of our community.</p>
+          <div data-fly="floor" className="mt-6 flex flex-wrap justify-center gap-3">
+            {['Lifelong membership', 'Direct mentorship', 'A permanent seat at the table'].map((p) => (
+              <span key={p} className="os-mono rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-slate-200 backdrop-blur-md">
+                {p}
+              </span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 5. WHAT WILL YOU WORK ON */}
-      <section className="py-24 bg-white border-b border-black/5">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">The Work</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">What will you work on?</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Real projects with real stakes — the kind that shape products, not slide decks.</p>
-          </div>
+      {/* ======================= 10 · NETWORK ======================= */}
+      <Section>
+        <div className="mb-16 flex flex-col items-center gap-3 text-center">
+          <SectionTag index="// 10" label="The Network" />
+          <h2 data-fly="floor" className="text-3xl font-black tracking-tight text-white sm:text-5xl">The Cube Network</h2>
+          <p data-fly="floor" className="max-w-2xl font-medium leading-relaxed text-slate-400">
+            Once a Cube, always a Cube. The network never closes — it only grows.
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {workCategories.map((cat, idx) => (
-              <div key={idx} className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm hover:translate-y-[-8px] hover:shadow-lg transition-all flex flex-col gap-4">
-                <div className="w-[50px] h-[50px] rounded-xl bg-gradient-to-br from-[#e6007e]/10 to-[#e0f2fe]/70 flex items-center justify-center text-[#e6007e]">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <h4 className="font-extrabold text-slate-900 text-[1.12rem]">{cat.title}</h4>
-                <p className="text-slate-500 text-xs font-semibold leading-relaxed">{cat.desc}</p>
+        <div className="grid grid-cols-1 items-center gap-[50px] md:grid-cols-2">
+          <div className="flex flex-col gap-3.5">
+            {['Current Cubes', 'Former Cubes', 'Mentors', 'Iceberg Team Members', 'Future Employers', 'Future Founders'].map((node, i) => (
+              <div
+                key={i}
+                data-fly="left"
+                data-fly-delay={(i * 0.06).toFixed(2)}
+                data-fly-frame
+                className="os-panel os-panel-hover flex items-center gap-4 rounded-2xl p-5 font-bold text-slate-100 hover:translate-x-2"
+              >
+                <span className="h-3 w-3 rounded-full bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] shadow-[0_0_10px_rgba(230,0,126,0.6)]" />
+                <span>{node}</span>
               </div>
             ))}
           </div>
 
-          {/* Active Missions Showcase */}
-          <div className="mt-16 pt-16 border-t border-black/5">
-            <div className="text-center max-w-[600px] mx-auto flex flex-col gap-2 mb-10">
-              <span className="text-magenta text-xs font-bold uppercase tracking-wider">Active R&D Board</span>
-              <h3 className="text-2xl font-extrabold text-slate-900">Current Cohort Projects</h3>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Here are actual research challenges currently being developed by our active Cubes.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  title: 'Build the Support Intelligence Platform',
-                  cat: 'AI / NLP',
-                  desc: 'Engineering a semantic search and automated resolution pipeline for customer success workloads.'
-                },
-                {
-                  title: 'OAuth2 / JWT MFA Integration Research',
-                  cat: 'Security / Go',
-                  desc: 'Researching multi-factor auth patterns and OAuth2 flows under Golang & MongoDB state-stores.'
-                },
-                {
-                  title: 'AI-Powered Dynamic Form Schema Renderer',
-                  cat: 'Frontend Eng',
-                  desc: 'Designing a declarative JSON schema parser that builds production-grade responsive UI forms on the fly.'
-                }
-              ].map((proj, idx) => (
-                <div key={idx} className="bg-slate-50/50 border border-black/5 hover:border-magenta/10 rounded-2xl p-6 shadow-subtle flex flex-col justify-between gap-4 hover:scale-[1.02] transition-all">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded-md uppercase self-start">
-                      {proj.cat}
-                    </span>
-                    <h4 className="font-extrabold text-slate-900 text-sm leading-snug mt-1">{proj.title}</h4>
-                    <p className="text-slate-500 text-[11px] font-semibold leading-relaxed">{proj.desc}</p>
-                  </div>
-                  <div className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100/50 px-2 py-0.5 rounded-md font-bold uppercase self-start flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                    <span>Active Research</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FELLOWSHIP PROCESS TIMELINE */}
-      <section className="py-24 bg-white border-b border-black/5" id="process">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">How It Works</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Fellowship Cycle</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">From initial code checks to the final archival, here is how a Cube moves through the program.</p>
-          </div>
-
-          <div className="relative max-w-[900px] mx-auto flex flex-col md:flex-row gap-6 md:gap-4 justify-between items-stretch">
-            {/* Step 1 */}
-            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
-              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">1</div>
-              <h4 className="font-extrabold text-slate-900 text-sm">Application & Verification</h4>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Apply online, submit your github portfolio, and pass the async review to join the cohort.</p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
-              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">2</div>
-              <h4 className="font-extrabold text-slate-900 text-sm">Briefing & Teams</h4>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Get grouped into 1-to-many teams and select your custom R&D mission blueprint.</p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
-              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">3</div>
-              <h4 className="font-extrabold text-slate-900 text-sm">Ship Code & Badge</h4>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Submit daily timeline updates, receive mentor evaluations, and earn program badges.</p>
-            </div>
-
-            {/* Step 4 */}
-            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
-              <div className="w-8 h-8 rounded-full bg-magenta/10 text-magenta font-black text-xs flex items-center justify-center border border-magenta/20 shadow-sm">4</div>
-              <h4 className="font-extrabold text-slate-900 text-sm">Demo Day Showcases</h4>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Deliver your functional prototype presentations directly to the founding engineering team.</p>
-            </div>
-
-            {/* Step 5 */}
-            <div className="flex-1 bg-white border border-black/5 rounded-3xl p-6 shadow-subtle flex flex-col gap-3 hover:-translate-y-1 transition-all">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] text-white font-black text-xs flex items-center justify-center shadow-sm">5</div>
-              <h4 className="font-extrabold text-slate-900 text-sm">Vault & Progression</h4>
-              <p className="text-slate-500 text-xs font-semibold leading-relaxed">Archive your finished project in the Vault, get your certificate, and start your next mission. Graduation is a mutual decision when you are ready.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. CUBE JOURNEY */}
-      <section className="py-24 bg-[#f6f6f8]" id="journey">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Growth & Progression</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Cube Journey</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">This program is built to support career growth and skill progression. Explore the branching paths of a Cube.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[900px] mx-auto text-left">
-            {/* Step 1: Cube */}
-            <div className="md:col-span-2 bg-white border border-black/5 rounded-3xl p-8 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-              <div className="absolute right-6 top-6 text-slate-100 text-7xl font-black select-none">01</div>
-              <span className="text-magenta text-xs font-extrabold uppercase tracking-widest">Stage 1: The Start</span>
-              <h3 className="text-xl font-extrabold text-slate-900 mt-2">Cube</h3>
-              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                Where every journey begins. You enter the program, learn the fundamentals, dive into R&D missions, build research prototypes, and explore modern engineering practices under mentor guidance.
-              </p>
-            </div>
-
-            {/* Connection Arrow */}
-            <div className="md:col-span-2 flex justify-center -my-4 relative z-10 text-magenta/40">
-              <ArrowDown className="w-8 h-8" />
-            </div>
-
-            {/* Stage 2: The Core split */}
-            <div className="bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] text-white border border-black/5 rounded-3xl p-8 shadow-md relative overflow-hidden group hover:translate-y-[-4px] transition-all">
-              <div className="absolute right-6 top-6 text-white/10 text-7xl font-black select-none">02A</div>
-              <span className="text-white/80 text-xs font-extrabold uppercase tracking-widest">Stage 2: Advanced Path</span>
-              <h3 className="text-xl font-extrabold text-white mt-2">Senior Cube</h3>
-              <p className="text-white/90 text-sm mt-2 leading-relaxed">
-                Demonstrated competence in technical and research domains. Trusted with larger system architectures, team collaboration leadership, and direct R&D demo delivery.
-              </p>
-            </div>
-
-            <div className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm relative overflow-hidden group hover:translate-y-[-4px] transition-all">
-              <div className="absolute right-6 top-6 text-slate-100 text-7xl font-black select-none">02B</div>
-              <span className="text-slate-400 text-xs font-extrabold uppercase tracking-widest">Stage 2: Exit Path</span>
-              <h3 className="text-slate-700 text-xl font-extrabold mt-2">Former Cube</h3>
-              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                Decided to pause or stop the program. Cubes are welcome to exit gracefully while retaining access to the community and their verified badge achievements.
-              </p>
-            </div>
-
-            {/* Connection Arrow splitting */}
-            <div className="md:col-span-2 flex justify-around px-24 -my-4 relative z-10 text-magenta/40">
-              <ArrowDown className="w-8 h-8" />
-              <div className="w-8"></div>
-            </div>
-
-            {/* Stage 3: The Graduation branching */}
-            <div className="bg-gradient-to-br from-[#0c1b33] via-[#090f1d] to-[#04060c] border-2 border-cyan-500/70 shadow-[0_0_20px_rgba(6,182,212,0.15)] text-white rounded-3xl p-8 relative overflow-hidden group hover:translate-y-[-4px] transition-all">
-              <div className="absolute right-6 top-6 text-cyan-500/10 text-7xl font-black select-none">03A</div>
-              <span className="text-cyan-400 text-xs font-extrabold uppercase tracking-widest">Stage 3: Corporate Path</span>
-              <h3 className="text-xl font-extrabold text-white mt-2 flex items-center gap-1.5">
-                <span>Iceberger</span>
-                <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
-              </h3>
-              <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-                Upon graduation, join the full-time team at Iceberg Digital. Transition into consulting, software engineering, or product management roles to continue building the future.
-              </p>
-            </div>
-
-            <div className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm relative overflow-hidden group hover:translate-y-[-4px] transition-all">
-              <div className="absolute right-6 top-6 text-slate-100 text-7xl font-black select-none">03B</div>
-              <span className="text-magenta text-xs font-extrabold uppercase tracking-widest">Stage 3: External Path</span>
-              <h3 className="text-xl font-extrabold text-slate-900 mt-2">Alumni</h3>
-              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                Leave Iceberg and carry the innovative mindset elsewhere. Alumni move on to top-tier global tech giants, start their own VC-backed companies, or pursue advanced research.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. RECOGNITION & ACHIEVEMENTS */}
-      <section className="py-24 bg-white border-b border-black/5">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Recognition & Achievements</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">Earn your place. Earn your badge.</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Achievement is recognised, recorded, and remembered. Every badge marks something you actually did.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-            {badges.map((badge, idx) => (
-              <div key={idx} className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm hover:translate-y-[-8px] hover:shadow-lg transition-all text-center flex flex-col gap-3">
-                <div className="w-[66px] h-[66px] mx-auto rounded-full bg-gradient-to-br from-[#e6007e] via-[#ff4da6] to-[#ff99cc] flex items-center justify-center text-white shadow-md shadow-magenta/30">
-                  <Award className="w-6 h-6" />
-                </div>
-                <h4 className="font-extrabold text-[1.05rem] text-slate-950 mt-2">{badge.title}</h4>
-                <p className="text-slate-500 text-[11px] font-semibold leading-relaxed">{badge.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7.5. THE QUEST SYSTEM */}
-      <section className="py-24 bg-[#0a0508] border-b border-black/10 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-radial-gradient from-magenta/5 to-transparent pointer-events-none" />
-        <div className="max-w-[1200px] mx-auto px-7 relative z-10">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-magenta text-xs uppercase font-extrabold tracking-wider flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Interactive Progression</span>
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black leading-none tracking-tight">Gamified Quests & Level-Ups</h2>
-            <p className="text-slate-400 font-medium leading-relaxed">
-              Embark on structured challenges designed to accelerate your growth. Achieve milestones, track your stats in real-time, and unlock next-tier quests.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Quest 1 */}
-            <div className="bg-[#120a10] border border-magenta/10 rounded-3xl p-7 flex flex-col justify-between gap-5 relative group hover:border-magenta/30 hover:-translate-y-1 transition-all">
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-start">
-                  <span className="inline-flex items-center gap-1 bg-[#1a0f18] text-magenta border border-magenta/20 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                    Common Quest
-                  </span>
-                  <Compass className="w-5 h-5 text-magenta/40" />
-                </div>
-                <h4 className="font-extrabold text-[1.2rem] mt-3">Consistency Master</h4>
-                <p className="text-slate-400 text-xs leading-relaxed mt-1">
-                  Log in to the fellowship portal daily for 7 consecutive days. Form habits, review scorecards, and stay engaged.
-                </p>
-              </div>
-              <div className="border-t border-white/5 pt-4 flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Target: 7 Days</span>
-                <span className="text-[10px] font-black text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded-md">🏆 GrowthMindset</span>
-              </div>
-            </div>
-
-            {/* Quest 2 */}
-            <div className="bg-[#120a10] border border-cyan-500/10 rounded-3xl p-7 flex flex-col justify-between gap-5 relative group hover:border-cyan-500/30 hover:-translate-y-1 transition-all">
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-start">
-                  <span className="inline-flex items-center gap-1 bg-cyan-950/40 text-cyan-400 border border-cyan-500/20 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                    Rare Quest
-                  </span>
-                  <Target className="w-5 h-5 text-cyan-400/40" />
-                </div>
-                <h4 className="font-extrabold text-[1.2rem] mt-3">Reliable Contributor</h4>
-                <p className="text-slate-400 text-xs leading-relaxed mt-1">
-                  Attend at least 90% of meetings and R&D synced sessions you are invited to. Value accountability.
-                </p>
-              </div>
-              <div className="border-t border-white/5 pt-4 flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Target: 90% Attend</span>
-                <span className="text-[10px] font-black text-cyan-400 bg-cyan-400/5 border border-cyan-400/10 px-2 py-0.5 rounded-md">🏆 NoGhosting</span>
-              </div>
-            </div>
-
-            {/* Quest 3 */}
-            <div className="bg-[#080306] border border-white/5 rounded-3xl p-7 flex flex-col justify-between gap-5 relative group hover:border-magenta/20 transition-all opacity-80">
-              <div className="absolute right-6 top-6 flex items-center gap-1 bg-magenta/10 text-magenta border border-magenta/20 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
-                <Lock className="w-3 h-3" />
-                <span>Locked Level</span>
-              </div>
-              <div className="flex flex-col gap-2 mt-4">
-                <div className="flex justify-between items-start">
-                  <span className="inline-flex items-center gap-1 bg-slate-900 text-slate-500 border border-white/5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                    Epic Quest
-                  </span>
-                </div>
-                <h4 className="font-extrabold text-[1.2rem] mt-3 text-white/50">Iceberg Elite Fellow</h4>
-                <p className="text-slate-500 text-xs leading-relaxed mt-1">
-                  Maintain an outstanding feedback score of 4.7+ across 5 completed missions.
-                </p>
-              </div>
-              <div className="border-t border-white/5 pt-4 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase text-slate-600 tracking-wider">Target: 4.7+ Avg</span>
-                  <span className="text-[10px] font-black text-white/40 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">🏆 Crown</span>
-                </div>
-                <p className="text-[9px] font-bold text-magenta mt-1 italic">
-                  * Unlocks only after completing "High Achiever" quest
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8. THE CUBE VAULT */}
-      <section className="py-24 vault-sec-bg text-white relative overflow-hidden">
-        <div className="max-w-[1200px] mx-auto px-7 relative z-10">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#ff99cc] text-xs uppercase font-extrabold tracking-wider">The Archive</span>
-            <h2 className="text-3xl sm:text-5xl font-black leading-none">The Cube Vault</h2>
-            <p className="text-white/60 font-medium leading-relaxed">Every project becomes part of the Cube Vault — a permanent archive of everything Cubes create. Some of it may become future Iceberg products.</p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-            {vaultItems.map((item, idx) => (
-              <div key={idx} className="bg-white/5 border border-white/10 rounded-3xl p-8 hover:translate-y-[-8px] hover:border-magenta hover:bg-[#e6007e]/10 transition-all">
-                <div className="text-[0.7rem] text-[#ff99cc] font-bold tracking-widest">VAULT · {item.num}</div>
-                <h4 className="text-[1.1rem] font-bold mt-2 text-white">{item.title}</h4>
-                <p className="text-[11px] text-white/50 mt-1">Permanently archived.</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 9. THE CUBE WALL / HALL OF FAME */}
-      <section className="py-24 bg-[#f6f6f8]">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Hall of Fame</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Cube Wall</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Every Cube receives a permanent place on the Cube Wall. A living record of the people who built this platform.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-[#111113] border border-white/10 rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.16)] hover:translate-y-[-8px] transition-all flex flex-col gap-5 relative overflow-hidden min-h-[228px]">
-              <div className="absolute -right-10 -top-10 w-36 h-36 rounded-full border border-white/10 opacity-70"></div>
-              <div className="absolute right-4 bottom-2 text-[6.5rem] font-black leading-none text-white/[0.035] select-none">X</div>
-              <div className="relative z-10 flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-[10px] text-[#ff99cc] font-extrabold tracking-[0.22em] uppercase">Classified</div>
-                  <h4 className="mt-3 text-[1.35rem] font-black text-white tracking-tight">#000</h4>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white/60">
-                  Classified
-                </span>
-              </div>
-              <div className="relative z-10 mt-auto">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Classified Cube</p>
-                <p className="mt-2 text-xs font-semibold leading-relaxed text-white/55">The Original Cube. No further information available.</p>
-              </div>
-            </div>
-            {hofCategories.map((item, idx) => (
-              <div key={idx} className="bg-white border border-black/5 rounded-3xl p-8 shadow-sm hover:translate-y-[-8px] hover:shadow-lg transition-all flex flex-col gap-4">
-                <div className="w-[44px] h-[44px] rounded-xl bg-slate-100 flex items-center justify-center text-[#e6007e]">
-                  <Users className="w-5 h-5" />
-                </div>
-                <h4 className="font-extrabold text-[1.08rem] text-slate-900">{item.title}</h4>
-                <p className="text-slate-500 text-xs font-semibold leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 10. THE ICEBERG FELLOWSHIP */}
-      <section className="py-24 bg-gradient-to-b from-[#120009] to-[#0a0006] text-white text-center relative overflow-hidden" id="fellowship">
-        <div className="absolute top-0 left-0 right-0 h-[600px] bg-gradient-radial from-[#e6007e]/30 to-transparent blur-3xl"></div>
-        <div className="max-w-[1200px] mx-auto px-7 relative z-10 flex flex-col gap-6">
-          <div className="crest-spin w-[120px] h-[120px] mx-auto rounded-[30px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] grid place-items-center text-white shadow-[0_0_80px_rgba(230,0,126,0.6)]">
-            <Award className="w-[56px] h-[56px]" />
-          </div>
-          <span className="text-[#ff99cc] text-xs uppercase font-extrabold tracking-widest mt-4">The Highest Recognition</span>
-          <h2 className="text-3xl sm:text-6xl font-black max-w-[760px] mx-auto">The Iceberg Fellowship</h2>
-          <p className="text-white/60 font-semibold text-lg max-w-[540px] mx-auto">Reserved for exceptional contributors. Few people achieve it.</p>
-          <p className="text-white/60 font-semibold text-lg max-w-[540px] mx-auto -mt-3">Those who do become lifelong members of our community.</p>
-          
-          <div className="flex gap-3 justify-center mt-6 flex-wrap">
-            <span className="text-xs px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white/90">Lifelong membership</span>
-            <span className="text-xs px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white/90">Direct mentorship</span>
-            <span className="text-xs px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white/90">A permanent seat at the table</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 11. THE CUBE NETWORK */}
-      <section className="py-24 bg-white">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[680px] mx-auto text-center mb-16 flex flex-col gap-3">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">The Network</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">The Cube Network</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Once a Cube, always a Cube. The network never closes — it only grows.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-[50px] items-center">
-            <div className="flex flex-col gap-4">
-              {['Current Cubes', 'Former Cubes', 'Mentors', 'Iceberg Team Members', 'Future Employers', 'Future Founders'].map((node, i) => (
-                <div key={i} className="flex items-center gap-4 bg-white border border-black/5 rounded-3xl p-5 shadow-sm hover:translate-x-2 hover:shadow-lg transition-all font-bold text-slate-800">
-                  <span className="w-3 h-3 rounded-full bg-gradient-to-tr from-[#e6007e] to-[#ff99cc] shadow-md shadow-magenta/40"></span>
-                  <span>{node}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* SVG Network Visualizer */}
-            <div className="aspect-square max-w-[460px] mx-auto w-full relative">
-              <svg viewBox="0 0 400 400" className="w-full h-full">
+          <div className="relative mx-auto aspect-square w-full max-w-[460px]">
+            {reducedMotion ? (
+              <svg viewBox="0 0 400 400" className="h-full w-full">
                 <defs>
                   <radialGradient id="netgrad">
                     <stop offset="0%" stopColor="#ff4da6" />
@@ -995,169 +1303,115 @@ export const Welcome: React.FC = () => {
                 </defs>
                 {pts.map((p, i) => (
                   <React.Fragment key={i}>
-                    <line x1={p[0]} y1={p[1]} x2={cx} y2={cy} className="stroke-[#e6007e] stroke-[1.2] opacity-25" />
-                    <line x1={p[0]} y1={p[1]} x2={pts[(i + 1) % N][0]} y2={pts[(i + 1) % N][1]} className="stroke-[#e6007e] stroke-[1.2] opacity-25" />
+                    <line x1={p[0]} y1={p[1]} x2={cx} y2={cy} className="stroke-[#e6007e] stroke-[1.2] opacity-30" />
+                    <line x1={p[0]} y1={p[1]} x2={pts[(i + 1) % N][0]} y2={pts[(i + 1) % N][1]} className="stroke-[#e6007e] stroke-[1.2] opacity-30" />
                   </React.Fragment>
                 ))}
                 <circle cx={cx} cy={cy} r={26} fill="url(#netgrad)" />
                 <text x={cx} y={cy + 5} textAnchor="middle" fill="#fff" fontSize="13" fontWeight="700">X</text>
                 {pts.map((p, i) => (
-                  <circle 
-                    key={i} 
-                    cx={p[0]} 
-                    cy={p[1]} 
-                    r={13} 
-                    className="fill-white stroke-[#e6007e] stroke-[1.6]" 
-                    style={{ animation: `floatyAnim ${5 + i * 0.4}s ease-in-out ${i * 0.3}s infinite` }}
-                  />
+                  <circle key={i} cx={p[0]} cy={p[1]} r={13} className="fill-white stroke-[#e6007e] stroke-[1.6]" />
                 ))}
               </svg>
-            </div>
+            ) : (
+              <InViewMount className="absolute inset-0">
+                <Suspense fallback={null}>
+                  <NetworkOrb />
+                </Suspense>
+              </InViewMount>
+            )}
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* 12. VISION / BRAND */}
-      <section className="py-24 bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] text-white text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-radial-gradient from-white/25 to-transparent blur-lg"></div>
-        <div className="max-w-[900px] mx-auto px-7 relative z-10 flex flex-col gap-6">
-          <h2 className="text-3xl sm:text-6xl font-black leading-tight">We're not building interns.<br />We're building innovators.</h2>
-          <p className="text-white/92 max-w-[620px] mx-auto text-lg leading-relaxed mt-4">
-            Some Cubes will become engineers. Some will become founders. Some will become leaders. Some may eventually join Iceberg Digital. <strong className="font-bold text-white">Every Cube will leave with experience, confidence, skills, and proof that they built something real.</strong>
+      {/* ======================= SIGNAL · VISION ======================= */}
+      <section className="os-hairline os-grid-bg relative overflow-hidden py-32 text-center">
+        <div className="os-aurora pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[1000px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle,rgba(230,0,126,0.3),rgba(0,240,255,0.12),transparent_70%)] blur-3xl" />
+        <div className="os-stage relative z-10 mx-auto flex max-w-[900px] flex-col gap-6 px-6">
+          <SectionTag index="// signal" label="Broadcast" />
+          <h2 data-fly="deep" className="grad-text text-3xl font-black leading-tight sm:text-6xl">
+            We're not building interns.
+            <br />
+            We're building innovators.
+          </h2>
+          <p data-fly="floor" className="mx-auto mt-2 max-w-[620px] text-lg leading-relaxed text-slate-300">
+            Some Cubes will become engineers. Some will become founders. Some will become leaders. Some may eventually join Iceberg Digital.{' '}
+            <strong className="font-bold text-white">Every Cube will leave with experience, confidence, skills, and proof that they built something real.</strong>
           </p>
         </div>
       </section>
 
-      {/* FOUNDER QUOTE */}
-      <section className="py-24 bg-white">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="max-w-[880px] mx-auto text-center flex flex-col gap-6">
-            <span className="text-[#e6007e] text-7xl font-extrabold opacity-20 block h-10 select-none">"</span>
-            <blockquote className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-relaxed italic">
-              The agencies that survive the next decade won't be the ones that hired the most people. They'll be the ones that built the smartest system — and freed their people to do the one thing intelligence cannot replace.
-            </blockquote>
-            <div className="text-slate-500 font-semibold mt-4 text-sm uppercase tracking-wide">
-              <strong className="text-[#e6007e]">Mark Burgess</strong> · CEO, Iceberg Digital
-            </div>
+      {/* ======================= TRANSMISSION · QUOTE ======================= */}
+      <Section>
+        <div className="mx-auto flex max-w-[880px] flex-col items-center gap-6 text-center">
+          <SectionTag index="// transmission" label="Founder" />
+          <span className="os-mono select-none text-7xl font-black text-[#e6007e]/25">"</span>
+          <blockquote data-fly="floor" className="text-2xl font-bold italic leading-relaxed tracking-tight text-slate-100 sm:text-3xl">
+            The agencies that survive the next decade won't be the ones that hired the most people. They'll be the ones that built the smartest system — and freed their people to do the one thing intelligence cannot replace.
+          </blockquote>
+          <div className="os-mono mt-4 text-sm uppercase tracking-wide text-slate-500">
+            <strong className="text-[#ff4da6]">Mark Burgess</strong> · CEO, Iceberg Digital
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* TESTIMONIALS INFINITE MARQUEE */}
+      {/* ======================= 11 · TESTIMONIALS ======================= */}
       {testimonials.length > 0 && (
-        <section className="py-24 bg-[#f6f6f8] border-t border-black/5 overflow-hidden font-sans" id="testimonials">
-          <div className="max-w-[1200px] mx-auto px-7 mb-12">
-            <div className="text-center max-w-[600px] mx-auto flex flex-col gap-3">
-              <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Fellowship Success</span>
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">What Our Cubes Say</h2>
-              <p className="text-slate-500 text-sm leading-relaxed">Hear from developers who transformed their research prototypes into working systems.</p>
+        <section id="testimonials" className="os-hairline os-grid-bg relative overflow-hidden py-28">
+          <div className="os-stage mx-auto mb-12 max-w-[1180px] px-6">
+            <div data-fly="floor" className="mx-auto flex max-w-[600px] flex-col items-center gap-3 text-center">
+              <SectionTag index="// 11" label="Fellowship Success" />
+              <h2 className="text-3xl font-black tracking-tight text-white sm:text-5xl">What Our Cubes Say</h2>
+              <p className="text-sm leading-relaxed text-slate-400">
+                Hear from developers who transformed their research prototypes into working systems.
+              </p>
             </div>
           </div>
 
-          <div className="marquee-mask flex flex-col gap-6 w-full py-4">
-            {/* Row 1: Scrolling Left */}
+          <div className="marquee-mask flex w-full flex-col gap-6 py-4">
             <div className="animate-marquee-left">
-              {[...testimonials, ...testimonials].map((t: any, idx: number) => (
-                <div
-                  key={`${t.id}-r1-${idx}`}
-                  onClick={() => setSelectedTestimonial(t)}
-                  title="Click to read full testimonial"
-                  className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 hover:border-[#e6007e]/30 cursor-pointer rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group hover:-translate-y-0.5"
-                >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
-                  <div className="flex flex-col gap-3">
-                    <Quote className="w-6 h-6 text-[#e6007e]/20" />
-                    <p className="text-slate-700 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
-                      "{t.content}"
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 pt-3 border-t border-slate-50">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-xs flex items-center justify-center border border-[#e6007e]/20 shadow-sm shrink-0">
-                      {t.cube?.user?.name ? t.cube.user.name[0] : 'C'}
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-[11px] text-slate-900 leading-tight">
-                        {t.cube?.user?.name || 'Anonymous Cube'}
-                      </h4>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
-                        Cube #{t.cube?.cube_number || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {[...testimonials, ...testimonials].map((t: any, idx: number) => testimonialCard(t, `${t.id}-r1-${idx}`))}
             </div>
-
-            {/* Row 2: Scrolling Right (only if we have more than 2 testimonials) */}
             {testimonials.length > 2 && (
               <div className="animate-marquee-right">
-                {[...testimonials.slice(1), ...testimonials, ...testimonials.slice(0, 1)].map((t: any, idx: number) => (
-                  <div
-                    key={`${t.id}-r2-${idx}`}
-                    onClick={() => setSelectedTestimonial(t)}
-                    title="Click to read full testimonial"
-                    className="w-[360px] sm:w-[400px] shrink-0 bg-white border border-black/5 hover:border-[#e6007e]/30 cursor-pointer rounded-3xl p-6 mx-3 shadow-subtle hover:shadow-premium transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden group hover:-translate-y-0.5"
-                  >
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#e6007e]/5 to-transparent rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
-                    <div className="flex flex-col gap-3">
-                      <Quote className="w-6 h-6 text-[#e6007e]/20" />
-                      <p className="text-slate-700 text-xs sm:text-sm font-semibold leading-relaxed italic relative z-10 line-clamp-4">
-                        "{t.content}"
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 pt-3 border-t border-slate-50">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-xs flex items-center justify-center border border-[#e6007e]/20 shadow-sm shrink-0">
-                        {t.cube?.user?.name ? t.cube.user.name[0] : 'C'}
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-[11px] text-slate-900 leading-tight">
-                          {t.cube?.user?.name || 'Anonymous Cube'}
-                        </h4>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
-                          Cube #{t.cube?.cube_number || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {[...testimonials.slice(1), ...testimonials, ...testimonials.slice(0, 1)].map((t: any, idx: number) =>
+                  testimonialCard(t, `${t.id}-r2-${idx}`),
+                )}
               </div>
             )}
           </div>
 
-          {/* Testimonial Zoom Modal */}
           {selectedTestimonial && (
-            <div 
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+            <div
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
               onClick={() => setSelectedTestimonial(null)}
             >
-              <div 
-                className="bg-white border border-black/5 rounded-3xl p-8 max-w-[500px] w-full shadow-premium relative flex flex-col gap-6"
-                onClick={e => e.stopPropagation()}
+              <div
+                className="os-panel relative flex w-full max-w-[500px] flex-col gap-6 rounded-3xl p-8"
+                onClick={(e) => e.stopPropagation()}
               >
                 <button
                   type="button"
                   onClick={() => setSelectedTestimonial(null)}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors"
+                  className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-colors hover:text-white"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
-
                 <div className="flex flex-col gap-4">
-                  <Quote className="w-10 h-10 text-[#e6007e]/20" />
-                  <p className="text-slate-800 text-sm sm:text-base font-semibold leading-relaxed italic">
+                  <Quote className="h-10 w-10 text-[#e6007e]/40" />
+                  <p className="text-sm font-medium italic leading-relaxed text-slate-200 sm:text-base">
                     "{selectedTestimonial.content}"
                   </p>
                 </div>
-
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#e6007e]/10 to-[#ff4da6]/10 text-[#e6007e] font-extrabold text-sm flex items-center justify-center border border-[#e6007e]/20 shadow-sm shrink-0">
+                <div className="flex items-center gap-3 border-t border-white/8 pt-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e6007e]/30 bg-[#e6007e]/10 text-sm font-extrabold text-[#ff99cc]">
                     {selectedTestimonial.cube?.user?.name ? selectedTestimonial.cube.user.name[0] : 'C'}
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-900 leading-tight">
+                    <h4 className="text-sm font-extrabold leading-tight text-white">
                       {selectedTestimonial.cube?.user?.name || 'Anonymous Cube'}
                     </h4>
-                    <p className="text-xs text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
+                    <p className="os-mono mt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
                       Cube #{selectedTestimonial.cube?.cube_number || 'N/A'}
                     </p>
                   </div>
@@ -1168,197 +1422,129 @@ export const Welcome: React.FC = () => {
         </section>
       )}
 
-      {/* 13. APPLICATION CTA */}
-      <section className="py-24 bg-gradient-to-b from-white to-[#f6f6f8]" id="apply">
-        <div className="max-w-[1200px] mx-auto px-7 grid grid-cols-1 md:grid-cols-2 gap-[60px] items-start">
-          <div className="flex flex-col gap-6">
-            <span className="text-[#e6007e] text-xs uppercase font-extrabold tracking-wider">Applications Open</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 leading-none">Ready to become a Cube?</h2>
-            <p className="text-slate-500 text-lg leading-relaxed">This isn't a placement. It's the start of something you'll carry for the rest of your career.</p>
-            
-            <div className="bg-[#111111] text-white p-6 rounded-3xl relative overflow-hidden flex flex-col gap-2 mt-4 shadow-xl">
-              <span className="text-xs uppercase font-bold text-magenta-3 tracking-widest block mb-2">Active Cohorts</span>
-              <p className="text-sm text-white/80 leading-relaxed">
+      {/* ======================= EXEC · APPLY ======================= */}
+      <Section id="apply">
+        <div className="grid grid-cols-1 items-start gap-[60px] md:grid-cols-2">
+          <div data-fly="left" className="flex flex-col gap-6">
+            <SectionTag index="// exec" label="Applications Open" />
+            <h2 className="text-3xl font-black leading-tight text-white sm:text-5xl">
+              Ready to become a <span className="grad-text">Cube</span>?
+            </h2>
+            <p className="text-lg leading-relaxed text-slate-400">
+              This isn't a placement. It's the start of something you'll carry for the rest of your career.
+            </p>
+            <div className="os-panel os-bracket relative flex flex-col gap-2 overflow-hidden rounded-3xl p-6">
+              <span className="os-mono mb-2 block text-xs font-bold uppercase tracking-widest text-[#ff99cc]">Active Cohorts</span>
+              <p className="text-sm leading-relaxed text-slate-400">
                 Although the inaugural Founding Cube cohort is closed, new active cohorts join the portal regularly to collaborate on production systems.
               </p>
             </div>
           </div>
 
-          <div className="w-full bg-white border border-black/5 rounded-[2rem] p-8 sm:p-10 shadow-xl">
+          <div data-fly="right" className="os-panel os-panel-hover w-full rounded-[2rem] p-8 sm:p-10">
             {formSuccess ? (
-              <div className="text-center py-10 flex flex-col items-center gap-4">
-                <div className="w-[70px] h-[70px] rounded-full form-success-icon flex items-center justify-center text-white shadow-lg shadow-magenta/40">
-                  <Check className="w-8 h-8 stroke-[2.4]" />
+              <div className="flex flex-col items-center gap-4 py-10 text-center">
+                <div className="flex h-[70px] w-[70px] items-center justify-center rounded-full bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] text-white shadow-[0_0_40px_rgba(230,0,126,0.5)]">
+                  <Check className="h-8 w-8 stroke-[2.4]" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900">Application received.</h3>
-                <p className="text-slate-500 font-semibold max-w-[340px] leading-relaxed mt-2">
+                <h3 className="text-2xl font-black text-white">Application received.</h3>
+                <p className="mt-2 max-w-[340px] font-medium leading-relaxed text-slate-400">
                   Your application has been logged. We will be in touch regarding upcoming cohort selections — keep building in the meantime!
                 </p>
               </div>
             ) : (
               <form onSubmit={handleFormSubmit} className="flex flex-col gap-5">
                 {formError && (
-                  <div className="flex items-center gap-2.5 bg-red-50 text-red-600 border border-red-100 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">
+                    <ShieldAlert className="h-4 w-4 flex-shrink-0" />
                     <span>{formError}</span>
                   </div>
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="f-name" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Name</label>
-                  <input 
-                    id="f-name" 
-                    type="text" 
-                    required 
-                    placeholder="Your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={formSubmitting}
-                    className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                  />
+                  <label htmlFor="f-name" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Name</label>
+                  <input id="f-name" type="text" required placeholder="Your full name" value={name} onChange={(e) => setName(e.target.value)} disabled={formSubmitting} className="os-input" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="f-email" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Email Address</label>
-                  <input 
-                    id="f-email" 
-                    type="email" 
-                    required 
-                    placeholder="you@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={formSubmitting}
-                    className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                  />
+                  <label htmlFor="f-email" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Email Address</label>
+                  <input id="f-email" type="email" required placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={formSubmitting} className="os-input" />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="f-uni" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">School / University</label>
-                    <input 
-                      id="f-uni" 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Stanford University or Science High School"
-                      value={university}
-                      onChange={(e) => setUniversity(e.target.value)}
-                      disabled={formSubmitting}
-                      className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                    />
+                    <label htmlFor="f-uni" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">School / University</label>
+                    <input id="f-uni" type="text" required placeholder="e.g. Stanford University or Science High School" value={university} onChange={(e) => setUniversity(e.target.value)} disabled={formSubmitting} className="os-input" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="f-deg" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Major / Grade</label>
-                    <input 
-                      id="f-deg" 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Computer Science or 11th Grade"
-                      value={degree}
-                      onChange={(e) => setDegree(e.target.value)}
-                      disabled={formSubmitting}
-                      className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                    />
+                    <label htmlFor="f-deg" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Major / Grade</label>
+                    <input id="f-deg" type="text" required placeholder="e.g. Computer Science or 11th Grade" value={degree} onChange={(e) => setDegree(e.target.value)} disabled={formSubmitting} className="os-input" />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="f-year" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Year / Grade Level</label>
-                  <input 
-                    id="f-year" 
-                    type="text" 
-                    required 
-                    placeholder="e.g. 11th Grade, Sophomore, Final Year"
-                    value={yearOfStudy}
-                    onChange={(e) => setYearOfStudy(e.target.value)}
-                    disabled={formSubmitting}
-                    className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                  />
+                  <label htmlFor="f-year" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Year / Grade Level</label>
+                  <input id="f-year" type="text" required placeholder="e.g. 11th Grade, Sophomore, Final Year" value={yearOfStudy} onChange={(e) => setYearOfStudy(e.target.value)} disabled={formSubmitting} className="os-input" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="f-why" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Why do you want to become a Cube?</label>
-                  <textarea 
-                    id="f-why" 
-                    required 
-                    placeholder="Tell us what you'd build given the chance…"
-                    value={whyJoin}
-                    onChange={(e) => setWhyJoin(e.target.value)}
-                    disabled={formSubmitting}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all resize-y min-h-[110px]"
-                  />
+                  <label htmlFor="f-why" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Why do you want to become a Cube?</label>
+                  <textarea id="f-why" required placeholder="Tell us what you'd build given the chance…" value={whyJoin} onChange={(e) => setWhyJoin(e.target.value)} disabled={formSubmitting} rows={4} className="os-input min-h-[110px] resize-y" />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="f-li" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">LinkedIn</label>
-                    <input 
-                      id="f-li" 
-                      type="url" 
-                      placeholder="linkedin.com/in/…"
-                      value={linkedinUrl}
-                      onChange={(e) => setLinkedinUrl(e.target.value)}
-                      disabled={formSubmitting}
-                      className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                    />
+                    <label htmlFor="f-li" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">LinkedIn</label>
+                    <input id="f-li" type="url" placeholder="linkedin.com/in/…" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} disabled={formSubmitting} className="os-input" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="f-gh" className="text-xs font-bold text-slate-600 uppercase tracking-wider pl-1">Portfolio / GitHub</label>
-                    <input 
-                      id="f-gh" 
-                      type="url" 
-                      placeholder="github.com/…"
-                      value={githubUrl}
-                      onChange={(e) => setGithubUrl(e.target.value)}
-                      disabled={formSubmitting}
-                      className="w-full px-4 py-3 border border-black/10 rounded-2xl bg-[#f6f6f8] focus:border-[#e6007e] focus:bg-white focus:shadow-md focus:shadow-magenta/5 outline-none font-semibold text-sm transition-all"
-                    />
+                    <label htmlFor="f-gh" className="os-mono pl-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Portfolio / GitHub</label>
+                    <input id="f-gh" type="url" placeholder="github.com/…" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} disabled={formSubmitting} className="os-input" />
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={formSubmitting}
-                  className="w-full py-4 bg-[#e6007e] text-white font-bold text-sm tracking-wide rounded-2xl hover:bg-[#ff4da6] active:scale-[0.98] transition-all shadow-md shadow-magenta/20 flex items-center justify-center gap-2 mt-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="glow-magenta mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e6007e] py-4 text-sm font-bold uppercase tracking-wide text-white transition-all hover:bg-[#ff4da6] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-75"
                 >
                   {formSubmitting ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   ) : (
                     'Submit Application →'
                   )}
                 </button>
-                <p className="text-slate-400 text-[0.78rem] text-center mt-2 font-semibold">
+                <p className="os-mono mt-2 text-center text-[0.72rem] font-medium text-slate-500">
                   We review every application personally. Fellowship cohort places are limited.
                 </p>
               </form>
             )}
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* FOOTER */}
-      <footer className="bg-[#111111] text-white/60 py-16 sm:py-20 border-t border-white/5 overflow-hidden">
-        <div className="max-w-[1200px] mx-auto px-7">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,520px)_minmax(260px,1fr)] items-center gap-8 lg:gap-12 pb-10 border-b border-white/10">
+      {/* ======================= FOOTER ======================= */}
+      <footer className="os-hairline os-grid-bg relative overflow-hidden border-t border-white/8 py-16 sm:py-20">
+        <div className="mx-auto max-w-[1180px] px-6">
+          <div className="grid grid-cols-1 items-center gap-8 border-b border-white/10 pb-10 lg:grid-cols-[minmax(0,520px)_minmax(260px,1fr)] lg:gap-12">
             <div className="flex flex-col gap-4">
-              <a href="#top" className="brand-logo-crop hover:opacity-95 transition-opacity" aria-label="Iceberg X home">
-                <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg X Logo" />
+              <a href="#top" className="w-fit overflow-hidden rounded-[22px] border border-white/10 bg-[#0d0b12]" aria-label="Iceberg X home">
+                <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg X Logo" className="block h-[130px] w-[min(480px,100%)] object-cover" />
               </a>
-              <p className="text-[11px] text-white/45 font-semibold">© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
+              <p className="os-mono text-[11px] font-medium text-slate-500">© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
             </div>
-            <div className="flex flex-wrap lg:flex-col gap-4 lg:gap-5 text-sm font-bold text-white/60 lg:justify-self-end lg:text-right">
-              <a href="#what" className="hover:text-white transition-colors">The Programme</a>
-              <a href="#cube" className="hover:text-white transition-colors">The Cube</a>
-              <a href="#journey" className="hover:text-white transition-colors">Journey</a>
-              <a href="#fellowship" className="hover:text-white transition-colors">Fellowship</a>
-              <a href="#apply" className="hover:text-white transition-colors">Apply</a>
+            <div className="os-mono flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-wider text-slate-400 lg:flex-col lg:gap-4 lg:justify-self-end lg:text-right">
+              <a href="#what" className="transition-colors hover:text-[#ff4da6]">The Programme</a>
+              <a href="#work" className="transition-colors hover:text-[#ff4da6]">Missions</a>
+              <a href="#pipeline" className="transition-colors hover:text-[#ff4da6]">Pipeline</a>
+              <a href="#journey" className="transition-colors hover:text-[#ff4da6]">Journey</a>
+              <a href="#fellowship" className="transition-colors hover:text-[#ff4da6]">Fellowship</a>
+              <a href="#apply" className="transition-colors hover:text-[#ff4da6]">Apply</a>
             </div>
           </div>
-          <div className="flex flex-wrap justify-end items-center text-xs mt-8 gap-4 text-white/50">
-            <div className="flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-white/70">
-              <span className="text-[#e6007e]">▶</span>
-              <span>Building the Next Generation of Innovators</span>
-            </div>
+          <div className="os-mono mt-8 flex flex-wrap items-center justify-end gap-4 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <span className="text-[#e6007e]">▶</span>
+            <span>Building the Next Generation of Innovators</span>
           </div>
         </div>
       </footer>
