@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X, ExternalLink } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X, ExternalLink, Clock, Mail, XCircle } from 'lucide-react';
 import { BadgeDisc, RarityPill } from '../components/BadgeMedal';
 import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 import ReactMarkdown from 'react-markdown';
@@ -86,6 +86,8 @@ export const Profile: React.FC = () => {
   const [editSkills, setEditSkills] = useState('');
   const [editInterests, setEditInterests] = useState('');
   const [editInternshipStatus, setEditInternshipStatus] = useState('');
+  const [editNdaStatus, setEditNdaStatus] = useState<'not_sent' | 'pending' | 'signed' | 'not_signed'>('not_sent');
+  const [ndaUpdating, setNdaUpdating] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [parsedAiSummary, setParsedAiSummary] = useState<any>(null);
 
@@ -130,6 +132,7 @@ export const Profile: React.FC = () => {
       setEditSkills(res.profile.skills?.join(', ') || '');
       setEditInterests(res.profile.interests?.join(', ') || '');
       setEditInternshipStatus(res.profile.internship_status || '');
+      setEditNdaStatus(res.profile.nda_status || (res.profile.nda_signed ? 'signed' : 'not_sent'));
 
       // Seed admin fields
       setAdminLevel(res.profile.current_level);
@@ -193,12 +196,19 @@ export const Profile: React.FC = () => {
         payload.email = editEmail;
       }
 
+      if (user?.role === 'ADMIN' || user?.role === 'MENTOR') {
+        payload.nda_status = editNdaStatus;
+        payload.nda_signed = editNdaStatus === 'signed';
+      }
+
       const updated = await api.put(`/cubes/${id}`, payload);
       setData((prev: any) => ({
         ...prev,
         profile: {
           ...prev.profile,
           ...updated,
+          nda_status: updated.nda_status ?? editNdaStatus,
+          nda_signed: updated.nda_signed ?? (editNdaStatus === 'signed'),
           cube_number: user?.role === 'ADMIN' ? editCubeNumber : prev.profile.cube_number,
           user: { 
             ...prev.profile.user, 
@@ -212,6 +222,30 @@ export const Profile: React.FC = () => {
       alert(err.message || 'Failed to update profile');
     } finally {
       setEditSubmitting(false);
+    }
+  };
+
+  const handleUpdateNdaStatus = async (newStatus: 'not_sent' | 'pending' | 'signed' | 'not_signed') => {
+    if (!data?.profile) return;
+    setNdaUpdating(true);
+    try {
+      const res = await api.patch(`/cubes/${data.profile.id}/nda`, { nda_status: newStatus });
+      const updatedStatus = res.cube?.nda_status ?? newStatus;
+      const isSigned = updatedStatus === 'signed';
+      setData((prev: any) => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          nda_status: updatedStatus,
+          nda_signed: isSigned,
+          nda_signed_at: isSigned ? (res.cube?.nda_signed_at || new Date().toISOString()) : null
+        }
+      }));
+      setEditNdaStatus(updatedStatus);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update NDA status');
+    } finally {
+      setNdaUpdating(false);
     }
   };
 
@@ -632,6 +666,73 @@ export const Profile: React.FC = () => {
             {profile.assigned_mentor && (
               <p><span className="font-bold text-gray-700">Mentor:</span> {profile.assigned_mentor.name}</p>
             )}
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100/60">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-gray-700 text-xs">NDA Agreement:</span>
+                {(() => {
+                  const status = profile.nda_status || (profile.nda_signed ? 'signed' : 'not_sent');
+                  if (status === 'signed') {
+                    return (
+                      <span
+                        title={`Signed${profile.nda_signed_at ? ' · ' + new Date(profile.nda_signed_at).toLocaleDateString('en-GB') : ''}`}
+                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"
+                      >
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>Signed {profile.nda_signed_at && `· ${new Date(profile.nda_signed_at).toLocaleDateString('en-GB')}`}</span>
+                      </span>
+                    );
+                  }
+                  if (status === 'pending') {
+                    return (
+                      <span
+                        title="Sent, pending signature"
+                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"
+                      >
+                        <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span>Pending</span>
+                      </span>
+                    );
+                  }
+                  if (status === 'not_signed') {
+                    return (
+                      <span
+                        title="Declined / Not signed"
+                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full"
+                      >
+                        <XCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                        <span>Not Signed</span>
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      title="Not sent yet"
+                      className="inline-flex items-center gap-1 text-[10px] font-extrabold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full"
+                    >
+                      <Mail className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span>Not Sent</span>
+                    </span>
+                  );
+                })()}
+              </div>
+
+              {isMentorOrAdmin && (
+                <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-dashed border-gray-100">
+                  <span className="text-[10.5px] font-bold text-gray-400">Change NDA:</span>
+                  <select
+                    value={profile.nda_status || (profile.nda_signed ? 'signed' : 'not_sent')}
+                    onChange={(e) => handleUpdateNdaStatus(e.target.value as any)}
+                    disabled={ndaUpdating}
+                    className="text-[11px] font-bold py-1 px-2 bg-gray-50 hover:bg-gray-100/60 border border-gray-200 rounded-lg text-gray-700 outline-none hover:border-magenta cursor-pointer disabled:opacity-50 transition-colors"
+                  >
+                    <option value="not_sent">✉ Not Sent</option>
+                    <option value="pending">⏳ Pending</option>
+                    <option value="signed">✓ Signed</option>
+                    <option value="not_signed">✕ Not Signed</option>
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 border-t border-gray-50 pt-4">
@@ -801,6 +902,24 @@ export const Profile: React.FC = () => {
               <label className="text-[10px] font-bold text-gray-500 uppercase">Interests (comma-separated)</label>
               <textarea value={editInterests} onChange={e => setEditInterests(e.target.value)} rows={2} className="p-2 border border-gray-100 bg-gray-50 rounded-lg text-xs outline-none focus:border-magenta font-semibold resize-none" />
             </div>
+
+            {isMentorOrAdmin && (
+              <div className="flex flex-col gap-1.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">
+                  Non-Disclosure Agreement (NDA) Status
+                </label>
+                <select
+                  value={editNdaStatus}
+                  onChange={e => setEditNdaStatus(e.target.value as any)}
+                  className="p-2 border border-gray-200 bg-white rounded-lg text-xs font-bold text-gray-800 outline-none focus:border-magenta"
+                >
+                  <option value="not_sent">✉ Not Sent (Henüz gönderilmedi)</option>
+                  <option value="pending">⏳ Pending Signature (Gönderildi, imza bekleniyor)</option>
+                  <option value="signed">✓ Signed (İmzalandı)</option>
+                  <option value="not_signed">✕ Not Signed (İmzalamadı / Reddedildi)</option>
+                </select>
+              </div>
+            )}
 
             <div className="flex gap-2 justify-end mt-2">
               <button type="button" onClick={() => setIsEditing(false)} className="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-500 font-bold text-xs rounded-lg hover:bg-gray-50">

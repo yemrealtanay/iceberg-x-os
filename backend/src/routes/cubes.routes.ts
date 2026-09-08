@@ -8,7 +8,7 @@ import path from 'path';
 import prisma from '../services/prisma';
 import { requireAuth, isAdmin, isMentorOrAdmin, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { IN_PROGRAMME_CUBE_LEVELS, DIRECTORY_HIDDEN_LEVELS } from '../config/constants';
-import { badRequest, conflict, sendError, parseCubeNumber } from '../utils/http';
+import { badRequest, conflict, notFound, sendError, parseCubeNumber } from '../utils/http';
 import { createSingleNotification } from '../services/notification.service';
 import { Role, CubeLevel } from '@prisma/client';
 import { recalculateAllQuestsForCube } from '../services/quest.service';
@@ -18,7 +18,7 @@ const router = Router();
 // Get list of all Cubes (Directory)
 router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { active, level, includeAlumni } = req.query;
+    const { active, level, includeAlumni, nda_signed, nda_status } = req.query;
     const whereClause: any = {};
 
     if (active === 'true') {
@@ -32,6 +32,14 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
       // Directory default: everyone except Alumni, who are shown on request.
       // Icebergers stay visible — they are the example of where this leads.
       whereClause.current_level = { notIn: DIRECTORY_HIDDEN_LEVELS };
+    }
+
+    if (nda_status && typeof nda_status === 'string' && nda_status !== 'all') {
+      whereClause.nda_status = nda_status;
+    } else if (nda_signed === 'true') {
+      whereClause.nda_signed = true;
+    } else if (nda_signed === 'false') {
+      whereClause.nda_signed = false;
     }
 
     // Phone numbers are staff-only; the directory does not display them.
@@ -58,6 +66,9 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
         is_founding_cube: true,
         avatar_url: true,
         assigned_mentor_id: true,
+        nda_signed: true,
+        nda_signed_at: true,
+        nda_status: true,
         created_at: true,
         updated_at: true,
         user: {
@@ -225,7 +236,9 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
       name, // Allow changing name on User table
       internship_status,
       cube_number,
-      email
+      email,
+      nda_signed,
+      nda_status
     } = req.body;
 
     const profile = await prisma.cubeProfile.findUnique({
@@ -291,20 +304,34 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
       }
 
       // 2. Update CubeProfile
+      const updateData: any = {
+        university,
+        department,
+        github_url,
+        gitlab_url,
+        linkedin_url,
+        slack_handle,
+        phone_number,
+        skills: skills ? skills : undefined,
+        interests: interests ? interests : undefined,
+        internship_status: internship_status !== undefined ? internship_status : undefined
+      };
+
+      if (req.user?.role === 'ADMIN' || req.user?.role === 'MENTOR') {
+        if (nda_status !== undefined) {
+          updateData.nda_status = nda_status;
+          updateData.nda_signed = nda_status === 'signed';
+          updateData.nda_signed_at = nda_status === 'signed' ? (profile.nda_signed_at || new Date()) : null;
+        } else if (nda_signed !== undefined) {
+          updateData.nda_signed = Boolean(nda_signed);
+          updateData.nda_status = nda_signed ? 'signed' : 'pending';
+          updateData.nda_signed_at = nda_signed ? (profile.nda_signed_at || new Date()) : null;
+        }
+      }
+
       const p = await tx.cubeProfile.update({
         where: { id },
-        data: {
-          university,
-          department,
-          github_url,
-          gitlab_url,
-          linkedin_url,
-          slack_handle,
-          phone_number,
-          skills: skills ? skills : undefined,
-          interests: interests ? interests : undefined,
-          internship_status: internship_status !== undefined ? internship_status : undefined
-        }
+        data: updateData
       });
 
       if (name) {
@@ -395,6 +422,61 @@ router.post('/cubes/:id/avatar', requireAuth, async (req: AuthenticatedRequest, 
     return res.json({ avatar_url: updatedProfile.avatar_url });
   } catch (error: any) {
     console.error('Error uploading avatar:', error);
+    return sendError(res, error);
+  }
+});
+
+// PATCH toggle or update NDA (Gizlilik Sözleşmesi) status for a Cube (Mentor/Admin only)
+router.patch('/cubes/:id/nda', requireAuth, isMentorOrAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { status, nda_status, nda_signed } = req.body;
+
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id },
+      select: { id: true, cube_number: true, nda_signed: true, nda_signed_at: true, nda_status: true }
+    });
+
+    if (!profile) {
+      throw notFound('Cube profile not found');
+    }
+
+    let targetStatus: string;
+    if (nda_status && typeof nda_status === 'string') {
+      targetStatus = nda_status;
+    } else if (status && typeof status === 'string') {
+      targetStatus = status;
+    } else if (typeof nda_signed === 'boolean') {
+      targetStatus = nda_signed ? 'signed' : 'pending';
+    } else {
+      // Toggle logic if no body passed
+      targetStatus = profile.nda_status === 'signed' ? 'pending' : 'signed';
+    }
+
+    const isSigned = targetStatus === 'signed';
+
+    const updated = await prisma.cubeProfile.update({
+      where: { id },
+      data: {
+        nda_status: targetStatus,
+        nda_signed: isSigned,
+        nda_signed_at: isSigned ? (profile.nda_signed_at || new Date()) : null
+      },
+      select: {
+        id: true,
+        cube_number: true,
+        nda_signed: true,
+        nda_signed_at: true,
+        nda_status: true
+      }
+    });
+
+    return res.json({
+      success: true,
+      cube: updated,
+      message: `NDA status set to ${targetStatus}.`
+    });
+  } catch (error: any) {
     return sendError(res, error);
   }
 });

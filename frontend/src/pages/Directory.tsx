@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Filter, ShieldAlert, Award, Sparkles, Trash, Rocket, AlertCircle, GraduationCap } from 'lucide-react';
+import { Search, Filter, ShieldAlert, ShieldCheck, Award, Sparkles, Trash, Rocket, AlertCircle, GraduationCap, Clock, Mail, XCircle } from 'lucide-react';
 import { getLevelMeta, isInProgramme } from '../utils/cubeStatus';
 
 export const Directory: React.FC = () => {
@@ -15,6 +15,7 @@ export const Directory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
   const [assignmentFilter, setAssignmentFilter] = useState('all'); // 'all', 'assigned', 'unassigned'
+  const [ndaFilter, setNdaFilter] = useState<'all' | 'signed' | 'pending' | 'not_sent' | 'not_signed'>('all');
   const [showAlumni, setShowAlumni] = useState(false);
 
   // Alumni are excluded by default and fetched only when asked for, so the
@@ -107,7 +108,13 @@ export const Directory: React.FC = () => {
           ? isUnassigned
           : !!activeMission;
 
-    return matchesSearch && matchesLevel && matchesAssignment;
+    const effectiveNdaStatus = cube.nda_status || (cube.nda_signed ? 'signed' : 'not_sent');
+    const matchesNda =
+      ndaFilter === 'all'
+        ? true
+        : effectiveNdaStatus === ndaFilter;
+
+    return matchesSearch && matchesLevel && matchesAssignment && matchesNda;
   });
 
   return (
@@ -186,6 +193,21 @@ export const Directory: React.FC = () => {
               </select>
             </div>
           )}
+
+          <div className="relative flex-1 md:w-44">
+            <ShieldCheck className="absolute left-3.5 top-3 w-4.5 h-4.5 text-gray-400 pointer-events-none" />
+            <select
+              value={ndaFilter}
+              onChange={(e) => setNdaFilter(e.target.value as any)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer text-slate-800"
+            >
+              <option value="all">All NDA Statuses</option>
+              <option value="signed">✓ NDA Signed</option>
+              <option value="pending">⏳ NDA Pending</option>
+              <option value="not_sent">✉ NDA Not Sent</option>
+              <option value="not_signed">✕ NDA Not Signed</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -277,7 +299,52 @@ export const Directory: React.FC = () => {
                       </h3>
                       <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
                     </Link>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {(() => {
+                        const status = cube.nda_status || (cube.nda_signed ? 'signed' : 'not_sent');
+                        if (status === 'signed') {
+                          return (
+                            <span
+                              title={`NDA Signed${cube.nda_signed_at ? ' · ' + new Date(cube.nda_signed_at).toLocaleDateString('en-GB') : ''}`}
+                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm"
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>NDA</span>
+                            </span>
+                          );
+                        }
+                        if (status === 'pending') {
+                          return (
+                            <span
+                              title="NDA Pending Signature"
+                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 shadow-sm"
+                            >
+                              <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                              <span>Pending</span>
+                            </span>
+                          );
+                        }
+                        if (status === 'not_signed') {
+                          return (
+                            <span
+                              title="NDA Not Signed (Declined)"
+                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 shadow-sm"
+                            >
+                              <XCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                              <span>Not Signed</span>
+                            </span>
+                          );
+                        }
+                        return (
+                          <span
+                            title="NDA Not Sent"
+                            className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 shadow-sm"
+                          >
+                            <Mail className="w-3 h-3 text-slate-500 shrink-0" />
+                            <span>Not Sent</span>
+                          </span>
+                        );
+                      })()}
                       <span className={`font-extrabold text-xs px-2.5 py-0.5 rounded ${
                         isIceberger
                           ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-300'

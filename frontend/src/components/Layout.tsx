@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown, Trophy } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown, Trophy, ShieldCheck } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 
 export const Layout: React.FC = () => {
@@ -48,6 +48,7 @@ export const Layout: React.FC = () => {
       { path: '/teams', label: 'Teams', icon: Shield },
       { path: '/demodays', label: 'Demo Days', icon: Calendar },
       { path: '/offboarding', label: 'Offboarding', icon: GraduationCap },
+      { path: '/admin/nda', label: 'NDA Tracking', icon: ShieldCheck },
       { path: '/notifications', label: 'Broadcast', icon: Send },
     ];
     if (user.role === 'ADMIN') {

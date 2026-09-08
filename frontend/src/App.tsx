@@ -31,6 +31,7 @@ import { AdminTestimonials } from './pages/AdminTestimonials';
 import { AcceptInvite } from './pages/AcceptInvite';
 import { Quests } from './pages/Quests';
 import { AdminQuests } from './pages/AdminQuests';
+import { AdminNda } from './pages/AdminNda';
 
 import { PublicProfile } from './pages/PublicProfile';
 
@@ -205,6 +206,16 @@ function App() {
               element={
                 <RouteGuard allowedRoles={['ADMIN']}>
                   <AdminQuests />
+                </RouteGuard>
+              }
+            />
+
+            {/* NDA & Confidentiality Agreements Tracking (Admins & Mentors) */}
+            <Route
+              path="admin/nda"
+              element={
+                <RouteGuard allowedRoles={['ADMIN', 'MENTOR']}>
+                  <AdminNda />
                 </RouteGuard>
               }
             />

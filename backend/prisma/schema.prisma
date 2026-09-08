@@ -126,6 +126,9 @@ model CubeProfile {
   avatar_url         String?
   assigned_mentor_id String?
   assigned_mentor    User?       @relation("MentorToCube", fields: [assigned_mentor_id], references: [id], onDelete: SetNull)
+  nda_signed         Boolean     @default(false)
+  nda_signed_at      DateTime?
+  nda_status         String      @default("not_sent")
   created_at         DateTime    @default(now())
   updated_at         DateTime    @updatedAt
 
@@ -140,6 +143,8 @@ model CubeProfile {
 
   @@index([assigned_mentor_id])
   @@index([current_level])
+  @@index([nda_signed])
+  @@index([nda_status])
 }
 
 model Mission {
