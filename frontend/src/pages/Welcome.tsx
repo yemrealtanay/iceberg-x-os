@@ -246,6 +246,30 @@ export const Welcome: React.FC = () => {
     { icon: 'm', title: 'Senior Cubes', desc: 'Experienced Cubes trusted with deeper ownership.' },
   ];
 
+  const fellowshipUniversitiesRow1 = [
+    { name: 'İzmir Bakırçay Üniversitesi', location: 'İzmir, TR', logo: '/images/universities/bakircay.svg' },
+    { name: 'Muğla Sıtkı Koçman Üniversitesi', location: 'Muğla, TR', logo: '/images/universities/msku.svg' },
+    { name: 'Ege Üniversitesi', location: 'İzmir, TR', logo: '/images/universities/ege.svg' },
+    { name: 'Ulster University', location: 'Northern Ireland, UK', logo: '/images/universities/ulster.png' },
+    { name: 'Ankara Üniversitesi', location: 'Ankara, TR', logo: '/images/universities/ankara.png' },
+    { name: 'Gazi Üniversitesi', location: 'Ankara, TR', logo: '/images/universities/gazi.png' },
+    { name: 'University of Bremen', location: 'Bremen, Germany', logo: '/images/universities/bremen.png' },
+    { name: 'Doğuş Üniversitesi', location: 'İstanbul, TR', logo: '/images/universities/dogus.png' },
+    { name: 'Fırat Üniversitesi', location: 'Elazığ, TR', logo: '/images/universities/firat.svg' },
+  ];
+
+  const fellowshipUniversitiesRow2 = [
+    { name: 'Anadolu Üniversitesi', location: 'Eskişehir, TR', logo: '/images/universities/anadolu.svg' },
+    { name: 'Yeditepe Üniversitesi', location: 'İstanbul, TR', logo: '/images/universities/yeditepe.png' },
+    { name: 'Ankara Yıldırım Beyazıt Üniversitesi', location: 'Ankara, TR', logo: '/images/universities/aybu.svg' },
+    { name: 'İstanbul Atlas Üniversitesi', location: 'İstanbul, TR', logo: '/images/universities/atlas.svg' },
+    { name: 'İstanbul Arel Üniversitesi', location: 'İstanbul, TR', logo: '/images/universities/arel.svg' },
+    { name: 'Kırıkkale Üniversitesi', location: 'Kırıkkale, TR', logo: '/images/universities/kirikkale.svg' },
+    { name: 'Kütahya Dumlupınar Üniversitesi', location: 'Kütahya, TR', logo: '/images/universities/dumlupinar.png' },
+    { name: 'Bilecik Şeyh Edebali Üniversitesi', location: 'Bilecik, TR', logo: '/images/universities/bilecik.jpg' },
+    { name: 'Karamanoğlu Mehmetbey Üniversitesi', location: 'Karaman, TR', logo: '/images/universities/kmu.jpg' },
+  ];
+
   // Dynamic network SVG render coordinate calculations
   const cx = 200;
   const cy = 200;
@@ -388,6 +412,79 @@ export const Welcome: React.FC = () => {
               <div className="text-3xl font-extrabold">#<span className="text-[#e6007e]">072</span></div>
               <div className="text-xs font-semibold text-slate-500 mt-2">Automation Experiments</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 1.5 FELLOWSHIP UNIVERSITIES / TALENT NETWORK */}
+      <section className="py-14 bg-white border-y border-black/5 relative overflow-hidden" id="universities">
+        <div className="max-w-[1200px] mx-auto px-7 mb-8 text-center flex flex-col items-center gap-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-magenta/5 border border-magenta/15 text-[0.72rem] font-black uppercase tracking-[0.16em] text-magenta">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Academic Talent Network</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+            Where Our Cubes Come From
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl leading-relaxed">
+            Fellowship builders representing leading computer science, AI, and engineering faculties across national and international universities.
+          </p>
+        </div>
+
+        {/* Animated Marquee Tracks */}
+        <div className="flex flex-col gap-3.5 marquee-mask py-2">
+          {/* Row 1: Sliding Left */}
+          <div className="animate-marquee-left flex gap-4 items-center">
+            {[...fellowshipUniversitiesRow1, ...fellowshipUniversitiesRow1].map((uni, idx) => (
+              <div
+                key={`row1-${uni.name}-${idx}`}
+                className="group flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-[#f8f9fa] border border-slate-200/75 hover:border-magenta/40 hover:bg-white hover:shadow-lg hover:shadow-magenta/5 hover:-translate-y-0.5 transition-all duration-300 shrink-0 cursor-default select-none"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-150 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
+                  <img
+                    src={uni.logo}
+                    alt={uni.name}
+                    className="max-w-full max-h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-xs font-extrabold text-slate-800 group-hover:text-magenta transition-colors whitespace-nowrap">
+                    {uni.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    {uni.location}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Row 2: Sliding Right */}
+          <div className="animate-marquee-right flex gap-4 items-center">
+            {[...fellowshipUniversitiesRow2, ...fellowshipUniversitiesRow2].map((uni, idx) => (
+              <div
+                key={`row2-${uni.name}-${idx}`}
+                className="group flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-[#f8f9fa] border border-slate-200/75 hover:border-magenta/40 hover:bg-white hover:shadow-lg hover:shadow-magenta/5 hover:-translate-y-0.5 transition-all duration-300 shrink-0 cursor-default select-none"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-150 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
+                  <img
+                    src={uni.logo}
+                    alt={uni.name}
+                    className="max-w-full max-h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-xs font-extrabold text-slate-800 group-hover:text-magenta transition-colors whitespace-nowrap">
+                    {uni.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    {uni.location}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
