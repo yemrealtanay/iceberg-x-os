@@ -56,38 +56,38 @@ interface CubeDocumentsManagerProps {
 
 const DOCUMENT_TYPE_LABELS: Record<DocumentType, { label: string; description: string; iconColor: string }> = {
   NDA: {
-    label: 'Gizlilik Sözleşmesi (NDA)',
-    description: 'Iceberg Fellowship gizlilik ve veri güvenliği taahhütnamesi',
+    label: 'Non-Disclosure Agreement (NDA)',
+    description: 'Iceberg Fellowship confidentiality & data protection agreement',
     iconColor: 'text-magenta',
   },
   STUDENT_CERTIFICATE: {
-    label: 'Öğrenci Belgesi',
-    description: 'E-Devlet veya üniversiteden alınmış güncel öğrenci belgesi',
+    label: 'Student Certificate',
+    description: 'Official active student enrollment certificate',
     iconColor: 'text-blue-500',
   },
   TRANSCRIPT: {
-    label: 'Transkript (Not Dökümü)',
-    description: 'Güncel akademik başarı ve ders döküm belgesi',
+    label: 'Academic Transcript',
+    description: 'Official academic grade transcript and course records',
     iconColor: 'text-indigo-500',
   },
   INTERNSHIP_CONTRACT: {
-    label: 'Staj / Fellowship Sözleşmesi',
-    description: 'Üniversite staj formu veya fellowship kabul sözleşmesi',
+    label: 'Internship / Fellowship Contract',
+    description: 'University internship contract or fellowship acceptance agreement',
     iconColor: 'text-purple-500',
   },
   SGK_ENTRY: {
-    label: 'SGK İşe Giriş / Staj Bildirgesi',
-    description: 'Üniversite veya kurum tarafından onaylı SGK dökümü',
+    label: 'Social Security (SGK) Entry Document',
+    description: 'Official university or institutional social security entry statement',
     iconColor: 'text-emerald-500',
   },
   ID_COPY: {
-    label: 'Kimlik Fotokopisi',
-    description: 'Nüfus cüzdanı / T.C. kimlik kartı ön-arka fotokopisi',
+    label: 'National ID / Passport Copy',
+    description: 'Front and back copy of national ID or passport',
     iconColor: 'text-amber-500',
   },
   OTHER: {
-    label: 'Diğer Resmi Belge',
-    description: 'Ek sertifika, referans veya resmi başvuru evrakı',
+    label: 'Other Official Document',
+    description: 'Additional certificate, recommendation, or official paperwork',
     iconColor: 'text-slate-500',
   },
 };
@@ -137,7 +137,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       const data = await api.get(`/cubes/${cubeId}/documents`);
       setDocuments(data || []);
     } catch (err: any) {
-      setError(err.message || 'Belgeler yüklenirken hata oluştu.');
+      setError(err.message || 'Failed to load documents.');
     } finally {
       setLoading(false);
     }
@@ -168,11 +168,11 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (!allowed.includes(file.type)) {
-      setUploadError('Yalnızca PDF, görsel (PNG, JPG) veya Word belgeleri yüklenebilir.');
+      setUploadError('Only PDF, images (PNG, JPG, WEBP), or Word documents (.doc, .docx) can be uploaded.');
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
-      setUploadError('Dosya boyutu 15MB sınırını aşamaz.');
+      setUploadError('File size cannot exceed the 15MB limit.');
       return;
     }
     setSelectedFile(file);
@@ -185,7 +185,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      setUploadError('Lütfen bir dosya seçin.');
+      setUploadError('Please select a file.');
       return;
     }
 
@@ -205,7 +205,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       await fetchDocuments();
       if (onDocumentsChange) onDocumentsChange();
     } catch (err: any) {
-      setUploadError(err.message || 'Dosya yükleme başarısız oldu.');
+      setUploadError(err.message || 'Failed to upload document.');
     } finally {
       setUploading(false);
     }
@@ -228,14 +228,14 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       }
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (err: any) {
-      alert(err.message || 'Belge indirilemedi.');
+      alert(err.message || 'Failed to download document.');
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const handleDelete = async (doc: CubeDocument) => {
-    if (!confirm(`"${doc.title}" belgesini silmek istediğinize emin misiniz?`)) return;
+    if (!confirm(`Are you sure you want to delete "${doc.title}"?`)) return;
 
     setActionLoadingId(doc.id);
     try {
@@ -243,7 +243,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       if (onDocumentsChange) onDocumentsChange();
     } catch (err: any) {
-      alert(err.message || 'Belge silinemedi.');
+      alert(err.message || 'Failed to delete document.');
     } finally {
       setActionLoadingId(null);
     }
@@ -263,7 +263,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       await fetchDocuments();
       if (onDocumentsChange) onDocumentsChange();
     } catch (err: any) {
-      alert(err.message || 'Durum güncellenemedi.');
+      alert(err.message || 'Failed to update review status.');
     } finally {
       setReviewLoading(false);
     }
@@ -279,11 +279,11 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
               <FileCheck className="w-5 h-5" />
             </div>
             <h3 className="text-lg font-black text-gray-900 tracking-tight">
-              Cube Belgeleri &amp; Gizlilik Sözleşmesi (NDA)
+              Cube Documents &amp; Confidentiality Agreements (NDA)
             </h3>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Fellowship süresince imzalanan gizlilik sözleşmeleri, öğrenci ve resmi staj evrakları.
+            Confidentiality agreements (NDA), student certificates, and official fellowship documents.
           </p>
         </div>
 
@@ -294,7 +294,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-magenta text-white font-bold text-xs hover:bg-magenta/90 shadow-md shadow-magenta/20 transition shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span>Belge Yükle</span>
+            <span>Upload Document</span>
           </button>
         )}
       </div>
@@ -303,7 +303,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       {loading ? (
         <div className="py-12 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-6 h-6 text-magenta animate-spin" />
-          <p className="text-xs font-bold text-gray-400">Belgeler yükleniyor...</p>
+          <p className="text-xs font-bold text-gray-400">Loading documents...</p>
         </div>
       ) : error ? (
         <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-2xl flex items-center gap-2 text-xs">
@@ -313,9 +313,9 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
       ) : documents.length === 0 ? (
         <div className="py-12 px-4 text-center flex flex-col items-center justify-center border-2 border-dashed border-gray-100 rounded-2xl">
           <FileText className="w-10 h-10 text-gray-300 mb-2" />
-          <p className="text-sm font-bold text-gray-800">Henüz yüklenmiş belge bulunmuyor</p>
+          <p className="text-sm font-bold text-gray-800">No documents uploaded yet</p>
           <p className="text-xs text-gray-400 max-w-sm mt-1">
-            Gizlilik sözleşmesi (NDA), öğrenci belgesi veya resmi evraklarınızı bu alandan güvenle yükleyebilirsiniz.
+            You can securely upload your Non-Disclosure Agreement (NDA), student certificate, or official records here.
           </p>
           {canUpload && (
             <button
@@ -324,7 +324,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
               className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-700 hover:border-magenta hover:text-magenta transition"
             >
               <UploadCloud className="w-4 h-4" />
-              <span>İmzalı NDA Yükle</span>
+              <span>Upload Signed NDA</span>
             </button>
           )}
         </div>
@@ -368,18 +368,18 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                       <span>·</span>
                       <span>{formatFileSize(doc.file_size)}</span>
                       <span>·</span>
-                      <span>{new Date(doc.created_at).toLocaleDateString('tr-TR')}</span>
+                      <span>{new Date(doc.created_at).toLocaleDateString('en-GB')}</span>
                       {doc.uploaded_by && (
                         <>
                           <span>·</span>
-                          <span>Yükleyen: {doc.uploaded_by.name}</span>
+                          <span>Uploaded by: {doc.uploaded_by.name}</span>
                         </>
                       )}
                     </div>
 
                     {doc.notes && (
                       <p className="mt-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1 inline-block">
-                        <span className="font-bold text-gray-400 mr-1">Not:</span>
+                        <span className="font-bold text-gray-400 mr-1">Note:</span>
                         {doc.notes}
                       </p>
                     )}
@@ -393,19 +393,19 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                     {isApproved && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Onaylandı</span>
+                        <span>Approved</span>
                       </span>
                     )}
                     {isPending && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
                         <Clock className="w-3.5 h-3.5 text-amber-600" />
-                        <span>İncelemede</span>
+                        <span>Pending Review</span>
                       </span>
                     )}
                     {isRejected && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-50 text-rose-700 border border-rose-200">
                         <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Düzeltme İstendi</span>
+                        <span>Changes Requested</span>
                       </span>
                     )}
                   </div>
@@ -417,7 +417,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                       disabled={isDocActionLoading}
                       onClick={() => handleDownload(doc, false)}
                       className="p-2 text-gray-500 hover:text-magenta hover:bg-magenta/5 rounded-xl border border-gray-100 transition"
-                      title="Önizle / Görüntüle"
+                      title="Preview / View"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -427,7 +427,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                       disabled={isDocActionLoading}
                       onClick={() => handleDownload(doc, true)}
                       className="p-2 text-gray-500 hover:text-magenta hover:bg-magenta/5 rounded-xl border border-gray-100 transition"
-                      title="İndir"
+                      title="Download"
                     >
                       {isDocActionLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin text-magenta" />
@@ -446,10 +446,10 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                           setReviewNotes(doc.notes || '');
                         }}
                         className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50 transition flex items-center gap-1"
-                        title="İnceleme Durumunu Güncelle"
+                        title="Review Document"
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-gray-500" />
-                        <span>İncele</span>
+                        <span>Review</span>
                       </button>
                     )}
 
@@ -460,7 +460,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                         disabled={isDocActionLoading}
                         onClick={() => handleDelete(doc)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition"
-                        title="Belgeyi Sil"
+                        title="Delete Document"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -489,11 +489,11 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                 <UploadCloud className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                Cube Belgesi Yükle
+                Upload Cube Document
               </h3>
             </div>
             <p className="text-xs text-gray-400 mb-5">
-              Fellowship belgelerinizi sisteme güvenle yükleyin. Hassas belgeler sadece yetkili mentör ve yöneticilerce incelenebilir.
+              Securely upload fellowship documents. Sensitive files are only accessible by authorized mentors and admins.
             </p>
 
             {uploadError && (
@@ -506,7 +506,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
             <form onSubmit={handleUploadSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Belge Türü *
+                  Document Type *
                 </label>
                 <select
                   value={selectedType}
@@ -532,13 +532,13 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Belge Başlığı
+                  Document Title
                 </label>
                 <input
                   type="text"
                   value={docTitle}
                   onChange={(e) => setDocTitle(e.target.value)}
-                  placeholder="Örn: 2026 İmzalı Gizlilik Sözleşmesi"
+                  placeholder="e.g. 2026 Signed Non-Disclosure Agreement"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 outline-none focus:border-magenta focus:ring-1 focus:ring-magenta transition"
                 />
               </div>
@@ -546,7 +546,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
               {/* File picker drop area */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Dosya (PDF, Görsel veya Word) *
+                  File (PDF, Image, or Word) *
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -573,17 +573,17 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                         {selectedFile.name}
                       </p>
                       <p className="text-[11px] text-gray-400">
-                        {formatFileSize(selectedFile.size)} · Değiştirmek için tıklayın
+                        {formatFileSize(selectedFile.size)} · Click to replace
                       </p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <UploadCloud className="w-8 h-8 text-gray-400 mb-1" />
                       <p className="text-xs font-bold text-gray-700">
-                        Dosya seçmek için tıklayın veya sürükleyin
+                        Click to browse or drag and drop your file here
                       </p>
                       <p className="text-[11px] text-gray-400">
-                        PDF, PNG, JPG, DOCX (Maks. 15MB)
+                        PDF, PNG, JPG, DOCX (Max. 15MB)
                       </p>
                     </div>
                   )}
@@ -592,13 +592,13 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Açıklama / Ek Not (İsteğe Bağlı)
+                  Description / Extra Notes (Optional)
                 </label>
                 <textarea
                   rows={2}
                   value={docNotes}
                   onChange={(e) => setDocNotes(e.target.value)}
-                  placeholder="İlgili belgeye ilişkin eklemek istediğiniz not..."
+                  placeholder="Any additional notes regarding this document..."
                   className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 outline-none focus:border-magenta focus:ring-1 focus:ring-magenta transition"
                 />
               </div>
@@ -609,7 +609,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                   onClick={() => setIsUploadModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
                 >
-                  İptal
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -619,12 +619,12 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                   {uploading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Yükleniyor...</span>
+                      <span>Uploading...</span>
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
-                      <span>Belgeyi Yükle</span>
+                      <span>Upload Document</span>
                     </>
                   )}
                 </button>
@@ -646,16 +646,16 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
             </button>
 
             <h3 className="text-lg font-black text-gray-900 tracking-tight mb-1">
-              Belgeyi İncele
+              Review Document
             </h3>
             <p className="text-xs text-gray-400 mb-4">
-              "{reviewDoc.title}" belgesinin onay durumunu belirleyin.
+              Set review decision for "{reviewDoc.title}".
             </p>
 
             <form onSubmit={handleReviewSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                  İnceleme Kararı *
+                  Review Decision *
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -668,7 +668,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Onayla</span>
+                    <span>Approve</span>
                   </button>
 
                   <button
@@ -681,14 +681,14 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                     }`}
                   >
                     <XCircle className="w-4 h-4 text-rose-600" />
-                    <span>Düzeltme İste</span>
+                    <span>Request Changes</span>
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  İnceleme Notu / Gerekçe
+                  Review Notes / Feedback
                 </label>
                 <textarea
                   rows={3}
@@ -696,8 +696,8 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                   onChange={(e) => setReviewNotes(e.target.value)}
                   placeholder={
                     reviewStatus === 'APPROVED'
-                      ? 'İsteğe bağlı not...'
-                      : 'Lütfen Cube geliştiricisine iletilecek düzeltme gerekçesini belirtin (Örn: İmza eksik, tarih okunmuyor).'
+                      ? 'Optional note...'
+                      : 'Please specify required changes or missing items for the Cube (e.g. missing signature, illegible scan)...'
                   }
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 outline-none focus:border-magenta transition"
                 />
@@ -709,7 +709,7 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                   onClick={() => setReviewDoc(null)}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
                 >
-                  Vazgeç
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -719,10 +719,10 @@ export const CubeDocumentsManager: React.FC<CubeDocumentsManagerProps> = ({
                   {reviewLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Kaydediliyor...</span>
+                      <span>Saving...</span>
                     </>
                   ) : (
-                    <span>Kararı Kaydet</span>
+                    <span>Save Decision</span>
                   )}
                 </button>
               </div>

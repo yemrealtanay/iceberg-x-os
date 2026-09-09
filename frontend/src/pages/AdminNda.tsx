@@ -79,38 +79,38 @@ interface CubeNdaRecord {
 
 const DOC_TYPE_META: Record<DocumentType, { label: string; short: string; color: string }> = {
   NDA: {
-    label: 'Gizlilik Sözleşmesi (NDA)',
+    label: 'Non-Disclosure Agreement (NDA)',
     short: 'NDA',
     color: 'bg-magenta/10 text-magenta border-magenta/20',
   },
   STUDENT_CERTIFICATE: {
-    label: 'Öğrenci Belgesi',
-    short: 'Öğrenci',
+    label: 'Student Certificate',
+    short: 'Student',
     color: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   SGK_ENTRY: {
-    label: 'SGK İşe Giriş',
+    label: 'Social Security (SGK)',
     short: 'SGK',
     color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   },
   INTERNSHIP_CONTRACT: {
-    label: 'Staj Sözleşmesi',
-    short: 'Staj',
+    label: 'Internship Contract',
+    short: 'Contract',
     color: 'bg-purple-50 text-purple-700 border-purple-200',
   },
   TRANSCRIPT: {
-    label: 'Transkript',
-    short: 'Transkript',
+    label: 'Academic Transcript',
+    short: 'Transcript',
     color: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   },
   ID_COPY: {
-    label: 'Kimlik Fotokopisi',
-    short: 'Kimlik',
+    label: 'National ID / Passport',
+    short: 'ID',
     color: 'bg-amber-50 text-amber-700 border-amber-200',
   },
   OTHER: {
-    label: 'Diğer Belge',
-    short: 'Diğer',
+    label: 'Other Document',
+    short: 'Other',
     color: 'bg-slate-100 text-slate-700 border-slate-200',
   },
 };
@@ -213,7 +213,7 @@ export const AdminNda: React.FC = () => {
       }
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (err: any) {
-      alert(err.message || 'Belge açılamadı veya indirilemedi.');
+      alert(err.message || 'Failed to open or download document.');
     }
   };
 
@@ -229,7 +229,7 @@ export const AdminNda: React.FC = () => {
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadTargetCube || !uploadFile) {
-      setUploadError('Lütfen bir dosya seçin.');
+      setUploadError('Please select a file to upload.');
       return;
     }
 
@@ -263,11 +263,11 @@ export const AdminNda: React.FC = () => {
         })
       );
 
-      setToastMessage(`Cube #${uploadTargetCube.cube_number} için "${newDoc.title}" belgesi başarıyla yüklendi.`);
+      setToastMessage(`Document "${newDoc.title}" uploaded successfully for Cube #${uploadTargetCube.cube_number}.`);
       setTimeout(() => setToastMessage(null), 4000);
       setUploadTargetCube(null);
     } catch (err: any) {
-      setUploadError(err.message || 'Belge yükleme başarısız oldu.');
+      setUploadError(err.message || 'Failed to upload document.');
     } finally {
       setUploadLoading(false);
     }
@@ -363,7 +363,7 @@ export const AdminNda: React.FC = () => {
             </span>
           </div>
           <p className="text-gray-500 mt-1 text-sm">
-            Gizlilik Sözleşmeleri (NDA) başta olmak üzere tüm Cube resmi belgelerini (öğrenci belgesi, SGK vb.) takip edin, yükleyin ve inceleyin.
+            Track, upload, and review confidentiality agreements (NDA) and official Cube documents (student certificate, SGK, etc.).
           </p>
         </div>
 
@@ -375,7 +375,7 @@ export const AdminNda: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Yenile</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -394,7 +394,7 @@ export const AdminNda: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold tracking-wider text-emerald-600 uppercase flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>NDA İmzalandı</span>
+              <span>NDA Signed</span>
             </span>
             <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
               {signedPercentage}%
@@ -409,7 +409,7 @@ export const AdminNda: React.FC = () => {
               style={{ width: `${signedPercentage}%` }}
             ></div>
           </div>
-          <p className="text-[11px] text-gray-500 mt-1">Sözleşmesi tamamlanan Cubelar</p>
+          <p className="text-[11px] text-gray-500 mt-1">Cubes with completed agreement</p>
         </div>
 
         {/* NDA Pending */}
@@ -424,14 +424,14 @@ export const AdminNda: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold tracking-wider text-amber-600 uppercase flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              <span>İmza Bekleyen NDA</span>
+              <span>Pending Signature</span>
             </span>
             <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-              Bekliyor
+              Pending
             </span>
           </div>
           <div className="text-3xl font-black text-amber-700 mt-2">{pendingCount}</div>
-          <p className="text-xs text-gray-500 mt-0.5">İletildi, Cube imzası bekleniyor</p>
+          <p className="text-xs text-gray-500 mt-0.5">Sent, awaiting Cube signature</p>
         </div>
 
         {/* Total Documents Uploaded */}
@@ -446,14 +446,14 @@ export const AdminNda: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold tracking-wider text-magenta uppercase flex items-center gap-1.5">
               <FileCheck className="w-3.5 h-3.5" />
-              <span>Yüklenen Belgeler</span>
+              <span>Uploaded Documents</span>
             </span>
             <span className="text-[10px] font-bold text-magenta bg-magenta/10 px-2 py-0.5 rounded-full">
-              Kalıcı Volume
+              Persistent Volume
             </span>
           </div>
           <div className="text-3xl font-black text-gray-900 mt-2">{totalDocumentsCount}</div>
-          <p className="text-xs text-gray-500 mt-0.5">Toplam arşivlenen resmi evrak</p>
+          <p className="text-xs text-gray-500 mt-0.5">Total archived official files</p>
         </div>
 
         {/* Pending Review Documents */}
@@ -468,14 +468,14 @@ export const AdminNda: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold tracking-wider text-purple-600 uppercase flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              <span>İnceleme Bekleyen</span>
+              <span>Pending Review</span>
             </span>
             <span className="text-[10px] font-bold text-purple-600 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">
-              Onay
+              Review
             </span>
           </div>
           <div className="text-3xl font-black text-purple-700 mt-2">{pendingReviewDocsCount}</div>
-          <p className="text-xs text-gray-500 mt-0.5">Mentör/Admin onayı bekleyen belge</p>
+          <p className="text-xs text-gray-500 mt-0.5">Files awaiting mentor/admin review</p>
         </div>
       </div>
 
@@ -486,7 +486,7 @@ export const AdminNda: React.FC = () => {
           <Search className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Cube adı, numarası, e-posta, üniversite veya bölüm ara..."
+            placeholder="Search by Cube name, number, email, university, or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-semibold text-xs transition-all focus:bg-white focus:border-magenta/30"
@@ -502,11 +502,11 @@ export const AdminNda: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer pr-8"
             >
-              <option value="all">Tüm NDA Durumları</option>
-              <option value="signed">✓ İmzalandı ({signedCount})</option>
-              <option value="pending">⏳ İmza Bekliyor ({pendingCount})</option>
-              <option value="not_sent">✉ İletilmedi ({notSentCount})</option>
-              <option value="not_signed">✕ İmzalanmadı ({notSignedCount})</option>
+              <option value="all">All NDA Statuses</option>
+              <option value="signed">✓ Signed ({signedCount})</option>
+              <option value="pending">⏳ Pending Signature ({pendingCount})</option>
+              <option value="not_sent">✉ Not Sent ({notSentCount})</option>
+              <option value="not_signed">✕ Not Signed ({notSignedCount})</option>
             </select>
             <Filter className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
           </div>
@@ -518,13 +518,13 @@ export const AdminNda: React.FC = () => {
               onChange={(e) => setDocFilter(e.target.value)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer pr-8 text-magenta"
             >
-              <option value="all">Tüm Belge Durumları</option>
-              <option value="has_nda_doc">İmzalı NDA Dosyası Yüklü</option>
-              <option value="missing_nda_doc">İmzalı NDA Dosyası Eksik</option>
-              <option value="has_student_cert">Öğrenci Belgesi Olanlar</option>
-              <option value="has_sgk">SGK Belgesi Olanlar</option>
-              <option value="has_pending">İnceleme Bekleyen Belgesi Var</option>
-              <option value="no_docs">Hiç Belge Yüklemeyenler</option>
+              <option value="all">All Document Statuses</option>
+              <option value="has_nda_doc">Signed NDA File Uploaded</option>
+              <option value="missing_nda_doc">Signed NDA File Missing</option>
+              <option value="has_student_cert">With Student Certificate</option>
+              <option value="has_sgk">With SGK Entry</option>
+              <option value="has_pending">With Pending Review Docs</option>
+              <option value="no_docs">No Documents Uploaded</option>
             </select>
             <FileText className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
           </div>
@@ -536,7 +536,7 @@ export const AdminNda: React.FC = () => {
               onChange={(e) => setCohortFilter(e.target.value)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer pr-8"
             >
-              <option value="all">Tüm Cohortlar</option>
+              <option value="all">All Cohorts</option>
               {cohorts.map((ch) => (
                 <option key={ch} value={ch}>
                   {ch}
@@ -553,7 +553,7 @@ export const AdminNda: React.FC = () => {
               onChange={(e) => setLevelFilter(e.target.value)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer pr-8"
             >
-              <option value="all">Tüm Seviyeler</option>
+              <option value="all">All Levels</option>
               {levels.map((lvl) => (
                 <option key={lvl} value={lvl}>
                   {lvl.replace(/_/g, ' ')}
@@ -570,20 +570,20 @@ export const AdminNda: React.FC = () => {
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 rounded-full border-4 border-magenta border-t-transparent animate-spin"></div>
-            <p className="text-xs font-bold text-gray-400">Belgeler ve sözleşmeler yükleniyor...</p>
+            <p className="text-xs font-bold text-gray-400">Loading documents and agreements...</p>
           </div>
         ) : error ? (
           <div className="py-16 px-4 text-center">
             <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-2" />
-            <h3 className="font-extrabold text-sm text-gray-900">Veriler yüklenemedi</h3>
+            <h3 className="font-extrabold text-sm text-gray-900">Failed to load data</h3>
             <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">{error}</p>
           </div>
         ) : filteredCubes.length === 0 ? (
           <div className="py-16 px-4 text-center">
             <ShieldCheck className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <h3 className="font-extrabold text-sm text-gray-900">Seçilen filtrelere uygun Cube bulunamadı</h3>
+            <h3 className="font-extrabold text-sm text-gray-900">No Cubes found matching selected filters</h3>
             <p className="text-xs text-gray-400 mt-1">
-              Arama kriterlerinizi değiştirin veya filtreleri temizleyin.
+              Try adjusting your search query or clearing filter options.
             </p>
           </div>
         ) : (
@@ -596,11 +596,11 @@ export const AdminNda: React.FC = () => {
                   <th className="py-3.5 px-4">
                     <span className="text-magenta flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Gizlilik Sözleşmesi (NDA)</span>
+                      <span>Non-Disclosure Agreement (NDA)</span>
                     </span>
                   </th>
-                  <th className="py-3.5 px-4">Yüklenen Belgeler</th>
-                  <th className="py-3.5 px-4 text-right">İşlemler</th>
+                  <th className="py-3.5 px-4">Uploaded Documents</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
@@ -661,28 +661,28 @@ export const AdminNda: React.FC = () => {
                             <div className="inline-flex flex-col items-start gap-0.5">
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span>İmzalandı</span>
+                                <span>Signed</span>
                               </span>
                               {cube.nda_signed_at && (
                                 <span className="text-[10px] font-mono text-gray-400 pl-1">
-                                  {new Date(cube.nda_signed_at).toLocaleDateString('tr-TR')}
+                                  {new Date(cube.nda_signed_at).toLocaleDateString('en-GB')}
                                 </span>
                               )}
                             </div>
                           ) : status === 'pending' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200">
                               <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                              <span>İmza Bekliyor</span>
+                              <span>Pending Signature</span>
                             </span>
                           ) : status === 'not_signed' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200">
                               <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                              <span>İmzalanmadı</span>
+                              <span>Not Signed</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200">
                               <Send className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                              <span>İletilmedi</span>
+                              <span>Not Sent</span>
                             </span>
                           )}
 
@@ -692,16 +692,16 @@ export const AdminNda: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleViewDoc(ndaDoc.id, false)}
-                                title={`NDA Belgesini Aç: ${ndaDoc.file_name}`}
+                                title={`View NDA document: ${ndaDoc.file_name}`}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-magenta/20 bg-magenta/5 hover:bg-magenta/10 text-magenta transition"
                               >
                                 <Eye className="w-3 h-3" />
-                                <span>Sözleşmeyi Gör</span>
+                                <span>View Agreement</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleViewDoc(ndaDoc.id, true)}
-                                title={`NDA Belgesini İndir: ${ndaDoc.file_name}`}
+                                title={`Download NDA document: ${ndaDoc.file_name}`}
                                 className="p-1 rounded-lg text-gray-500 hover:text-magenta hover:bg-magenta/5 border border-gray-200 transition"
                               >
                                 <Download className="w-3 h-3" />
@@ -714,7 +714,7 @@ export const AdminNda: React.FC = () => {
                               className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-magenta hover:underline"
                             >
                               <Plus className="w-3 h-3" />
-                              <span>İmzalı NDA Yükle</span>
+                              <span>Upload Signed NDA</span>
                             </button>
                           )}
                         </div>
@@ -723,7 +723,7 @@ export const AdminNda: React.FC = () => {
                       {/* All Other Uploaded Documents Column */}
                       <td className="py-3.5 px-4">
                         {otherDocs.length === 0 ? (
-                          <span className="text-gray-400 text-xs italic">Başka evrak yok</span>
+                          <span className="text-gray-400 text-xs italic">No other documents</span>
                         ) : (
                           <div className="flex flex-wrap gap-1.5 max-w-xs">
                             {otherDocs.map((doc) => {
@@ -736,7 +736,7 @@ export const AdminNda: React.FC = () => {
                                   key={doc.id}
                                   type="button"
                                   onClick={() => handleViewDoc(doc.id, false)}
-                                  title={`${doc.title} (${doc.file_name}) - Tıkla ve İncele`}
+                                  title={`${doc.title} (${doc.file_name}) - Click to preview`}
                                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition hover:opacity-85 shadow-2xs ${meta.color}`}
                                 >
                                   {isApproved && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
@@ -757,10 +757,10 @@ export const AdminNda: React.FC = () => {
                             type="button"
                             onClick={() => handleOpenUpload(cube)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 hover:border-magenta hover:text-magenta bg-white hover:bg-magenta/5 text-gray-700 font-bold text-xs shadow-2xs transition"
-                            title="Bu Cube için belge yükle"
+                            title="Upload document for this Cube"
                           >
                             <Plus className="w-3.5 h-3.5" />
-                            <span>Belge Yükle</span>
+                            <span>Upload Doc</span>
                           </button>
 
                           {/* Quick NDA Status Selector */}
@@ -771,7 +771,7 @@ export const AdminNda: React.FC = () => {
                               disabled={isActionLoading}
                               className={`text-[11px] font-bold py-1.5 pl-2.5 pr-6 rounded-xl border appearance-none outline-none cursor-pointer transition disabled:opacity-50 ${
                                 status === 'signed'
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                   : status === 'pending'
                                   ? 'bg-amber-50 text-amber-800 border-amber-200'
                                   : status === 'not_signed'
@@ -779,10 +779,10 @@ export const AdminNda: React.FC = () => {
                                   : 'bg-gray-50 text-gray-700 border-gray-200'
                               }`}
                             >
-                              <option value="not_sent">✉ İletilmedi</option>
-                              <option value="pending">⏳ Bekliyor</option>
-                              <option value="signed">✓ İmzalandı</option>
-                              <option value="not_signed">✕ İmzalanmadı</option>
+                              <option value="not_sent">✉ Not Sent</option>
+                              <option value="pending">⏳ Pending</option>
+                              <option value="signed">✓ Signed</option>
+                              <option value="not_signed">✕ Not Signed</option>
                             </select>
                             {isActionLoading ? (
                               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin absolute right-2 top-2.5 pointer-events-none"></div>
@@ -795,7 +795,7 @@ export const AdminNda: React.FC = () => {
                           <Link
                             to={`/cubes/${cube.id}`}
                             className="p-1.5 rounded-lg border border-gray-100 hover:border-gray-200 text-gray-400 hover:text-gray-700 transition"
-                            title="Cube Profiline Git"
+                            title="Go to Cube Profile"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </Link>
@@ -827,7 +827,7 @@ export const AdminNda: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                  Belge Yükle
+                  Upload Document
                 </h3>
                 <p className="text-xs text-magenta font-bold">
                   Cube #{uploadTargetCube.cube_number} · {uploadTargetCube.user?.name}
@@ -835,7 +835,7 @@ export const AdminNda: React.FC = () => {
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-2 mb-5">
-              Bu Cube adına sisteme resmi belge (Gizlilik Sözleşmesi, Öğrenci Belgesi, SGK evrakı vb.) yükleyin.
+              Upload an official document (NDA, Student Certificate, SGK document, etc.) on behalf of this Cube.
             </p>
 
             {uploadError && (
@@ -848,7 +848,7 @@ export const AdminNda: React.FC = () => {
             <form onSubmit={handleUploadSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Belge Türü *
+                  Document Type *
                 </label>
                 <select
                   value={uploadDocType}
@@ -869,13 +869,13 @@ export const AdminNda: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Belge Başlığı
+                  Document Title
                 </label>
                 <input
                   type="text"
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="Örn: 2026 İmzalı Gizlilik Sözleşmesi"
+                  placeholder="e.g. 2026 Signed Non-Disclosure Agreement"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 outline-none focus:border-magenta transition"
                 />
               </div>
@@ -883,7 +883,7 @@ export const AdminNda: React.FC = () => {
               {/* File picker */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Dosya (PDF, Görsel veya Word) *
+                  File (PDF, Image, or Word) *
                 </label>
                 <div
                   onClick={() => modalFileInputRef.current?.click()}
@@ -909,13 +909,13 @@ export const AdminNda: React.FC = () => {
                       <p className="text-xs font-extrabold text-gray-900 truncate max-w-xs">
                         {uploadFile.name}
                       </p>
-                      <p className="text-[11px] text-gray-400">Değiştirmek için tıklayın</p>
+                      <p className="text-[11px] text-gray-400">Click to replace</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <UploadCloud className="w-8 h-8 text-gray-400 mb-1" />
-                      <p className="text-xs font-bold text-gray-700">Dosya seçmek için tıklayın</p>
-                      <p className="text-[11px] text-gray-400">PDF, PNG, JPG, DOCX (Maks. 15MB)</p>
+                      <p className="text-xs font-bold text-gray-700">Click or drag and drop file to upload</p>
+                      <p className="text-[11px] text-gray-400">PDF, PNG, JPG, DOCX (Max. 15MB)</p>
                     </div>
                   )}
                 </div>
@@ -923,13 +923,13 @@ export const AdminNda: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Açıklama / Not (İsteğe Bağlı)
+                  Description / Notes (Optional)
                 </label>
                 <textarea
                   rows={2}
                   value={uploadNotes}
                   onChange={(e) => setUploadNotes(e.target.value)}
-                  placeholder="Eklemek istediğiniz not..."
+                  placeholder="Any additional notes regarding this document..."
                   className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 outline-none focus:border-magenta transition"
                 />
               </div>
@@ -940,7 +940,7 @@ export const AdminNda: React.FC = () => {
                   onClick={() => setUploadTargetCube(null)}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition"
                 >
-                  İptal
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -950,12 +950,12 @@ export const AdminNda: React.FC = () => {
                   {uploadLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Yükleniyor...</span>
+                      <span>Uploading...</span>
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
-                      <span>Belgeyi Yükle</span>
+                      <span>Upload Document</span>
                     </>
                   )}
                 </button>

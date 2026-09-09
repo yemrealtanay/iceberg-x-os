@@ -398,6 +398,7 @@ export const Profile: React.FC = () => {
   const isOwner = user?.cubeProfileId === id;
   const isMentorOrAdmin = user?.role === 'ADMIN' || user?.role === 'MENTOR';
   const canEditProfile = isOwner || user?.role === 'ADMIN';
+  const canViewDocuments = isOwner || isMentorOrAdmin;
 
   // Compute meeting attendance stats
   const attendanceList = profile.meeting_attendance || [];
@@ -668,88 +669,90 @@ export const Profile: React.FC = () => {
             {profile.assigned_mentor && (
               <p><span className="font-bold text-gray-700">Mentor:</span> {profile.assigned_mentor.name}</p>
             )}
-            <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100/60">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-700 text-xs">NDA Agreement:</span>
-                {(() => {
-                  const status = profile.nda_status || (profile.nda_signed ? 'signed' : 'not_sent');
-                  if (status === 'signed') {
+            {canViewDocuments && (
+              <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100/60">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-700 text-xs">NDA Agreement:</span>
+                  {(() => {
+                    const status = profile.nda_status || (profile.nda_signed ? 'signed' : 'not_sent');
+                    if (status === 'signed') {
+                      return (
+                        <span
+                          title={`Signed${profile.nda_signed_at ? ' · ' + new Date(profile.nda_signed_at).toLocaleDateString('en-GB') : ''}`}
+                          className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"
+                        >
+                          <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span>Signed {profile.nda_signed_at && `· ${new Date(profile.nda_signed_at).toLocaleDateString('en-GB')}`}</span>
+                        </span>
+                      );
+                    }
+                    if (status === 'pending') {
+                      return (
+                        <span
+                          title="Sent, pending signature"
+                          className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"
+                        >
+                          <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span>Pending</span>
+                        </span>
+                      );
+                    }
+                    if (status === 'not_signed') {
+                      return (
+                        <span
+                          title="Declined / Not signed"
+                          className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full"
+                        >
+                          <XCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                          <span>Not Signed</span>
+                        </span>
+                      );
+                    }
                     return (
                       <span
-                        title={`Signed${profile.nda_signed_at ? ' · ' + new Date(profile.nda_signed_at).toLocaleDateString('en-GB') : ''}`}
-                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"
+                        title="Not sent yet"
+                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full"
                       >
-                        <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
-                        <span>Signed {profile.nda_signed_at && `· ${new Date(profile.nda_signed_at).toLocaleDateString('en-GB')}`}</span>
+                        <Mail className="w-3 h-3 text-slate-500 shrink-0" />
+                        <span>Not Sent</span>
                       </span>
                     );
-                  }
-                  if (status === 'pending') {
-                    return (
-                      <span
-                        title="Sent, pending signature"
-                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"
-                      >
-                        <Clock className="w-3 h-3 text-amber-600 shrink-0" />
-                        <span>Pending</span>
-                      </span>
-                    );
-                  }
-                  if (status === 'not_signed') {
-                    return (
-                      <span
-                        title="Declined / Not signed"
-                        className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full"
-                      >
-                        <XCircle className="w-3 h-3 text-rose-600 shrink-0" />
-                        <span>Not Signed</span>
-                      </span>
-                    );
-                  }
-                  return (
-                    <span
-                      title="Not sent yet"
-                      className="inline-flex items-center gap-1 text-[10px] font-extrabold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full"
-                    >
-                      <Mail className="w-3 h-3 text-slate-500 shrink-0" />
-                      <span>Not Sent</span>
-                    </span>
-                  );
-                })()}
-              </div>
-
-              {isMentorOrAdmin && (
-                <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-dashed border-gray-100">
-                  <span className="text-[10.5px] font-bold text-gray-400">Change NDA:</span>
-                  <select
-                    value={profile.nda_status || (profile.nda_signed ? 'signed' : 'not_sent')}
-                    onChange={(e) => handleUpdateNdaStatus(e.target.value as any)}
-                    disabled={ndaUpdating}
-                    className="text-[11px] font-bold py-1 px-2 bg-gray-50 hover:bg-gray-100/60 border border-gray-200 rounded-lg text-gray-700 outline-none hover:border-magenta cursor-pointer disabled:opacity-50 transition-colors"
-                  >
-                    <option value="not_sent">✉ Not Sent</option>
-                    <option value="pending">⏳ Pending</option>
-                    <option value="signed">✓ Signed</option>
-                    <option value="not_signed">✕ Not Signed</option>
-                  </select>
+                  })()}
                 </div>
-              )}
 
-              <div className="flex items-center justify-between pt-1.5 border-t border-gray-100/60">
-                <span className="font-bold text-gray-700 text-xs">Documents:</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    document.getElementById('documents-section')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
-                  title="View all uploaded documents"
-                >
-                  <FileText className="w-3 h-3 text-blue-600 shrink-0" />
-                  <span>{profile.documents?.length || 0} files</span>
-                </button>
+                {isMentorOrAdmin && (
+                  <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-dashed border-gray-100">
+                    <span className="text-[10.5px] font-bold text-gray-400">Change NDA:</span>
+                    <select
+                      value={profile.nda_status || (profile.nda_signed ? 'signed' : 'not_sent')}
+                      onChange={(e) => handleUpdateNdaStatus(e.target.value as any)}
+                      disabled={ndaUpdating}
+                      className="text-[11px] font-bold py-1 px-2 bg-gray-50 hover:bg-gray-100/60 border border-gray-200 rounded-lg text-gray-700 outline-none hover:border-magenta cursor-pointer disabled:opacity-50 transition-colors"
+                    >
+                      <option value="not_sent">✉ Not Sent</option>
+                      <option value="pending">⏳ Pending</option>
+                      <option value="signed">✓ Signed</option>
+                      <option value="not_signed">✕ Not Signed</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-1.5 border-t border-gray-100/60">
+                  <span className="font-bold text-gray-700 text-xs">Documents:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      document.getElementById('documents-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
+                    title="View all uploaded documents"
+                  >
+                    <FileText className="w-3 h-3 text-blue-600 shrink-0" />
+                    <span>{profile.documents?.length || 0} files</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 border-t border-gray-50 pt-4">
@@ -1207,13 +1210,15 @@ export const Profile: React.FC = () => {
         )}
         
         {/* Documents & Confidential Agreements (NDA, Internship docs) */}
-        <div id="documents-section" className="scroll-mt-24">
-          <CubeDocumentsManager
-            cubeId={profile.id}
-            isOwner={isOwner}
-            onDocumentsChange={fetchProfileData}
-          />
-        </div>
+        {canViewDocuments && (
+          <div id="documents-section" className="scroll-mt-24">
+            <CubeDocumentsManager
+              cubeId={profile.id}
+              isOwner={isOwner}
+              onDocumentsChange={fetchProfileData}
+            />
+          </div>
+        )}
 
         {/* Badges Earned Section */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">

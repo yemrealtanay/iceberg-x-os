@@ -116,6 +116,15 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
       }
     });
 
+    const isStaff = req.user?.role === 'ADMIN' || req.user?.role === 'MENTOR';
+    if (!isStaff) {
+      cubes.forEach((c: any) => {
+        if (c.user_id !== req.user?.id) {
+          c.documents = [];
+        }
+      });
+    }
+
     return res.json(cubes);
   } catch (error: any) {
     return sendError(res, error);
@@ -923,6 +932,11 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
         const { private_notes, ...rest } = item;
         return rest;
       });
+    }
+
+    // Confidential documents privacy guard: Only staff or the Cube themselves can access documents
+    if (!isMentorOrAdminUser && !isOwnProfile && (profile as any).documents) {
+      (profile as any).documents = [];
     }
 
     return res.json({
