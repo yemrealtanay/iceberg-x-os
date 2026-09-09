@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Search, Filter, ShieldAlert, ShieldCheck, Award, Sparkles, Trash, Rocket, AlertCircle, GraduationCap, Clock, Mail, XCircle } from 'lucide-react';
 import { getLevelMeta, isInProgramme } from '../utils/cubeStatus';
+import { UserAvatar } from '../components/UserAvatar';
 
 export const Directory: React.FC = () => {
   const { user } = useAuth();
@@ -284,20 +285,28 @@ export const Directory: React.FC = () => {
                 className={cardClassName}
               >
                 <div>
-                  <div className="flex justify-between items-start">
-                    <Link to={`/cubes/${cube.id}`} className="hover:opacity-85 transition-opacity block flex-1">
-                      <h3 className={`font-extrabold transition-colors flex items-center gap-1.5 ${
-                        isIceberger
-                          ? 'text-white group-hover:text-cyan-400'
-                          : isFounding
-                            ? 'text-gray-900 group-hover:text-amber-600'
-                            : 'text-gray-900 group-hover:text-magenta'
-                      }`}>
-                        <span>{cube.user.name}</span>
-                        {isFounding && <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse flex-shrink-0" />}
-                        {isIceberger && <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />}
-                      </h3>
-                      <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
+                  <div className="flex justify-between items-start gap-3">
+                    <Link to={`/cubes/${cube.id}`} className="hover:opacity-85 transition-opacity flex items-center gap-3 min-w-0 flex-1">
+                      <UserAvatar
+                        name={cube.user.name}
+                        avatarUrl={cube.avatar_url || cube.user.avatar_url}
+                        size="sm"
+                        className={isIceberger ? 'ring-2 ring-cyan-400/30' : isFounding ? 'ring-2 ring-amber-400/30' : ''}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <h3 className={`font-extrabold transition-colors flex items-center gap-1.5 truncate ${
+                          isIceberger
+                            ? 'text-white group-hover:text-cyan-400'
+                            : isFounding
+                              ? 'text-gray-900 group-hover:text-amber-600'
+                              : 'text-gray-900 group-hover:text-magenta'
+                        }`}>
+                          <span className="truncate">{cube.user.name}</span>
+                          {isFounding && <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse flex-shrink-0" />}
+                          {isIceberger && <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />}
+                        </h3>
+                        <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
+                      </div>
                     </Link>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {(() => {

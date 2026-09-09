@@ -3,12 +3,15 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown, Trophy, ShieldCheck } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
+import { UserAvatar } from './UserAvatar';
+import { AvatarUploadModal } from './AvatarUploadModal';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   if (!user) return null;
 
@@ -31,6 +34,12 @@ export const Layout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isLinkActive = (path: string) => {
+    if (location.pathname === path) return true;
+    if (path === '/admin/documents' && location.pathname === '/admin/nda') return true;
+    return false;
+  };
+
   const getMainLinks = () => {
     return [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,7 +57,7 @@ export const Layout: React.FC = () => {
       { path: '/teams', label: 'Teams', icon: Shield },
       { path: '/demodays', label: 'Demo Days', icon: Calendar },
       { path: '/offboarding', label: 'Offboarding', icon: GraduationCap },
-      { path: '/admin/nda', label: 'NDA Tracking', icon: ShieldCheck },
+      { path: '/admin/documents', label: 'Document Tracking', icon: ShieldCheck },
       { path: '/notifications', label: 'Broadcast', icon: Send },
     ];
     if (user.role === 'ADMIN') {
@@ -99,7 +108,7 @@ export const Layout: React.FC = () => {
                   <button
                     onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold leading-none whitespace-nowrap transition-all duration-200 ${
-                      adminDropdownOpen || getAdminLinks().some(l => location.pathname === l.path)
+                      adminDropdownOpen || getAdminLinks().some(l => isLinkActive(l.path))
                         ? 'bg-gray-800 text-white shadow-md'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
@@ -113,7 +122,7 @@ export const Layout: React.FC = () => {
                     <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-fadeIn">
                       {getAdminLinks().map((link) => {
                         const Icon = link.icon;
-                        const isActive = location.pathname === link.path;
+                        const isActive = isLinkActive(link.path);
                         return (
                           <Link
                             key={link.path}
@@ -139,28 +148,27 @@ export const Layout: React.FC = () => {
             {/* Right-side User Actions */}
             <div className="hidden lg:flex items-center justify-end gap-2.5 min-w-0">
               {user.role === 'CUBE' && user.cubeProfileId ? (
-                <Link to={`/cubes/${user.cubeProfileId}`} className="flex items-center gap-2 min-w-0 hover:opacity-80 group">
+                <Link to={`/cubes/${user.cubeProfileId}`} className="flex items-center gap-2.5 min-w-0 hover:opacity-85 group">
                   <div className="text-right min-w-0 max-w-[160px]">
                     <p className="text-xs font-bold leading-tight text-gray-900 truncate group-hover:text-magenta transition-colors">{user.name}</p>
                     <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
                   </div>
-                  {user.cubeNumber && (
-                    <div className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-[10px]">
-                      #{user.cubeNumber}
-                    </div>
-                  )}
+                  <UserAvatar name={user.name} avatarUrl={user.avatarUrl || user.avatar_url} size="sm" />
                 </Link>
               ) : (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="text-right min-w-0 max-w-[160px]">
                     <p className="text-xs font-bold leading-tight text-gray-900 truncate">{user.name}</p>
                     <p className="text-[10px] text-magenta font-bold tracking-wider uppercase">{user.role}</p>
                   </div>
-                  {user.cubeNumber && (
-                    <div className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-[10px]">
-                      #{user.cubeNumber}
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarModalOpen(true)}
+                    title="Click to update profile photo"
+                    className="focus:outline-none group rounded-full"
+                  >
+                    <UserAvatar name={user.name} avatarUrl={user.avatarUrl || user.avatar_url} size="sm" className="group-hover:ring-2 group-hover:ring-magenta/40 transition" />
+                  </button>
                 </div>
               )}
               <NotificationBell />
@@ -197,7 +205,7 @@ export const Layout: React.FC = () => {
           <div className="lg:hidden bg-white border-b border-gray-100 px-4 pt-2 pb-4 space-y-1 shadow-inner animate-fadeIn">
             {links.map((link) => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+              const isActive = isLinkActive(link.path);
               return (
                 <Link
                   key={link.path}
@@ -219,29 +227,31 @@ export const Layout: React.FC = () => {
                 <Link
                   to={`/cubes/${user.cubeProfileId}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 hover:opacity-80 group animate-fadeIn"
+                  className="flex items-center gap-2.5 hover:opacity-80 group animate-fadeIn"
                 >
+                  <UserAvatar name={user.name} avatarUrl={user.avatarUrl || user.avatar_url} size="sm" />
                   <div>
                     <p className="text-sm font-bold group-hover:text-magenta transition-colors">{user.name}</p>
                     <p className="text-xs text-magenta font-semibold tracking-wider uppercase">{user.role}</p>
                   </div>
-                  {user.cubeNumber && (
-                    <span className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-xs">
-                      #{user.cubeNumber}
-                    </span>
-                  )}
                 </Link>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setAvatarModalOpen(true);
+                    }}
+                    title="Click to update profile photo"
+                    className="focus:outline-none"
+                  >
+                    <UserAvatar name={user.name} avatarUrl={user.avatarUrl || user.avatar_url} size="sm" />
+                  </button>
                   <div>
                     <p className="text-sm font-bold">{user.name}</p>
                     <p className="text-xs text-magenta font-semibold tracking-wider uppercase">{user.role}</p>
                   </div>
-                  {user.cubeNumber && (
-                    <span className="bg-magenta/10 text-magenta font-bold px-1.5 py-0.5 rounded text-xs">
-                      #{user.cubeNumber}
-                    </span>
-                  )}
                 </div>
               )}
               <div className="flex items-center gap-2">
@@ -293,6 +303,11 @@ export const Layout: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      <AvatarUploadModal
+        isOpen={avatarModalOpen}
+        onClose={() => setAvatarModalOpen(false)}
+      />
     </div>
   );
 };

@@ -9,6 +9,8 @@ interface User {
   cubeProfileId?: string;
   cubeNumber?: string;
   isFoundingCube?: boolean;
+  avatar_url?: string | null;
+  avatarUrl?: string | null;
 }
 
 interface AuthContextType {

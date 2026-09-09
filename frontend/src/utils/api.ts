@@ -1,4 +1,4 @@
-const API_BASE = window.location.origin.includes(':5173')
+export const API_BASE = window.location.origin.includes(':5173')
   ? 'http://localhost:5001/api'
   : '/api';
 
@@ -10,10 +10,15 @@ interface RequestOptions {
 
 async function request<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = localStorage.getItem('iceberg_token');
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -25,7 +30,7 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
   };
 
   if (options.body) {
-    config.body = JSON.stringify(options.body);
+    config.body = isFormData ? options.body : JSON.stringify(options.body);
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, config);
@@ -69,4 +74,33 @@ export const api = {
     
   delete: <T = any>(endpoint: string, headers?: Record<string, string>) => 
     request<T>(endpoint, { method: 'DELETE', headers }),
+
+  upload: <T = any>(endpoint: string, formData: FormData, method = 'POST') =>
+    request<T>(endpoint, { method, body: formData }),
+
+  downloadBlob: async (endpoint: string): Promise<{ blob: Blob; filename: string }> => {
+    const token = localStorage.getItem('iceberg_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}${endpoint}`, { headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to download file: ${res.statusText}`);
+    }
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    let filename = 'document.pdf';
+    const match = disposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?/i);
+    if (match && match[1]) {
+      try {
+        filename = decodeURIComponent(match[1]);
+      } catch {
+        filename = match[1];
+      }
+    }
+
+    const blob = await res.blob();
+    return { blob, filename };
+  }
 };

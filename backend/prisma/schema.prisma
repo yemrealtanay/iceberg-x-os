@@ -83,6 +83,7 @@ model User {
   email         String   @unique
   password_hash String
   role          Role     @default(CUBE)
+  avatar_url    String?
   last_login_at DateTime?
   login_streak  Int      @default(0)
   created_at    DateTime @default(now())
@@ -103,6 +104,8 @@ model User {
   notifications        Notification[]       @relation("UserNotifications")
   invites              UserInvite[]         @relation("UserInvites")
   invites_created      UserInvite[]         @relation("InvitesCreated")
+  uploaded_documents   CubeDocument[]       @relation("DocumentUploader")
+  reviewed_documents   CubeDocument[]       @relation("DocumentReviewer")
 }
 
 model CubeProfile {
@@ -140,6 +143,7 @@ model CubeProfile {
   private_notes      PrivateNote[]
   testimonials       Testimonial[]
   cube_quests        CubeQuest[]
+  documents          CubeDocument[]
 
   @@index([assigned_mentor_id])
   @@index([current_level])
@@ -540,5 +544,47 @@ model CubeQuest {
   @@unique([cube_id, quest_id])
   @@index([cube_id])
   @@index([quest_id])
+}
+
+enum DocumentType {
+  NDA
+  STUDENT_CERTIFICATE
+  TRANSCRIPT
+  INTERNSHIP_CONTRACT
+  SGK_ENTRY
+  ID_COPY
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model CubeDocument {
+  id             String         @id @default(uuid())
+  cube_id        String
+  cube           CubeProfile    @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  type           DocumentType   @default(OTHER)
+  title          String
+  file_name      String
+  file_path      String
+  file_size      Int
+  mime_type      String
+  status         DocumentStatus @default(PENDING_REVIEW)
+  notes          String?
+  uploaded_by_id String
+  uploaded_by    User           @relation("DocumentUploader", fields: [uploaded_by_id], references: [id], onDelete: Restrict)
+  reviewed_by_id String?
+  reviewed_by    User?          @relation("DocumentReviewer", fields: [reviewed_by_id], references: [id], onDelete: SetNull)
+  reviewed_at    DateTime?
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+
+  @@index([cube_id])
+  @@index([type])
+  @@index([status])
+  @@index([uploaded_by_id])
 }
 

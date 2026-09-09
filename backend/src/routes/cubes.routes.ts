@@ -12,6 +12,7 @@ import { badRequest, conflict, notFound, sendError, parseCubeNumber } from '../u
 import { createSingleNotification } from '../services/notification.service';
 import { Role, CubeLevel } from '@prisma/client';
 import { recalculateAllQuestsForCube } from '../services/quest.service';
+import { StorageService } from '../services/storage.service';
 
 const router = Router();
 
@@ -76,6 +77,22 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
             id: true,
             name: true,
             email: true,
+            avatar_url: true,
+          }
+        },
+        documents: {
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            status: true,
+            file_name: true,
+            file_size: true,
+            mime_type: true,
+            created_at: true,
+          },
+          orderBy: {
+            created_at: 'desc',
           }
         },
         assigned_mentor: {
@@ -396,27 +413,20 @@ router.post('/cubes/:id/avatar', requireAuth, async (req: AuthenticatedRequest, 
 
     // Convert to binary buffer
     const buffer = Buffer.from(base64Data, 'base64');
+    const extension = imageType.split('/')[1] || 'png';
 
-    // Resolve directory and create it if not exists
-    const uploadsDir = path.resolve(__dirname, '../uploads/avatars');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    // Save avatar using persistent StorageService
+    const { relativeUrl } = await StorageService.saveAvatar(id, buffer, extension);
 
-    // Define file name and path
-    const extension = imageType.split('/')[1];
-    const filename = `${id}.${extension}`;
-    const filePath = path.join(uploadsDir, filename);
-
-    // Save image
-    fs.writeFileSync(filePath, buffer);
-
-    const avatarUrl = `/uploads/avatars/${filename}`;
-
-    // Update database
+    // Update database for both CubeProfile and User
     const updatedProfile = await prisma.cubeProfile.update({
       where: { id },
-      data: { avatar_url: avatarUrl }
+      data: { avatar_url: relativeUrl }
+    });
+
+    await prisma.user.update({
+      where: { id: profile.user_id },
+      data: { avatar_url: relativeUrl }
     });
 
     return res.json({ avatar_url: updatedProfile.avatar_url });
@@ -798,7 +808,8 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
             id: true,
             name: true,
             email: true,
-            role: true
+            role: true,
+            avatar_url: true,
           }
         },
         assigned_mentor: {
@@ -835,6 +846,13 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
           }
         },
         offboarding_record: true,
+        documents: {
+          include: {
+            uploaded_by: { select: { id: true, name: true, role: true } },
+            reviewed_by: { select: { id: true, name: true, role: true } },
+          },
+          orderBy: { created_at: 'desc' }
+        },
         cube_quests: {
           include: {
             quest: {

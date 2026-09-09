@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import path from 'path';
 import type { Request } from 'express';
 
 dotenv.config();
@@ -88,3 +89,12 @@ export function resolvePublicOrigin(req?: Request): string {
 
   return APP_URL;
 }
+
+/**
+ * The directory where uploaded files (avatars, documents) are stored.
+ * If STORAGE_PATH is provided (e.g., mounted Railway Volume at /data/uploads),
+ * that absolute path is used. Defaults to local backend/uploads.
+ */
+export const STORAGE_PATH = process.env.STORAGE_PATH
+  ? path.resolve(process.env.STORAGE_PATH)
+  : path.resolve(__dirname, '../../uploads');

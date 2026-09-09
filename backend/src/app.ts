@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { APP_URL, IS_PROD } from './config/env';
+import { APP_URL, IS_PROD, STORAGE_PATH } from './config/env';
 import router from './routes';
 
 const app = express();
@@ -45,8 +45,13 @@ const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
 // Serve static assets in production/Docker
 app.use(express.static(frontendDistPath));
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+// Serve uploaded avatars statically
+// Note: Confidential documents (NDAs, Cube docs) are strictly NOT served statically;
+// they are guarded by authentication and access control via /api/documents/:id/file.
+const avatarsStoragePath = path.join(STORAGE_PATH, 'avatars');
+const legacyAvatarsPath = path.resolve(__dirname, '../uploads/avatars');
+app.use('/uploads/avatars', express.static(avatarsStoragePath));
+app.use('/uploads/avatars', express.static(legacyAvatarsPath));
 
 // Mount all API routes
 app.use('/api', router);

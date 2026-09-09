@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, ShieldCheck, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X, ExternalLink, Clock, Mail, XCircle } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Award, Calendar, Sparkles, AlertCircle, Edit, Star, GitBranch, Video, CheckCircle, Camera, GraduationCap, Trash, X, ExternalLink, Clock, Mail, XCircle, FileText } from 'lucide-react';
 import { BadgeDisc, RarityPill } from '../components/BadgeMedal';
 import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
 import { getAssetUrl } from '../utils/assets';
+import { CubeDocumentsManager } from '../components/CubeDocumentsManager';
 
 const formatExternalUrl = (url: string | null | undefined): string => {
   if (!url) return '';
@@ -21,7 +22,7 @@ const formatExternalUrl = (url: string | null | undefined): string => {
 
 export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // CubeProfile ID
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [data, setData] = useState<any>(null);
@@ -43,8 +44,8 @@ export const Profile: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File size must be less than 2MB.');
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB.');
       return;
     }
 
@@ -62,6 +63,7 @@ export const Profile: React.FC = () => {
           }
         }));
         setAvatarLoadError(false);
+        await refreshUser();
       } catch (err: any) {
         alert(err.message || 'Failed to upload avatar');
       } finally {
@@ -732,6 +734,21 @@ export const Profile: React.FC = () => {
                   </select>
                 </div>
               )}
+
+              <div className="flex items-center justify-between pt-1.5 border-t border-gray-100/60">
+                <span className="font-bold text-gray-700 text-xs">Documents:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById('documents-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
+                  title="View all uploaded documents"
+                >
+                  <FileText className="w-3 h-3 text-blue-600 shrink-0" />
+                  <span>{profile.documents?.length || 0} files</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1189,6 +1206,15 @@ export const Profile: React.FC = () => {
           </div>
         )}
         
+        {/* Documents & Confidential Agreements (NDA, Internship docs) */}
+        <div id="documents-section" className="scroll-mt-24">
+          <CubeDocumentsManager
+            cubeId={profile.id}
+            isOwner={isOwner}
+            onDocumentsChange={fetchProfileData}
+          />
+        </div>
+
         {/* Badges Earned Section */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
           <h3 className="font-extrabold text-lg flex items-center gap-2">

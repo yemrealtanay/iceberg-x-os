@@ -210,7 +210,15 @@ function App() {
               }
             />
 
-            {/* NDA & Confidentiality Agreements Tracking (Admins & Mentors) */}
+            {/* Documents & NDA Tracking (Admins & Mentors) */}
+            <Route
+              path="admin/documents"
+              element={
+                <RouteGuard allowedRoles={['ADMIN', 'MENTOR']}>
+                  <AdminNda />
+                </RouteGuard>
+              }
+            />
             <Route
               path="admin/nda"
               element={

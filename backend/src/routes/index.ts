@@ -19,6 +19,7 @@ import invitesRoutes from './invites.routes';
 import notificationsRoutes from './notifications.routes';
 import testimonialsRoutes from './testimonials.routes';
 import questsRoutes from './quests.routes';
+import documentsRoutes from './documents.routes';
 
 const router = Router();
 
@@ -50,5 +51,6 @@ router.use(invitesRoutes);
 router.use(notificationsRoutes);
 router.use(testimonialsRoutes);
 router.use(questsRoutes);
+router.use(documentsRoutes);
 
 export default router;
