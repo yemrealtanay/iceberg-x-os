@@ -189,8 +189,8 @@ export const Directory: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-xl outline-none font-bold text-xs appearance-none cursor-pointer text-slate-800"
               >
                 <option value="all">All Assignments</option>
-                <option value="unassigned">Unassigned (Görevsiz)</option>
-                <option value="assigned">Assigned (Görevli)</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="assigned">Assigned</option>
               </select>
             </div>
           )}
@@ -284,30 +284,37 @@ export const Directory: React.FC = () => {
                 key={cube.id}
                 className={cardClassName}
               >
-                <div>
-                  <div className="flex justify-between items-start gap-3">
-                    <Link to={`/cubes/${cube.id}`} className="hover:opacity-85 transition-opacity flex items-center gap-3 min-w-0 flex-1">
-                      <UserAvatar
-                        name={cube.user.name}
-                        avatarUrl={cube.avatar_url || cube.user.avatar_url}
-                        size="sm"
-                        className={isIceberger ? 'ring-2 ring-cyan-400/30' : isFounding ? 'ring-2 ring-amber-400/30' : ''}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <h3 className={`font-extrabold transition-colors flex items-center gap-1.5 truncate ${
-                          isIceberger
-                            ? 'text-white group-hover:text-cyan-400'
-                            : isFounding
-                              ? 'text-gray-900 group-hover:text-amber-600'
-                              : 'text-gray-900 group-hover:text-magenta'
-                        }`}>
-                          <span className="truncate">{cube.user.name}</span>
-                          {isFounding && <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse flex-shrink-0" />}
-                          {isIceberger && <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />}
-                        </h3>
-                        <p className={`text-xs mt-0.5 ${isIceberger ? 'text-cyan-300/60' : 'text-gray-400'}`}>{cube.cohort}</p>
-                      </div>
-                    </Link>
+                <div className="flex flex-col gap-4">
+                  {/* Top Metadata Row: Number + Status Pills on Left, NDA + Admin Actions on Right */}
+                  <div className="flex items-center justify-between gap-2 min-h-[1.75rem]">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg border ${
+                        isIceberger
+                          ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300'
+                          : isFounding
+                            ? 'bg-amber-400/10 border-amber-400/25 text-amber-700'
+                            : 'bg-magenta/5 border-magenta/15 text-magenta'
+                      }`}>
+                        #{cube.cube_number}
+                      </span>
+                      <span
+                        title={getLevelMeta(cube.current_level).hint}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                          isFounding && !hasLeftProgramme
+                            ? 'text-amber-700 bg-amber-400/10 border-amber-400/20'
+                            : getLevelMeta(cube.current_level).badge
+                        }`}
+                      >
+                        {getLevelMeta(cube.current_level).label}
+                      </span>
+                      {isFounding && (
+                        <span className="bg-amber-400/10 border border-amber-400/20 text-amber-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs uppercase tracking-wider">
+                          <Award className="w-3 h-3 text-amber-500 shrink-0" />
+                          <span>Founding</span>
+                        </span>
+                      )}
+                    </div>
+
                     <div className="flex items-center gap-1.5 shrink-0">
                       {(() => {
                         const status = cube.nda_status || (cube.nda_signed ? 'signed' : 'not_sent');
@@ -315,7 +322,7 @@ export const Directory: React.FC = () => {
                           return (
                             <span
                               title={`NDA Signed${cube.nda_signed_at ? ' · ' + new Date(cube.nda_signed_at).toLocaleDateString('en-GB') : ''}`}
-                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm"
+                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-2xs"
                             >
                               <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
                               <span>NDA</span>
@@ -326,7 +333,7 @@ export const Directory: React.FC = () => {
                           return (
                             <span
                               title="NDA Pending Signature"
-                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 shadow-sm"
+                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 shadow-2xs"
                             >
                               <Clock className="w-3 h-3 text-amber-600 shrink-0" />
                               <span>Pending</span>
@@ -336,8 +343,8 @@ export const Directory: React.FC = () => {
                         if (status === 'not_signed') {
                           return (
                             <span
-                              title="NDA Not Signed (Declined)"
-                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 shadow-sm"
+                              title="NDA Not Signed"
+                              className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 shadow-2xs"
                             >
                               <XCircle className="w-3 h-3 text-rose-600 shrink-0" />
                               <span>Not Signed</span>
@@ -347,22 +354,13 @@ export const Directory: React.FC = () => {
                         return (
                           <span
                             title="NDA Not Sent"
-                            className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 shadow-sm"
+                            className="inline-flex items-center gap-1 font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 shadow-2xs"
                           >
                             <Mail className="w-3 h-3 text-slate-500 shrink-0" />
                             <span>Not Sent</span>
                           </span>
                         );
                       })()}
-                      <span className={`font-extrabold text-xs px-2.5 py-0.5 rounded ${
-                        isIceberger
-                          ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-300'
-                          : isFounding
-                            ? 'bg-amber-400/10 border border-amber-400/20 text-amber-700'
-                            : 'bg-magenta/5 border border-magenta/10 text-magenta'
-                      }`}>
-                        #{cube.cube_number}
-                      </span>
                       {user?.role === 'ADMIN' && (
                         <button
                           type="button"
@@ -380,73 +378,86 @@ export const Directory: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <span
-                      title={getLevelMeta(cube.current_level).hint}
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
-                        isFounding && !hasLeftProgramme
-                          ? 'text-amber-700 bg-amber-400/10 border-amber-400/20'
-                          : getLevelMeta(cube.current_level).badge
+                  {/* Primary Identity Section: Avatar + Name (Spacious, Uncramped) */}
+                  <Link
+                    to={`/cubes/${cube.id}`}
+                    className="flex items-start gap-3.5 group/link hover:opacity-90 transition-opacity pt-1"
+                  >
+                    <UserAvatar
+                      name={cube.user.name}
+                      avatarUrl={cube.avatar_url || cube.user.avatar_url}
+                      size="md"
+                      className={`shrink-0 shadow-sm transition-transform duration-200 group-hover/link:scale-105 ${
+                        isIceberger ? 'ring-2 ring-cyan-400/40' : isFounding ? 'ring-2 ring-amber-400/40' : 'ring-2 ring-gray-100'
                       }`}
-                    >
-                      {getLevelMeta(cube.current_level).label}
-                    </span>
-                    {hasLeftProgramme && (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
+                    />
+                    <div className="min-w-0 flex-1">
+                      <h3 className={`font-black text-base tracking-tight leading-snug break-words flex items-center gap-1.5 ${
                         isIceberger
-                          ? 'text-cyan-300/80 bg-white/5 border-white/10'
-                          : 'text-gray-500 bg-white border-gray-200'
+                          ? 'text-white group-hover/link:text-cyan-400'
+                          : isFounding
+                            ? 'text-gray-900 group-hover/link:text-amber-600'
+                            : 'text-gray-900 group-hover/link:text-magenta'
                       }`}>
-                        {getLevelMeta(cube.current_level).hint}
-                      </span>
-                    )}
-                    {isFounding && (
-                      <span className="bg-amber-400/10 border border-amber-400/20 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm uppercase tracking-wide">
-                        <Award className="w-3 h-3 text-amber-500" />
-                        Founding Cube
-                      </span>
-                    )}
-                  </div>
+                        <span>{cube.user.name}</span>
+                        {isFounding && <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                        {isIceberger && <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+                      </h3>
+                      <p className={`text-xs font-semibold mt-0.5 ${isIceberger ? 'text-cyan-300/70' : 'text-gray-400'}`}>
+                        {cube.cohort || 'Fellowship'}
+                      </p>
+                    </div>
+                  </Link>
 
-                  <div className={`mt-4 flex flex-col gap-1 text-xs ${isIceberger ? 'text-slate-300' : 'text-gray-500'}`}>
-                    <p>
-                      <span className={`font-bold ${isIceberger ? 'text-cyan-400/90' : 'text-gray-600'}`}>Uni:</span> {cube.university || 'N/A'}
-                    </p>
+                  {/* Program & Academic Details */}
+                  <div className={`flex flex-col gap-1.5 text-xs pt-3 border-t ${
+                    isIceberger ? 'border-cyan-500/15 text-slate-300' : 'border-gray-100/70 text-gray-500'
+                  }`}>
+                    <div className="flex items-start gap-1.5">
+                      <span className={`font-bold shrink-0 ${isIceberger ? 'text-cyan-400/90' : 'text-gray-700'}`}>Uni:</span>
+                      <span className="truncate" title={cube.university || 'N/A'}>
+                        {cube.university || 'N/A'}
+                      </span>
+                    </div>
                     {cube.internship_status && (
-                      <p>
-                        <span className={`font-bold ${isIceberger ? 'text-cyan-400/90' : 'text-gray-600'}`}>Current Role:</span>{' '}
-                        <span className={isIceberger ? 'text-cyan-300 font-semibold' : 'text-magenta font-semibold'}>
+                      <div className="flex items-start gap-1.5">
+                        <span className={`font-bold shrink-0 ${isIceberger ? 'text-cyan-400/90' : 'text-gray-700'}`}>Current Role:</span>
+                        <span className={`font-semibold line-clamp-1 ${isIceberger ? 'text-cyan-300' : 'text-magenta'}`} title={cube.internship_status}>
                           {cube.internship_status}
                         </span>
-                      </p>
+                      </div>
                     )}
                     {cube.assigned_mentor && (
-                      <p>
-                        <span className={`font-bold ${isIceberger ? 'text-cyan-400/90' : 'text-gray-600'}`}>Mentor:</span> {cube.assigned_mentor.name}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-bold shrink-0 ${isIceberger ? 'text-cyan-400/90' : 'text-gray-700'}`}>Mentor:</span>
+                        <span className="font-semibold text-gray-700 dark:text-slate-200">
+                          {cube.assigned_mentor.name}
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Active Assignment Section.
-                      Only meaningful for people currently in the programme —
-                      an Alumni with no mission is not a problem to solve. */}
+                  {/* Active Mission Section */}
                   {!hasLeftProgramme && (
-                    <div className={`mt-4 pt-3 border-t border-gray-100 text-xs flex flex-col gap-1`}>
+                    <div className={`pt-2.5 border-t text-xs flex flex-col gap-1 ${
+                      isIceberger ? 'border-cyan-500/15' : 'border-gray-100/70'
+                    }`}>
                       <span className="font-bold text-[10px] uppercase tracking-wider text-gray-400">
                         Active Mission:
                       </span>
                       {activeMission ? (
                         <Link
                           to={`/missions/${activeMission.id}`}
-                          className="text-magenta hover:text-magenta-hover font-bold hover:underline flex items-center gap-1 mt-0.5 truncate"
+                          className="text-magenta hover:text-magenta-hover font-bold hover:underline flex items-center gap-1.5 line-clamp-1"
+                          title={activeMission.title}
                         >
-                          <Rocket className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
+                          <Rocket className="w-3.5 h-3.5 shrink-0" />
                           <span className="truncate">{activeMission.title}</span>
                         </Link>
                       ) : (
-                        <span className="text-red-500 font-extrabold flex items-center gap-1 mt-0.5">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 animate-bounce" />
-                          <span>Görevlendirilmemiş (Unassigned)</span>
+                        <span className="text-red-500 font-bold flex items-center gap-1.5 text-xs">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Unassigned</span>
                         </span>
                       )}
                     </div>
