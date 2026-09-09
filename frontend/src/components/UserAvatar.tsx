@@ -4,7 +4,7 @@ import { getAssetUrl } from '../utils/assets';
 interface UserAvatarProps {
   name: string;
   avatarUrl?: string | null;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'card' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -12,6 +12,7 @@ const sizeClasses = {
   xs: 'w-6 h-6 text-[10px]',
   sm: 'w-8 h-8 text-xs',
   md: 'w-10 h-10 text-sm font-bold',
+  card: 'w-12 h-12 text-sm font-extrabold',
   lg: 'w-16 h-16 text-lg font-extrabold',
   xl: 'w-24 h-24 text-2xl font-black',
 };
