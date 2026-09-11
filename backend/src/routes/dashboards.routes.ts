@@ -266,10 +266,30 @@ router.get('/cube/dashboard', requireAuth, async (req: AuthenticatedRequest, res
     });
 
     const activeMemberships = memberships.filter(
-      m => m.team.mission && !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(m.team.mission.status)
+      m => m.team?.mission && !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(m.team.mission.status)
     );
-    const activeMission = activeMemberships[0]?.team.mission || null;
-    const activeTeam = activeMemberships[0]?.team || null;
+
+    // Group memberships by unique mission so Cubes with multiple active missions see all of them
+    const missionMap = new Map<string, { mission: any; team: any; teams: any[]; role: string }>();
+    for (const m of activeMemberships) {
+      if (!m.team?.mission) continue;
+      const missionId = m.team.mission.id;
+      if (!missionMap.has(missionId)) {
+        missionMap.set(missionId, {
+          mission: m.team.mission,
+          team: m.team,
+          teams: [m.team],
+          role: m.role
+        });
+      } else {
+        const existing = missionMap.get(missionId)!;
+        existing.teams.push(m.team);
+      }
+    }
+
+    const activeMissions = Array.from(missionMap.values());
+    const activeMission = activeMissions[0]?.mission || null;
+    const activeTeam = activeMissions[0]?.team || null;
 
     // Upcoming Demo Day
     const upcomingDemoDay = await prisma.demoDay.findFirst({
@@ -296,6 +316,7 @@ router.get('/cube/dashboard', requireAuth, async (req: AuthenticatedRequest, res
       profile,
       activeMission,
       activeTeam,
+      activeMissions,
       upcomingDemoDay,
       recentFeedback
     });

@@ -14,7 +14,7 @@ export const CubeDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Submit Update modal/form states
-  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [activeUpdateMissionId, setActiveUpdateMissionId] = useState<string | null>(null);
   const [updateType, setUpdateType] = useState('daily');
   const [updateContent, setUpdateContent] = useState('');
   const [updateBlockers, setUpdateBlockers] = useState('');
@@ -65,9 +65,9 @@ export const CubeDashboard: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
-  const handleUpdateSubmit = async (e: React.FormEvent) => {
+  const handleUpdateSubmit = async (e: React.FormEvent, missionId: string) => {
     e.preventDefault();
-    if (!updateContent) return;
+    if (!updateContent.trim()) return;
 
     setUpdateSubmitting(true);
     setUpdateError(null);
@@ -75,18 +75,19 @@ export const CubeDashboard: React.FC = () => {
 
     try {
       await api.post('/updates', {
-        mission_id: data.activeMission.id,
+        mission_id: missionId,
         type: updateType,
-        content: updateContent,
-        blockers: updateBlockers || undefined
+        content: updateContent.trim(),
+        blockers: updateBlockers.trim() || undefined
       });
       setUpdateSuccess(true);
       setUpdateContent('');
       setUpdateBlockers('');
       setTimeout(() => {
-        setShowUpdateForm(false);
+        setActiveUpdateMissionId(null);
         setUpdateSuccess(false);
       }, 2000);
+      fetchDashboardData();
     } catch (err: any) {
       setUpdateError(err.message || 'Failed to submit update');
     } finally {
@@ -140,7 +141,12 @@ export const CubeDashboard: React.FC = () => {
     );
   }
 
-  const { profile, activeMission, activeTeam, upcomingDemoDay, recentFeedback } = data;
+  const { profile, activeMission, activeTeam, activeMissions, upcomingDemoDay, recentFeedback } = data;
+
+  const missionsList: Array<{ mission: any; team: any; role?: string }> =
+    (activeMissions && activeMissions.length > 0)
+      ? activeMissions
+      : (activeMission ? [{ mission: activeMission, team: activeTeam }] : []);
 
   return (
     <div className="flex flex-col gap-8">
@@ -209,179 +215,211 @@ export const CubeDashboard: React.FC = () => {
         
         {/* Active Mission & Team (Left 2 Columns) */}
         <div className="lg:col-span-2 flex flex-col gap-8">
-          
-          {/* Mission Details */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-6">
-            <div className="flex justify-between items-center border-b border-gray-50 pb-3">
-              <h3 className="font-extrabold text-lg flex items-center gap-2">
-                <Rocket className="w-5 h-5 text-magenta" />
-                <span>My Active Mission</span>
-              </h3>
-              {activeMission && (
-                <span className="text-xs font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-1 rounded-full uppercase">
-                  {activeMission.status.replace(/_/g, ' ')}
-                </span>
-              )}
+          {missionsList.length === 0 ? (
+            <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-subtle text-center flex flex-col items-center justify-center gap-2">
+              <Rocket className="w-8 h-8 text-gray-300" />
+              <h3 className="font-extrabold text-base text-gray-700">No Active Mission</h3>
+              <p className="text-gray-400 text-xs max-w-sm">No active mission currently assigned. Ask your mentor for assignment.</p>
             </div>
+          ) : (
+            missionsList.map((item: any, index: number) => {
+              const m = item.mission;
+              const t = item.team;
+              const isUpdateOpen = activeUpdateMissionId === m.id;
 
-            {activeMission ? (
-              <div className="flex flex-col gap-4">
-                <div>
-                  <Link to={`/missions/${activeMission.id}`} className="text-xl font-bold hover:text-magenta transition-colors">
-                    {activeMission.title}
-                  </Link>
-                  <div className="markdown-body text-gray-500 text-xs mt-2 leading-relaxed">
-                    <CustomMarkdown>{activeMission.description}</CustomMarkdown>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  {activeMission.slack_channel_url && (
-                    <a
-                      href={activeMission.slack_channel_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-magenta bg-gray-50 border border-gray-100 p-3 rounded-xl transition-all"
-                    >
-                      <MessageCircle className="w-4 h-4 text-magenta" />
-                      <span>Slack Channel Link</span>
-                      <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-400" />
-                    </a>
-                  )}
-                  {activeMission.repository_url && (
-                    <a
-                      href={activeMission.repository_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-magenta bg-gray-50 border border-gray-100 p-3 rounded-xl transition-all"
-                    >
-                      <PlayCircle className="w-4 h-4 text-magenta" />
-                      <span>Repository URL</span>
-                      <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-400" />
-                    </a>
-                  )}
-                </div>
-
-                {/* Submissions/Updates Quick Buttons */}
-                <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-50">
-                  <button
-                    onClick={() => setShowUpdateForm(!showUpdateForm)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors shadow-sm shadow-magenta/10"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Submit Update</span>
-                  </button>
-                  <Link
-                    to="/submit-demo"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors"
-                  >
-                    <PlayCircle className="w-3.5 h-3.5" />
-                    <span>Submit Demo Day Material</span>
-                  </Link>
-                </div>
-
-                {/* Submit Update Inline Card */}
-                {showUpdateForm && (
-                  <form onSubmit={handleUpdateSubmit} className="mt-4 border border-magenta/10 bg-magenta/5 p-4 rounded-xl flex flex-col gap-3.5 animate-fadeIn">
-                    <h4 className="font-bold text-xs text-magenta uppercase tracking-wider">New Progress Update</h4>
-
-                    {updateSuccess && (
-                      <div className="bg-green-50 text-green-700 text-xs font-semibold p-2.5 rounded-lg border border-green-100">
-                        Update submitted successfully!
+              return (
+                <div key={m.id} className="flex flex-col gap-6">
+                  {/* Mission Details Card */}
+                  <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-6">
+                    <div className="flex justify-between items-center border-b border-gray-50 pb-3 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Rocket className="w-5 h-5 text-magenta" />
+                        <h3 className="font-extrabold text-lg">
+                          {missionsList.length > 1 ? `Active Mission ${index + 1}` : 'My Active Mission'}
+                        </h3>
+                        {item.role && (
+                          <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full uppercase">
+                            {item.role.replace(/_/g, ' ')}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    {updateError && (
-                      <div className="bg-red-50 text-red-700 text-xs font-semibold p-2.5 rounded-lg border border-red-100">
-                        {updateError}
-                      </div>
-                    )}
+                      {m.status && (
+                        <span className="text-xs font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2.5 py-1 rounded-full uppercase">
+                          {m.status.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
 
-                    <div className="flex items-center gap-4">
-                      <label className="text-xs font-bold text-gray-600">Type:</label>
-                      <div className="flex gap-3">
-                        {['daily', 'weekly', 'mission_progress'].map((type) => (
-                          <label key={type} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="updateType"
-                              value={type}
-                              checked={updateType === type}
-                              onChange={() => setUpdateType(type)}
-                              className="text-magenta focus:ring-magenta"
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <Link to={`/missions/${m.id}`} className="text-xl font-bold hover:text-magenta transition-colors">
+                          {m.title}
+                        </Link>
+                        <div className="markdown-body text-gray-500 text-xs mt-2 leading-relaxed">
+                          <CustomMarkdown>{m.description}</CustomMarkdown>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        {m.slack_channel_url && (
+                          <a
+                            href={m.slack_channel_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-magenta bg-gray-50 border border-gray-100 p-3 rounded-xl transition-all"
+                          >
+                            <MessageCircle className="w-4 h-4 text-magenta" />
+                            <span>Slack Channel Link</span>
+                            <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-400" />
+                          </a>
+                        )}
+                        {m.repository_url && (
+                          <a
+                            href={m.repository_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-magenta bg-gray-50 border border-gray-100 p-3 rounded-xl transition-all"
+                          >
+                            <PlayCircle className="w-4 h-4 text-magenta" />
+                            <span>Repository URL</span>
+                            <ExternalLink className="w-3.5 h-3.5 ml-auto text-gray-400" />
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Submissions/Updates Quick Buttons */}
+                      <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-50">
+                        <button
+                          onClick={() => {
+                            if (activeUpdateMissionId === m.id) {
+                              setActiveUpdateMissionId(null);
+                            } else {
+                              setActiveUpdateMissionId(m.id);
+                              setUpdateSuccess(false);
+                              setUpdateError(null);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-magenta text-white font-bold text-xs rounded-xl hover:bg-magenta-hover transition-colors shadow-sm shadow-magenta/10"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>{isUpdateOpen ? 'Cancel Update' : 'Submit Update'}</span>
+                        </button>
+                        <Link
+                          to={`/submit-demo?missionId=${m.id}`}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors"
+                        >
+                          <PlayCircle className="w-3.5 h-3.5" />
+                          <span>Submit Demo Day Material</span>
+                        </Link>
+                      </div>
+
+                      {/* Submit Update Inline Card */}
+                      {isUpdateOpen && (
+                        <form onSubmit={(e) => handleUpdateSubmit(e, m.id)} className="mt-4 border border-magenta/10 bg-magenta/5 p-4 rounded-xl flex flex-col gap-3.5 animate-fadeIn">
+                          <h4 className="font-bold text-xs text-magenta uppercase tracking-wider">
+                            New Progress Update: {m.title}
+                          </h4>
+
+                          {updateSuccess && (
+                            <div className="bg-green-50 text-green-700 text-xs font-semibold p-2.5 rounded-lg border border-green-100">
+                              Update submitted successfully!
+                            </div>
+                          )}
+                          {updateError && (
+                            <div className="bg-red-50 text-red-700 text-xs font-semibold p-2.5 rounded-lg border border-red-100">
+                              {updateError}
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <label className="text-xs font-bold text-gray-600">Type:</label>
+                            <div className="flex gap-3">
+                              {['daily', 'weekly', 'mission_progress'].map((type) => (
+                                <label key={type} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`updateType-${m.id}`}
+                                    value={type}
+                                    checked={updateType === type}
+                                    onChange={() => setUpdateType(type)}
+                                    className="text-magenta focus:ring-magenta"
+                                  />
+                                  <span className="capitalize">{type.replace('_', ' ')}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-bold text-gray-600">What did you build or discover?</label>
+                            <textarea
+                              required
+                              placeholder="Detail your milestones and findings..."
+                              value={updateContent}
+                              onChange={(e) => setUpdateContent(e.target.value)}
+                              disabled={updateSubmitting}
+                              className="w-full p-2.5 bg-white border border-gray-200 focus:border-magenta rounded-lg text-xs outline-none font-semibold transition-colors resize-none"
+                              rows={3}
                             />
-                            <span className="capitalize">{type.replace('_', ' ')}</span>
-                          </label>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-bold text-gray-600">Blockers (Optional)</label>
+                            <input
+                              type="text"
+                              placeholder="Any engineering bottlenecks or support needed?"
+                              value={updateBlockers}
+                              onChange={(e) => setUpdateBlockers(e.target.value)}
+                              disabled={updateSubmitting}
+                              className="w-full p-2.5 bg-white border border-gray-200 focus:border-magenta rounded-lg text-xs outline-none font-semibold transition-colors"
+                            />
+                          </div>
+
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setActiveUpdateMissionId(null)}
+                              disabled={updateSubmitting}
+                              className="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-500 font-bold text-xs rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={updateSubmitting || !updateContent.trim()}
+                              className="px-4 py-1.5 bg-magenta text-white font-bold text-xs rounded-lg hover:bg-magenta-hover transition-colors disabled:opacity-75"
+                            >
+                              {updateSubmitting ? 'Submitting...' : 'Send Update'}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Team Members Card */}
+                  {t && (
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
+                      <h3 className="font-extrabold text-lg border-b border-gray-50 pb-3">
+                        Team: {t.name}
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {t.members && t.members.map((member: any) => (
+                          <div key={member.id} className="border border-gray-100 bg-gray-50/50 p-4 rounded-xl">
+                            <h4 className="font-bold text-sm text-gray-900">{member.cube?.user?.name || 'Unknown'}</h4>
+                            <p className="text-xs text-magenta font-bold tracking-wider uppercase mt-1">
+                              {(member.role || 'Member').replace(/_/g, ' ')}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">Cube #{member.cube?.cube_number || 'N/A'}</p>
+                          </div>
                         ))}
                       </div>
                     </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-gray-600">What did you build or discover?</label>
-                      <textarea
-                        required
-                        placeholder="Detail your milestones and findings..."
-                        value={updateContent}
-                        onChange={(e) => setUpdateContent(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-gray-200 focus:border-magenta rounded-lg text-xs outline-none font-semibold transition-colors"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-gray-600">Blockers (Optional)</label>
-                      <input
-                        type="text"
-                        placeholder="Any engineering bottlenecks or support needed?"
-                        value={updateBlockers}
-                        onChange={(e) => setUpdateBlockers(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-gray-200 focus:border-magenta rounded-lg text-xs outline-none font-semibold transition-colors"
-                      />
-                    </div>
-
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setShowUpdateForm(false)}
-                        className="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-500 font-bold text-xs rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={updateSubmitting}
-                        className="px-4 py-1.5 bg-magenta text-white font-bold text-xs rounded-lg hover:bg-magenta-hover transition-colors disabled:opacity-75"
-                      >
-                        {updateSubmitting ? 'Submitting...' : 'Send Update'}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm py-4 text-center">No active mission currently assigned. Ask your mentor for assignment.</p>
-            )}
-          </div>
-
-          {/* Team Members */}
-          {activeTeam && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
-              <h3 className="font-extrabold text-lg border-b border-gray-50 pb-3">
-                Team: {activeTeam.name}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {activeTeam.members.map((member: any) => (
-                  <div key={member.id} className="border border-gray-100 bg-gray-50/50 p-4 rounded-xl">
-                    <h4 className="font-bold text-sm text-gray-900">{member.cube.user.name}</h4>
-                    <p className="text-xs text-magenta font-bold tracking-wider uppercase mt-1">
-                      {member.role.replace(/_/g, ' ')}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Cube #{member.cube.cube_number}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  )}
+                </div>
+              );
+            })
           )}
-
         </div>
 
         {/* Sidebar Achievements & feedback (Right Column) */}

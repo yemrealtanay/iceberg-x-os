@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Rocket, ShieldAlert, Sparkles, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -8,6 +8,8 @@ import ReactMarkdown from 'react-markdown';
 export const DemoSubmission: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryMissionId = searchParams.get('missionId');
 
   const [missions, setMissions] = useState<any[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
@@ -45,7 +47,11 @@ export const DemoSubmission: React.FC = () => {
 
         // Filter teams where logged-in user is a member
         const userTeams = teamsRes.filter((t: any) =>
-          t.members.some((m: any) => m.cube?.user?.id === user?.id)
+          t.members && t.members.some((m: any) => 
+            m.cube?.user?.id === user?.id || 
+            m.cube?.user_id === user?.id || 
+            (user?.cubeProfileId && (m.cube_id === user.cubeProfileId || m.cube?.id === user.cubeProfileId))
+          )
         );
         // Extract missions from these teams
         const userMissions = userTeams.map((t: any) => t.mission).filter(Boolean);
@@ -55,10 +61,16 @@ export const DemoSubmission: React.FC = () => {
         setMissions(uniqueMissions);
 
         if (uniqueMissions.length > 0) {
-          setMissionId(uniqueMissions[0].id);
-        }
-        if (userTeams.length > 0) {
-          setTeamId(userTeams[0].id);
+          const matched = queryMissionId && uniqueMissions.find((m: any) => m.id === queryMissionId);
+          const initialMissionId = matched ? queryMissionId : uniqueMissions[0].id;
+          setMissionId(initialMissionId);
+
+          const matchingTeam = userTeams.find((t: any) => t.mission_id === initialMissionId);
+          if (matchingTeam) {
+            setTeamId(matchingTeam.id);
+          } else if (userTeams.length > 0) {
+            setTeamId(userTeams[0].id);
+          }
         }
       } catch (err: any) {
         setError(err.message || 'Failed to initialize page data');

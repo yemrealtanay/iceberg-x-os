@@ -34,14 +34,25 @@ export const Directory: React.FC = () => {
     }
   };
 
-  const getActiveMission = (cube: any) => {
-    if (!cube.team_memberships || cube.team_memberships.length === 0) return null;
-    const activeMem = cube.team_memberships.find((m: any) => {
+  const getActiveMissions = (cube: any) => {
+    if (!cube.team_memberships || cube.team_memberships.length === 0) return [];
+    const activeMems = cube.team_memberships.filter((m: any) => {
       const mission = m.team?.mission;
       if (!mission) return false;
       return !['completed', 'reviewed', 'promoted_to_product_backlog', 'archived', 'cancelled'].includes(mission.status);
     });
-    return activeMem?.team?.mission || null;
+    const map = new Map<string, any>();
+    for (const m of activeMems) {
+      if (m.team?.mission && !map.has(m.team.mission.id)) {
+        map.set(m.team.mission.id, m.team.mission);
+      }
+    }
+    return Array.from(map.values());
+  };
+
+  const getActiveMission = (cube: any) => {
+    const list = getActiveMissions(cube);
+    return list[0] || null;
   };
 
   useEffect(() => {
@@ -252,8 +263,9 @@ export const Directory: React.FC = () => {
             }
 
             let cardClassName = "p-6 rounded-3xl transition-all duration-300 flex flex-col justify-between group relative ";
-            const activeMission = getActiveMission(cube);
-            const isUnassigned = !activeMission;
+            const activeMissions = getActiveMissions(cube);
+            const activeMission = activeMissions[0] || null;
+            const isUnassigned = activeMissions.length === 0;
             const isAlumni = cube.current_level === 'Alumni';
             const isFormer = cube.current_level === 'Former_Cube';
             // Icebergers, Former Cubes and Alumni are not doing the programme,
@@ -457,16 +469,21 @@ export const Directory: React.FC = () => {
                       isIceberger ? 'border-cyan-500/15' : 'border-gray-100'
                     }`}>
                       <span className="font-extrabold text-[11px] uppercase tracking-wider text-gray-400">
-                        ACTIVE MISSION
+                        {activeMissions.length > 1 ? `ACTIVE MISSIONS (${activeMissions.length})` : 'ACTIVE MISSION'}
                       </span>
-                      {activeMission ? (
-                        <Link
-                          to={`/missions/${activeMission.id}`}
-                          className="text-magenta hover:text-magenta-hover font-bold text-sm sm:text-[15px] leading-snug line-clamp-2 hover:underline transition-colors"
-                          title={activeMission.title}
-                        >
-                          {activeMission.title}
-                        </Link>
+                      {activeMissions.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {activeMissions.map((m: any) => (
+                            <Link
+                              key={m.id}
+                              to={`/missions/${m.id}`}
+                              className="text-magenta hover:text-magenta-hover font-bold text-sm sm:text-[15px] leading-snug line-clamp-1 hover:underline transition-colors"
+                              title={m.title}
+                            >
+                              {m.title}
+                            </Link>
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-red-500 font-bold text-xs flex items-center gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
