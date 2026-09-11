@@ -1,5 +1,6 @@
 import prisma from './prisma';
 import { BadgeRarity, MissionStatus } from '@prisma/client';
+import { StorageService } from './storage.service';
 
 /**
  * Fallback minimum sample size for "rate" criteria (average_score,
@@ -223,7 +224,11 @@ export async function trackUserLogin(userId: string): Promise<void> {
  * Re-evaluates a Cube's progress on a single Quest.
  * If target criteria is met, completes the quest and awards the badge(s).
  */
-export async function verifyQuestProgress(cubeProfileId: string, questId: string): Promise<any> {
+export async function verifyQuestProgress(
+  cubeProfileId: string,
+  questId: string,
+  options?: { forceRecheck?: boolean }
+): Promise<any> {
   const cubeQuest = await prisma.cubeQuest.findUnique({
     where: { cube_id_quest_id: { cube_id: cubeProfileId, quest_id: questId } },
     include: {
@@ -233,7 +238,7 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
     }
   });
 
-  if (!cubeQuest || cubeQuest.is_completed) return cubeQuest;
+  if (!cubeQuest || (cubeQuest.is_completed && !options?.forceRecheck)) return cubeQuest;
 
   const { quest } = cubeQuest;
   let newValue = cubeQuest.current_value;
@@ -451,25 +456,64 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
         user: { select: { avatar_url: true } }
       }
     });
-    const hasAvatar = Boolean(profile?.avatar_url || profile?.user?.avatar_url);
+    const hasAvatar = StorageService.avatarExists(profile?.avatar_url) || StorageService.avatarExists(profile?.user?.avatar_url);
     newValue = hasAvatar ? 1 : 0;
   }
 
   // 2. Check if quest criteria are met
-  const isNowCompleted = newValue >= quest.criteria_value;
+  // For binary criteria, Goal Target Value MUST be at least 1.
+  // A criteria_value of 0 would allow 0 >= 0, completing the quest for everyone!
+  const isBinaryCriteria = ['profile_picture', 'avatar_upload', 'nda_signed'].includes(quest.criteria_type);
+  const effectiveTarget = isBinaryCriteria ? Math.max(1, quest.criteria_value) : quest.criteria_value;
+
+  // Auto-heal corrupt/zero criteria_value in DB if found
+  if (isBinaryCriteria && quest.criteria_value < 1) {
+    await prisma.quest.update({
+      where: { id: quest.id },
+      data: { criteria_value: 1 }
+    }).catch(err => console.error('Failed to auto-heal quest criteria_value:', err));
+    quest.criteria_value = 1;
+  }
+
+  const isNowCompleted = effectiveTarget > 0 ? newValue >= effectiveTarget : false;
 
   // 3. Perform database updates
   const updatedCubeQuest = await prisma.$transaction(async (tx) => {
+    // If quest was previously marked completed, but criteria is no longer met: revert!
+    if (cubeQuest.is_completed && !isNowCompleted) {
+      const reverted = await tx.cubeQuest.update({
+        where: { cube_id_quest_id: { cube_id: cubeProfileId, quest_id: questId } },
+        data: {
+          current_value: newValue,
+          is_completed: false,
+          completed_at: null
+        }
+      });
+
+      // Remove awarded reward badges
+      for (const badge of quest.rewards) {
+        await tx.cubeBadge.deleteMany({
+          where: {
+            cube_id: cubeProfileId,
+            badge_id: badge.id
+          }
+        });
+      }
+
+      return reverted;
+    }
+
     const updated = await tx.cubeQuest.update({
       where: { cube_id_quest_id: { cube_id: cubeProfileId, quest_id: questId } },
       data: {
         current_value: newValue,
         is_completed: isNowCompleted,
-        completed_at: isNowCompleted ? new Date() : null
+        completed_at: isNowCompleted ? (cubeQuest.completed_at || new Date()) : null
       }
     });
 
-    if (isNowCompleted) {
+    // Only award badges and notify when newly completed
+    if (isNowCompleted && !cubeQuest.is_completed) {
       // Get a valid system user to award the badge
       const systemAdmin = await tx.user.findFirst({
         where: { role: 'ADMIN' },
@@ -514,8 +558,8 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
     return updated;
   });
 
-  // 4. Auto-unlock dependent quests (runs after transaction commits successfully)
-  if (isNowCompleted) {
+  // 4. Auto-unlock dependent quests (runs only when newly completed)
+  if (isNowCompleted && !cubeQuest.is_completed) {
     try {
       const dependentQuests = await prisma.quest.findMany({
         where: { dependency_quest_id: questId }
@@ -548,17 +592,22 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
 }
 
 /**
- * Re-evaluates all active (incomplete) quests assigned to a Cube.
+ * Re-evaluates all active (incomplete, or all if forceRecheck is set) quests assigned to a Cube.
  */
-export async function recalculateAllQuestsForCube(cubeProfileId: string): Promise<void> {
-  const activeQuests = await prisma.cubeQuest.findMany({
-    where: { cube_id: cubeProfileId, is_completed: false },
+export async function recalculateAllQuestsForCube(
+  cubeProfileId: string,
+  options?: { forceRecheck?: boolean }
+): Promise<void> {
+  const questsToVerify = await prisma.cubeQuest.findMany({
+    where: options?.forceRecheck
+      ? { cube_id: cubeProfileId }
+      : { cube_id: cubeProfileId, is_completed: false },
     select: { quest_id: true }
   });
 
-  for (const aq of activeQuests) {
+  for (const aq of questsToVerify) {
     try {
-      await verifyQuestProgress(cubeProfileId, aq.quest_id);
+      await verifyQuestProgress(cubeProfileId, aq.quest_id, options);
     } catch (err) {
       console.error(`Failed to verify quest ${aq.quest_id} for cube ${cubeProfileId}:`, err);
     }
@@ -571,11 +620,14 @@ export async function recalculateAllQuestsForCube(cubeProfileId: string): Promis
  * mission, logging a scorecard, closing a meeting) must never fail because a
  * quest recalculation had a problem.
  */
-export async function recalculateQuestsForCubes(cubeProfileIds: string[]): Promise<void> {
+export async function recalculateQuestsForCubes(
+  cubeProfileIds: string[],
+  options?: { forceRecheck?: boolean }
+): Promise<void> {
   const uniqueIds = [...new Set(cubeProfileIds.filter(Boolean))];
   for (const id of uniqueIds) {
     try {
-      await recalculateAllQuestsForCube(id);
+      await recalculateAllQuestsForCube(id, options);
     } catch (err) {
       console.error(`Failed to recalculate quests for cube ${id}:`, err);
     }

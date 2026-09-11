@@ -86,7 +86,9 @@ export const AdminQuests: React.FC = () => {
         description,
         difficulty,
         criteria_type: criteriaType,
-        criteria_value: Number(criteriaValue),
+        criteria_value: (criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload')
+          ? 1
+          : Number(criteriaValue),
         min_sample_size: RATE_CRITERIA_TYPES.includes(criteriaType) && minSampleSize
           ? Number(minSampleSize)
           : null,
@@ -164,7 +166,7 @@ export const AdminQuests: React.FC = () => {
   const handleForceVerify = async (questId: string) => {
     try {
       const res = await api.post(`/admin/quests/${questId}/verify`);
-      alert(`Recalculation complete! Evaluated: ${res.evaluated}, Newly completed: ${res.newlyCompleted}`);
+      alert(res.message || `Recalculation complete! Evaluated: ${res.evaluated}, Newly completed: ${res.newlyCompleted}`);
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Failed to trigger recalculation.');
@@ -335,7 +337,13 @@ export const AdminQuests: React.FC = () => {
                   <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Criteria Type</label>
                   <select
                     value={criteriaType}
-                    onChange={e => setCriteriaType(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setCriteriaType(val);
+                      if (val === 'nda_signed' || val === 'profile_picture' || val === 'avatar_upload') {
+                        setCriteriaValue('1');
+                      }
+                    }}
                     disabled={formSubmitting}
                     className="w-full px-3 py-2.5 border border-gray-150 bg-gray-50 focus:bg-white focus:border-magenta rounded-xl text-xs font-semibold outline-none transition"
                   >
@@ -350,18 +358,26 @@ export const AdminQuests: React.FC = () => {
                     <option value="daily_update_streak">Daily Update Streak (Consecutive Days)</option>
                     <option value="weekly_update_streak">Weekly Update Streak (Consecutive Weeks)</option>
                     <option value="nda_signed">Sign NDA (Non-Disclosure Agreement)</option>
-                    <option value="profile_picture">Upload Profile Picture</option>
+                    <option value="profile_picture">Upload Profile Picture (Avatar Required)</option>
                     <option value="custom">Custom (Manual Update)</option>
                   </select>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Goal Target Value</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Goal Target Value</label>
+                  {(criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload') && (
+                    <span className="text-[9px] font-extrabold text-magenta bg-magenta/10 px-2 py-0.5 rounded-full">
+                      Fixed: 1 (Upload/Sign Required)
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
                   step="any"
                   required
+                  readOnly={criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload'}
                   placeholder={
                     criteriaType === 'nda_signed' || criteriaType === 'profile_picture' ? '1 (Required)' :
                     criteriaType === 'daily_update_streak' ? 'e.g. 30 or 90 (consecutive days)' :
@@ -369,10 +385,10 @@ export const AdminQuests: React.FC = () => {
                     criteriaType === 'mission_updates_count' ? 'e.g. 1 (updates count)' :
                     'e.g. 3, 4.5, 7, or 90'
                   }
-                  value={criteriaValue}
+                  value={criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload' ? '1' : criteriaValue}
                   onChange={e => setCriteriaValue(e.target.value)}
                   disabled={formSubmitting}
-                  className="w-full px-3 py-2.5 border border-gray-150 bg-gray-50 focus:bg-white focus:border-magenta rounded-xl text-xs font-semibold outline-none transition"
+                  className="w-full px-3 py-2.5 border border-gray-150 bg-gray-50 focus:bg-white focus:border-magenta rounded-xl text-xs font-semibold outline-none transition read-only:opacity-75 read-only:cursor-not-allowed"
                 />
               </div>
 
@@ -856,8 +872,8 @@ export const AdminQuests: React.FC = () => {
                               type="button"
                               onClick={async () => {
                                 try {
-                                  await api.post(`/admin/quests/${cq.quest_id}/verify`);
-                                  alert('Progress verified!');
+                                  const res = await api.post(`/admin/quests/${cq.quest_id}/verify`);
+                                  alert(res.message || 'Progress verified!');
                                   fetchData();
                                 } catch (err: any) {
                                   alert(err.message || 'Verification failed');

@@ -374,8 +374,8 @@ router.put('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
       await createSingleNotification(profile.user_id, "A mentor updated your profile status.");
     }
 
-    // Recalculate quests (for profile completion checks)
-    await recalculateAllQuestsForCube(id);
+    // Recalculate quests (forceRecheck true to re-evaluate NDA and profile quests)
+    await recalculateAllQuestsForCube(id, { forceRecheck: true });
 
     return res.json(updated);
   } catch (error: any) {

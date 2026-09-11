@@ -203,7 +203,7 @@ router.delete('/users/me/avatar', requireAuth, async (req: AuthenticatedRequest,
         where: { id: user.cube_profile.id },
         data: { avatar_url: null },
       });
-      recalculateAllQuestsForCube(user.cube_profile.id).catch(err => {
+      recalculateAllQuestsForCube(user.cube_profile.id, { forceRecheck: true }).catch(err => {
         console.error('Failed to recalculate quests after avatar removal:', err);
       });
     }

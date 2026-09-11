@@ -244,22 +244,47 @@ router.post('/admin/quests/:id/verify', requireAuth, isMentorOrAdmin, async (req
     const quest = await prisma.quest.findUnique({ where: { id } });
     if (!quest) throw notFound('Quest not found');
 
+    // Auto-heal corrupt or zero target value for binary criteria
+    if (['profile_picture', 'avatar_upload', 'nda_signed'].includes(quest.criteria_type) && quest.criteria_value < 1) {
+      await prisma.quest.update({
+        where: { id },
+        data: { criteria_value: 1 }
+      });
+      quest.criteria_value = 1;
+    }
+
+    // Recheck ALL assigned cubes (both completed and incomplete) with forceRecheck
     const cubeQuests = await prisma.cubeQuest.findMany({
-      where: { quest_id: id, is_completed: false },
-      select: { cube_id: true }
+      where: { quest_id: id },
+      select: { cube_id: true, is_completed: true }
     });
 
-    let completedCount = 0;
+    let newlyCompleted = 0;
+    let newlyReverted = 0;
+    let totalCompleted = 0;
+
     for (const cq of cubeQuests) {
-      const result = await verifyQuestProgress(cq.cube_id, id);
-      if (result.is_completed) completedCount++;
+      const result = await verifyQuestProgress(cq.cube_id, id, { forceRecheck: true });
+      if (result.is_completed) {
+        totalCompleted++;
+        if (!cq.is_completed) newlyCompleted++;
+      } else if (cq.is_completed && !result.is_completed) {
+        newlyReverted++;
+      }
+    }
+
+    let message = `Verified progress for ${cubeQuests.length} assigned Cube(s). ${totalCompleted} completed.`;
+    if (newlyReverted > 0) {
+      message += ` (${newlyReverted} reverted due to missing criteria)`;
     }
 
     return res.json({
       success: true,
       evaluated: cubeQuests.length,
-      newlyCompleted: completedCount,
-      message: `Verified progress for ${cubeQuests.length} assigned Cube(s). ${completedCount} completed.`
+      totalCompleted,
+      newlyCompleted,
+      newlyReverted,
+      message
     });
   } catch (error: any) {
     return sendError(res, error);

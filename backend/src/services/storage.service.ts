@@ -131,6 +131,44 @@ export class StorageService {
   }
 
   /**
+   * Checks if an avatar URL is valid and its file actually exists in storage.
+   * Handles relative /uploads/avatars paths, legacy paths, and external URLs.
+   */
+  static avatarExists(relativeUrlOrFilename?: string | null): boolean {
+    if (!relativeUrlOrFilename || typeof relativeUrlOrFilename !== 'string') return false;
+    const trimmed = relativeUrlOrFilename.trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined' || trimmed === 'none') {
+      return false;
+    }
+    const lower = trimmed.toLowerCase();
+    if (lower.includes('default-avatar') || lower.includes('avatar-placeholder') || lower.includes('placeholder')) {
+      return false;
+    }
+
+    // External URL (http:// or https://)
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return true;
+    }
+
+    // Local /uploads/avatars/:filename
+    try {
+      const filename = path.basename(trimmed);
+      if (!filename || filename === '.' || filename === '..') return false;
+      const primaryPath = path.resolve(AVATARS_DIR, filename);
+      const legacyPath = path.resolve(__dirname, '../../uploads/avatars', filename);
+      const legacyPath2 = path.resolve(__dirname, '../uploads/avatars', filename);
+
+      return (
+        (primaryPath.startsWith(AVATARS_DIR) && fs.existsSync(primaryPath)) ||
+        fs.existsSync(legacyPath) ||
+        fs.existsSync(legacyPath2)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Safely deletes an avatar file from storage if it exists.
    */
   static async deleteAvatar(relativeUrlOrFilename: string): Promise<boolean> {

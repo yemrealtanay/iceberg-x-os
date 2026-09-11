@@ -281,7 +281,7 @@ router.patch(
             },
           });
         }
-        recalculateAllQuestsForCube(document.cube_id).catch(err => {
+        recalculateAllQuestsForCube(document.cube_id, { forceRecheck: true }).catch(err => {
           console.error('Failed to recalculate quests after NDA review:', err);
         });
       }
@@ -347,7 +347,7 @@ router.delete('/documents/:id', requireAuth, async (req: AuthenticatedRequest, r
             nda_signed_at: null,
           },
         });
-        recalculateAllQuestsForCube(document.cube_id).catch(err => {
+        recalculateAllQuestsForCube(document.cube_id, { forceRecheck: true }).catch(err => {
           console.error('Failed to recalculate quests after NDA deletion:', err);
         });
       }

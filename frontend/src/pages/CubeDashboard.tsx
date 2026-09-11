@@ -462,6 +462,8 @@ export const CubeDashboard: React.FC = () => {
                              q.criteria_type === 'login_streak' ? `${q.criteria_value} Day Login Streak` :
                              q.criteria_type === 'meeting_attendance' ? `${q.criteria_value}% Meeting Attendance` :
                              q.criteria_type === 'profile_completion' ? 'Complete your Profile' :
+                             q.criteria_type === 'nda_signed' ? 'Sign the Non-Disclosure Agreement (NDA)' :
+                             (q.criteria_type === 'profile_picture' || q.criteria_type === 'avatar_upload') ? 'Upload your Profile Picture' :
                              q.criteria_type === 'write_testimonial' ? `Submit ${q.criteria_value} Testimonial(s)` :
                              (q.criteria_type === 'mission_updates_count' || q.criteria_type === 'mission_updates') ? (q.criteria_value === 1 ? 'Post 1 Mission Update' : `Post ${q.criteria_value} Updates`) :
                              q.criteria_type === 'daily_update_streak' ? `${q.criteria_value} Day Update Streak` :
@@ -469,7 +471,9 @@ export const CubeDashboard: React.FC = () => {
                              `Goal: ${q.criteria_value}`}
                           </span>
                           <span>
-                            {q.criteria_type === 'profile_completion' ? (cq.current_value === 1 ? 'Completed' : 'Incomplete') :
+                            {q.criteria_type === 'profile_completion' ? (cq.current_value >= 1 ? 'Completed' : 'Incomplete') :
+                             q.criteria_type === 'nda_signed' ? (cq.current_value >= 1 ? 'Signed' : 'Not Signed') :
+                             (q.criteria_type === 'profile_picture' || q.criteria_type === 'avatar_upload') ? (cq.current_value >= 1 ? 'Uploaded' : 'Missing') :
                              q.criteria_type === 'average_score' ? `${cq.current_value.toFixed(2)} / ${q.criteria_value.toFixed(1)}` :
                              q.criteria_type === 'meeting_attendance' ? `${cq.current_value.toFixed(1)}% / ${q.criteria_value}%` :
                              q.criteria_type === 'daily_update_streak' ? `${cq.current_value} / ${q.criteria_value}d` :
