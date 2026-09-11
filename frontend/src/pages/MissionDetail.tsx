@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Plus, Save, Trash2, Check, X, Download } from 'lucide-react';
+import { Rocket, ShieldAlert, Sparkles, MessageCircle, GitBranch, ExternalLink, Plus, Save, Trash2, Check, X, Download, Send } from 'lucide-react';
 import { CustomMarkdown } from '../components/CustomMarkdown';
 import { getStatusMeta } from '../utils/missionMeta';
 
@@ -43,6 +43,15 @@ export const MissionDetail: React.FC = () => {
   const [resolutionMemberIds, setResolutionMemberIds] = useState<string[]>([]);
   const [activeCubes, setActiveCubes] = useState<any[]>([]);
   const [resolveSubmitting, setResolveSubmitting] = useState(false);
+
+  // Update submission states
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [updateType, setUpdateType] = useState<string>('daily');
+  const [updateContent, setUpdateContent] = useState('');
+  const [updateBlockers, setUpdateBlockers] = useState('');
+  const [updateSubmitting, setUpdateSubmitting] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
 
   const fetchMissionDetails = async () => {
     try {
@@ -140,6 +149,36 @@ export const MissionDetail: React.FC = () => {
       }));
     } catch (err: any) {
       alert(err.message || 'Failed to delete update');
+    }
+  };
+
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateContent.trim()) return;
+
+    setUpdateSubmitting(true);
+    setUpdateError(null);
+    setUpdateSuccess(false);
+
+    try {
+      await api.post('/updates', {
+        mission_id: id,
+        type: updateType,
+        content: updateContent.trim(),
+        blockers: updateBlockers.trim() || undefined
+      });
+      setUpdateSuccess(true);
+      setUpdateContent('');
+      setUpdateBlockers('');
+      await fetchMissionDetails();
+      setTimeout(() => {
+        setShowUpdateForm(false);
+        setUpdateSuccess(false);
+      }, 1500);
+    } catch (err: any) {
+      setUpdateError(err.message || 'Failed to submit update');
+    } finally {
+      setUpdateSubmitting(false);
     }
   };
 
@@ -259,10 +298,15 @@ export const MissionDetail: React.FC = () => {
     ? mission.teams.flatMap((t: any) => t.members || [])
     : [];
 
-  const myMemberRecord = teamMembers.find((m: any) => m.cube?.user_id === user?.id);
+  const myMemberRecord = teamMembers.find((m: any) => 
+    m.cube?.user_id === user?.id || 
+    m.cube?.user?.id === user?.id || 
+    (user?.cubeProfileId && (m.cube_id === user.cubeProfileId || m.cube?.id === user.cubeProfileId))
+  );
   const isAssignedCube = !!myMemberRecord;
   const isMissionMentor = user?.role === 'MENTOR' && mission.mentor_id === user?.id;
   const canDownloadMarkdown = isAdmin || isMissionMentor || isAssignedCube;
+  const canPostUpdate = isAssignedCube || isMentorOrAdmin;
 
   const handleDownloadMarkdown = () => {
     const teamNames = mission.teams ? mission.teams.map((t: any) => t.name).join(', ') : 'None';
@@ -675,7 +719,100 @@ ${mission.description || 'No description provided.'}
 
         {/* Timeline of Updates */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-subtle flex flex-col gap-4">
-          <h3 className="font-extrabold text-lg border-b border-gray-50 pb-3">Updates Feed</h3>
+          <div className="flex justify-between items-center border-b border-gray-50 pb-3">
+            <h3 className="font-extrabold text-lg">Updates Feed</h3>
+            {canPostUpdate && (
+              <button
+                type="button"
+                onClick={() => setShowUpdateForm(!showUpdateForm)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-magenta text-white text-xs font-bold rounded-lg hover:bg-magenta-hover transition-colors shadow-sm shadow-magenta/10"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{showUpdateForm ? 'Close Form' : 'Post Update'}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Inline Update Form */}
+          {showUpdateForm && (
+            <form onSubmit={handleUpdateSubmit} className="border border-magenta/10 bg-magenta/5 p-4 rounded-xl flex flex-col gap-3.5 animate-fadeIn">
+              <h4 className="font-bold text-xs text-magenta uppercase tracking-wider">New Progress Update</h4>
+
+              {updateSuccess && (
+                <div className="bg-green-50 text-green-700 text-xs font-semibold p-2.5 rounded-lg border border-green-100">
+                  Update submitted successfully!
+                </div>
+              )}
+              {updateError && (
+                <div className="bg-red-50 text-red-700 text-xs font-semibold p-2.5 rounded-lg border border-red-100">
+                  {updateError}
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 flex-wrap">
+                <label className="text-xs font-bold text-gray-600">Type:</label>
+                <div className="flex gap-3">
+                  {['daily', 'weekly', 'mission_progress'].map((type) => (
+                    <label key={type} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="missionUpdateType"
+                        value={type}
+                        checked={updateType === type}
+                        onChange={() => setUpdateType(type)}
+                        className="text-magenta focus:ring-magenta"
+                      />
+                      <span className="capitalize">{type.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-gray-600">What did you build or discover? <span className="text-red-500">*</span></label>
+                <textarea
+                  required
+                  placeholder="Detail your milestones and findings..."
+                  value={updateContent}
+                  onChange={(e) => setUpdateContent(e.target.value)}
+                  disabled={updateSubmitting}
+                  className="w-full p-2.5 bg-white border border-gray-200 focus:border-magenta rounded-lg text-xs outline-none font-semibold transition-colors resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-gray-600">Blockers (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="Any engineering bottlenecks or support needed?"
+                  value={updateBlockers}
+                  onChange={(e) => setUpdateBlockers(e.target.value)}
+                  disabled={updateSubmitting}
+                  className="w-full p-2.5 bg-white border border-gray-200 focus:border-magenta rounded-lg text-xs outline-none font-semibold transition-colors"
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateForm(false)}
+                  disabled={updateSubmitting}
+                  className="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-500 font-bold text-xs rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateSubmitting || !updateContent.trim()}
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-magenta text-white font-bold text-xs rounded-lg hover:bg-magenta-hover transition-colors shadow-sm disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{updateSubmitting ? 'Posting...' : 'Post Update'}</span>
+                </button>
+              </div>
+            </form>
+          )}
 
           {mission.updates && mission.updates.length > 0 ? (
             <div className="flex flex-col gap-4">
@@ -683,7 +820,7 @@ ${mission.description || 'No description provided.'}
                 <div key={update.id} className="border-l-2 border-magenta/20 pl-4 py-1 flex flex-col gap-1 hover:border-magenta transition-all relative group/up">
                   <div className="flex justify-between items-center">
                     <p className="text-xs font-bold text-gray-700">
-                      {update.cube.name}
+                      {update.cube?.name || 'Unknown'}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] font-bold text-magenta bg-magenta/5 border border-magenta/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -711,7 +848,19 @@ ${mission.description || 'No description provided.'}
               ))}
             </div>
           ) : (
-            <p className="text-gray-400 text-sm py-4 text-center">No progress updates submitted yet.</p>
+            <div className="py-6 text-center flex flex-col items-center justify-center gap-2">
+              <p className="text-gray-400 text-sm">No progress updates submitted yet.</p>
+              {canPostUpdate && !showUpdateForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateForm(true)}
+                  className="text-xs font-bold text-magenta hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Post the first update</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
 
