@@ -93,6 +93,11 @@ export const Quests: React.FC = () => {
         return `Post a Mission Update for ${value} consecutive days`;
       case 'weekly_update_streak':
         return `Post a Mission Update every week for ${value} consecutive weeks`;
+      case 'nda_signed':
+        return 'Sign the Non-Disclosure Agreement (NDA)';
+      case 'profile_picture':
+      case 'avatar_upload':
+        return 'Upload your Profile Picture';
       case 'custom':
         return `Admin Sign-off (Goal: ${value})`;
       default:
@@ -113,7 +118,12 @@ export const Quests: React.FC = () => {
       case 'meeting_attendance':
         return `${current.toFixed(1)}% / ${target}% attendance`;
       case 'profile_completion':
-        return current === 1 ? 'Completed' : 'Incomplete';
+        return current >= 1 ? 'Completed' : 'Incomplete';
+      case 'nda_signed':
+        return current >= 1 ? 'Signed' : 'Not Signed';
+      case 'profile_picture':
+      case 'avatar_upload':
+        return current >= 1 ? 'Uploaded' : 'Missing';
       case 'write_testimonial':
         return `${current} / ${target} testimonials`;
       case 'mission_updates_count':

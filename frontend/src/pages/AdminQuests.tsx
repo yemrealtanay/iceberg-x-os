@@ -349,6 +349,8 @@ export const AdminQuests: React.FC = () => {
                     <option value="mission_updates_count">Mission Updates Count (Total Updates)</option>
                     <option value="daily_update_streak">Daily Update Streak (Consecutive Days)</option>
                     <option value="weekly_update_streak">Weekly Update Streak (Consecutive Weeks)</option>
+                    <option value="nda_signed">Sign NDA (Non-Disclosure Agreement)</option>
+                    <option value="profile_picture">Upload Profile Picture</option>
                     <option value="custom">Custom (Manual Update)</option>
                   </select>
                 </div>
@@ -361,6 +363,7 @@ export const AdminQuests: React.FC = () => {
                   step="any"
                   required
                   placeholder={
+                    criteriaType === 'nda_signed' || criteriaType === 'profile_picture' ? '1 (Required)' :
                     criteriaType === 'daily_update_streak' ? 'e.g. 30 or 90 (consecutive days)' :
                     criteriaType === 'weekly_update_streak' ? 'e.g. 8 or 30 (consecutive weeks)' :
                     criteriaType === 'mission_updates_count' ? 'e.g. 1 (updates count)' :
@@ -807,7 +810,11 @@ export const AdminQuests: React.FC = () => {
                             <div className="flex justify-between items-center text-[10px]">
                               <span className="font-extrabold text-slate-800">
                                 {cq.quest?.criteria_type === 'profile_completion'
-                                  ? (cq.current_value === 1 ? 'Completed' : 'Incomplete')
+                                  ? (cq.current_value >= 1 ? 'Completed' : 'Incomplete')
+                                  : cq.quest?.criteria_type === 'nda_signed'
+                                  ? (cq.current_value >= 1 ? 'Signed' : 'Not Signed')
+                                  : cq.quest?.criteria_type === 'profile_picture' || cq.quest?.criteria_type === 'avatar_upload'
+                                  ? (cq.current_value >= 1 ? 'Uploaded' : 'Missing')
                                   : cq.quest?.criteria_type === 'average_score'
                                   ? `${cq.current_value.toFixed(2)} / ${cq.quest?.criteria_value}`
                                   : cq.quest?.criteria_type === 'meeting_attendance'

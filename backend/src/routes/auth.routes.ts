@@ -13,7 +13,7 @@ import { Role } from '@prisma/client';
 import multer from 'multer';
 import { StorageService } from '../services/storage.service';
 
-import { trackUserLogin } from '../services/quest.service';
+import { trackUserLogin, recalculateAllQuestsForCube } from '../services/quest.service';
 
 const router = Router();
 
@@ -162,6 +162,9 @@ router.post(
           where: { id: updatedUser.cube_profile.id },
           data: { avatar_url: relativeUrl },
         });
+        recalculateAllQuestsForCube(updatedUser.cube_profile.id).catch(err => {
+          console.error('Failed to recalculate quests after avatar upload:', err);
+        });
       }
 
       return res.json({
@@ -199,6 +202,9 @@ router.delete('/users/me/avatar', requireAuth, async (req: AuthenticatedRequest,
       await prisma.cubeProfile.update({
         where: { id: user.cube_profile.id },
         data: { avatar_url: null },
+      });
+      recalculateAllQuestsForCube(user.cube_profile.id).catch(err => {
+        console.error('Failed to recalculate quests after avatar removal:', err);
       });
     }
 

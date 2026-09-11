@@ -5,6 +5,7 @@ import { requireAuth, AuthenticatedRequest, requireRole } from '../middlewares/a
 import { StorageService } from '../services/storage.service';
 import { badRequest, forbidden, notFound, sendError } from '../utils/http';
 import { DocumentType, DocumentStatus } from '@prisma/client';
+import { recalculateAllQuestsForCube } from '../services/quest.service';
 
 const router = Router();
 const isMentorOrAdmin = requireRole(['ADMIN', 'MENTOR']);
@@ -131,6 +132,9 @@ router.post(
             },
           });
         }
+        recalculateAllQuestsForCube(id).catch(err => {
+          console.error('Failed to recalculate quests after NDA document upload:', err);
+        });
       }
 
       return res.status(201).json({
@@ -277,6 +281,9 @@ router.patch(
             },
           });
         }
+        recalculateAllQuestsForCube(document.cube_id).catch(err => {
+          console.error('Failed to recalculate quests after NDA review:', err);
+        });
       }
 
       return res.json({
@@ -339,6 +346,9 @@ router.delete('/documents/:id', requireAuth, async (req: AuthenticatedRequest, r
             nda_status: 'not_sent',
             nda_signed_at: null,
           },
+        });
+        recalculateAllQuestsForCube(document.cube_id).catch(err => {
+          console.error('Failed to recalculate quests after NDA deletion:', err);
         });
       }
     }

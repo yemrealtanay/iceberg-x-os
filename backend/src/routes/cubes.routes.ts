@@ -438,6 +438,10 @@ router.post('/cubes/:id/avatar', requireAuth, async (req: AuthenticatedRequest, 
       data: { avatar_url: relativeUrl }
     });
 
+    recalculateAllQuestsForCube(id).catch(err => {
+      console.error('Failed to recalculate quests after avatar upload:', err);
+    });
+
     return res.json({ avatar_url: updatedProfile.avatar_url });
   } catch (error: any) {
     console.error('Error uploading avatar:', error);
@@ -488,6 +492,10 @@ router.patch('/cubes/:id/nda', requireAuth, isMentorOrAdmin, async (req: Authent
         nda_signed_at: true,
         nda_status: true
       }
+    });
+
+    recalculateAllQuestsForCube(id).catch(err => {
+      console.error('Failed to recalculate quests after NDA update:', err);
     });
 
     return res.json({

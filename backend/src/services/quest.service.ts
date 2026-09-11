@@ -436,6 +436,24 @@ export async function verifyQuestProgress(cubeProfileId: string, questId: string
       newValue = 0;
     }
   }
+  else if (quest.criteria_type === 'nda_signed') {
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId },
+      select: { nda_signed: true, nda_status: true }
+    });
+    newValue = (profile?.nda_signed || profile?.nda_status === 'signed') ? 1 : 0;
+  }
+  else if (quest.criteria_type === 'profile_picture' || quest.criteria_type === 'avatar_upload') {
+    const profile = await prisma.cubeProfile.findUnique({
+      where: { id: cubeProfileId },
+      select: {
+        avatar_url: true,
+        user: { select: { avatar_url: true } }
+      }
+    });
+    const hasAvatar = Boolean(profile?.avatar_url || profile?.user?.avatar_url);
+    newValue = hasAvatar ? 1 : 0;
+  }
 
   // 2. Check if quest criteria are met
   const isNowCompleted = newValue >= quest.criteria_value;

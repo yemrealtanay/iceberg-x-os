@@ -39,10 +39,22 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
       'mission_updates_count',
       'mission_updates',
       'daily_update_streak',
-      'weekly_update_streak'
+      'weekly_update_streak',
+      'nda_signed',
+      'profile_picture',
+      'avatar_upload'
     ];
     if (!validCriteriaTypes.includes(criteria_type)) {
       throw badRequest(`Criteria type must be one of: ${validCriteriaTypes.join(', ')}.`);
+    }
+
+    // Validate binary criteria
+    const BINARY_CRITERIA = ['nda_signed', 'profile_picture', 'avatar_upload'];
+    if (BINARY_CRITERIA.includes(criteria_type)) {
+      const parsed = Number(criteria_value);
+      if (!Number.isInteger(parsed) || parsed < 1) {
+        throw badRequest(`For "${criteria_type}" quests, Goal Target Value must be a positive whole number (typically 1).`);
+      }
     }
 
     // Validate count and streak criteria
