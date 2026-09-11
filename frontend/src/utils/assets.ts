@@ -4,9 +4,14 @@
  * the API serves uploads from :5001; in production both are same-origin.
  */
 export const getAssetUrl = (path: string | null | undefined): string | null => {
-  if (!path) return null;
+  if (!path || typeof path !== 'string') return null;
+  const trimmed = path.trim();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return null;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
   const base = window.location.origin.includes(':5173')
     ? 'http://localhost:5001'
     : '';
-  return `${base}${path}`;
+  return `${base}${trimmed}`;
 };

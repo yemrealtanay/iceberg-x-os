@@ -5,6 +5,7 @@ import { ShieldCheck, ShieldAlert, Award, Calendar, Clock, ExternalLink, Check, 
 import { ScaledCertificatePreview } from '../components/CertificateSheet';
 import { BadgeDisc, RarityPill, BadgeSparks } from '../components/BadgeMedal';
 import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
+import { getAssetUrl } from '../utils/assets';
 
 export const PublicProfile: React.FC = () => {
   const { cubeNumber, certNo } = useParams<{ cubeNumber?: string; certNo?: string }>();
@@ -12,6 +13,7 @@ export const PublicProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     const fetchPublicData = async () => {
@@ -86,6 +88,7 @@ export const PublicProfile: React.FC = () => {
 
   const profileUrl = window.location.href;
   const name = profile.user?.name || `Cube #${profile.cube_number}`;
+  const avatarUrl = getAssetUrl(profile.avatar_url || profile.user?.avatar_url);
   const mentorName = profile.assigned_mentor?.name || offboarding?.mentor_name || 'Iceberg Engineering Mentor';
   const questsCount = stats?.questsCompleted ?? (profile.cube_quests?.length || 0);
   const badgesCount = stats?.badgesEarned ?? (profile.cube_badges?.length || 0);
@@ -162,10 +165,19 @@ export const PublicProfile: React.FC = () => {
           />
 
           <div className="relative flex flex-wrap items-end gap-6 p-8 pb-6">
-            {/* Styled Initials Avatar */}
-            <div className="w-24 h-24 flex-none rounded-[26px] bg-gradient-to-br from-[#E5007D] to-[#7A0B58] flex items-center justify-center text-3xl font-extrabold tracking-tight shadow-xl shadow-[#E5007D]/25">
-              {getInitials(name)}
-            </div>
+            {/* Styled Avatar or Initials */}
+            {avatarUrl && !avatarError ? (
+              <img
+                src={avatarUrl}
+                alt={name}
+                onError={() => setAvatarError(true)}
+                className="w-24 h-24 flex-none rounded-[26px] object-cover border-2 border-white/20 shadow-xl shadow-[#E5007D]/25"
+              />
+            ) : (
+              <div className="w-24 h-24 flex-none rounded-[26px] bg-gradient-to-br from-[#E5007D] to-[#7A0B58] flex items-center justify-center text-3xl font-extrabold tracking-tight shadow-xl shadow-[#E5007D]/25">
+                {getInitials(name)}
+              </div>
+            )}
 
             {/* Candidate Info */}
             <div className="flex-1 min-w-[260px]">

@@ -688,7 +688,8 @@ router.get('/cubes/public/:identifier', async (req, res) => {
           select: {
             id: true,
             name: true,
-            role: true
+            role: true,
+            avatar_url: true
           }
         },
         assigned_mentor: {
@@ -791,9 +792,12 @@ router.get('/cubes/public/:identifier', async (req, res) => {
         skills: profile.skills,
         interests: profile.interests,
         current_level: profile.current_level,
-        avatar_url: profile.avatar_url,
+        avatar_url: profile.avatar_url || profile.user?.avatar_url || null,
         is_founding_cube: profile.is_founding_cube,
-        user: profile.user,
+        user: profile.user ? {
+          ...profile.user,
+          avatar_url: profile.avatar_url || profile.user.avatar_url || null
+        } : null,
         assigned_mentor: profile.assigned_mentor,
         offboarding_record: profile.offboarding_record,
         cube_badges: profile.cube_badges,
