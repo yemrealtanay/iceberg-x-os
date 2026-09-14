@@ -251,13 +251,15 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleDeleteStudent = async () => {
-    if (!data?.profile?.user?.name) return;
-    const confirmName = prompt(
-      `To permanently delete this Cube, please type their exact name: "${data.profile.user.name}"`
+  const handleDeleteCube = async () => {
+    if (!data?.profile?.user_id) return;
+    const cubeName = data?.profile?.user?.name || 'this Cube';
+    const confirmation = prompt(
+      `To permanently delete this Cube (${cubeName}), please type "delete":`
     );
-    if (confirmName !== data.profile.user.name) {
-      alert("Name mismatch. Deletion cancelled.");
+    if (confirmation === null) return;
+    if (confirmation.trim().toLowerCase() !== 'delete') {
+      alert("Confirmation text mismatch. Deletion cancelled.");
       return;
     }
 
@@ -1013,7 +1015,7 @@ export const Profile: React.FC = () => {
             </p>
             <button 
               type="button" 
-              onClick={handleDeleteStudent}
+              onClick={handleDeleteCube}
               className="w-full py-2 bg-red-600 text-white font-bold text-xs rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-1.5 shadow-md shadow-red-600/10"
             >
               <span>Permanently Delete Cube</span>

@@ -62,11 +62,13 @@ export const Directory: React.FC = () => {
   const handleDeleteClick = async (e: React.MouseEvent, cube: any) => {
     e.stopPropagation();
     e.preventDefault();
-    const confirmName = prompt(
-      `To permanently delete this Cube, please type their exact name: "${cube.user.name}"`
+    const cubeName = cube?.user?.name || 'this Cube';
+    const confirmation = prompt(
+      `To permanently delete this Cube (${cubeName}), please type "delete":`
     );
-    if (confirmName !== cube.user.name) {
-      alert("Name mismatch. Deletion cancelled.");
+    if (confirmation === null) return;
+    if (confirmation.trim().toLowerCase() !== 'delete') {
+      alert("Confirmation text mismatch. Deletion cancelled.");
       return;
     }
 
