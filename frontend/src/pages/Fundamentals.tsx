@@ -56,6 +56,7 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
 };
 
 interface QuizStatus {
+  isStaff?: boolean;
   canAttemptToday: boolean;
   completedToday: boolean;
   nextAttemptAt: string | null;
@@ -129,7 +130,14 @@ interface QuizResultData {
   durationSeconds: number;
   timedOut: boolean;
   completedAt: string;
-  badge: {
+  isStaffTest?: boolean;
+  badgeAwarded?: {
+    name: string;
+    rarity: string;
+    icon: string;
+    isUpgrade: boolean;
+  } | null;
+  badge?: {
     earnedRarity: string | null;
     badgeAwardedId: string | null;
     badgeName: string | null;
@@ -388,7 +396,11 @@ export const Fundamentals: React.FC = () => {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-xs bg-gradient-to-r from-magenta to-pink-600 hover:from-pink-600 hover:to-magenta text-white shadow-lg shadow-magenta/25 hover:shadow-magenta/40 transition-all transform hover:-translate-y-0.5"
               >
                 <Trophy className="w-4 h-4" />
-                <span>{lang === 'tr' ? "Quiz'e Git" : 'Go to Quiz'}</span>
+                <span>
+                  {user?.role === 'CUBE'
+                    ? (lang === 'tr' ? "Quiz'e Git" : 'Go to Quiz')
+                    : (lang === 'tr' ? "Quiz'i Test Et" : 'Test Quiz (Staff)')}
+                </span>
               </button>
             )}
           </div>
@@ -935,7 +947,11 @@ export const Fundamentals: React.FC = () => {
               <div className="text-center max-w-xl mx-auto py-4">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-bold bg-magenta/20 text-magenta border border-magenta/30 mb-4">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>QUIZ EVALUATION COMPLETE</span>
+                  <span>
+                    {quizResult.isStaffTest
+                      ? 'STAFF SANDBOX TEST COMPLETE (NOT SAVED TO DIRECTORY / LEADERBOARD)'
+                      : 'QUIZ EVALUATION COMPLETE'}
+                  </span>
                 </div>
 
                 <div className="text-6xl sm:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-magenta via-pink-400 to-cyan-300">
@@ -960,7 +976,40 @@ export const Fundamentals: React.FC = () => {
               </div>
 
               {/* Badge Award/Upgrade Showcase Card */}
-              {quizResult.badge && (
+              {quizResult.isStaffTest ? (
+                <div className="max-w-lg mx-auto">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 text-center shadow-lg">
+                    {quizResult.badgeAwarded ? (
+                      <div>
+                        <span className="text-xs font-mono uppercase tracking-widest text-cyan-300 font-bold block mb-3">
+                          🏆 STAFF PREVIEW: WOULD EARN {quizResult.badgeAwarded.rarity.toUpperCase()} BADGE
+                        </span>
+                        <div className="flex justify-center mb-4">
+                          <BadgeMedal
+                            badge={{
+                              name: quizResult.badgeAwarded.name,
+                              rarity: quizResult.badgeAwarded.rarity,
+                              description: `Preview badge for scoring ${quizResult.score}/100.`,
+                              icon: quizResult.badgeAwarded.icon || 'TechScout'
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-slate-300">
+                          A Cube scoring {quizResult.score}/100 would be awarded or upgraded to the <b>{quizResult.badgeAwarded.name}</b> ({quizResult.badgeAwarded.rarity}) badge.
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <Trophy className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                        <h4 className="text-sm font-bold text-slate-300">Passing score not reached (&lt; 50 pts)</h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          A Cube scoring below 50 would not earn a badge on this attempt.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : quizResult.badge && (
                 <div className="max-w-lg mx-auto">
                   <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 text-center shadow-lg">
                     {quizResult.badge.earnedRarity ? (
@@ -1068,31 +1117,44 @@ export const Fundamentals: React.FC = () => {
             <div className="space-y-8">
               {/* Top Highlights Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* 1. Daily Attempt Status */}
+                {/* 1. Daily Attempt Status (Cubes) or Staff Sandbox Test Mode (Admin/Mentor) */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                       <Clock className="w-4 h-4 text-magenta" />
-                      <span>Daily Attempt Status</span>
+                      <span>{user?.role === 'CUBE' ? 'Daily Attempt Status' : 'Staff Testing Sandbox'}</span>
                     </div>
                     <h3 className="text-lg font-extrabold text-gray-900">
-                      {quizStatus?.activeAttempt
+                      {user?.role !== 'CUBE'
+                        ? 'Unlimited Staff Test Mode'
+                        : quizLoading
+                        ? 'Checking Daily Status...'
+                        : quizStatus?.activeAttempt
                         ? 'Ongoing Quiz in Progress'
-                        : quizStatus?.canAttemptToday
-                        ? '1 Attempt Ready Today'
-                        : 'Daily Limit Reached'}
+                        : quizStatus?.completedToday
+                        ? 'Daily Limit Reached'
+                        : '1 Attempt Ready Today'}
                     </h3>
                     <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                      {quizStatus?.activeAttempt
+                      {user?.role !== 'CUBE'
+                        ? 'As an Admin/Mentor, you can take and test the certification exam repeatedly without daily limits. Your scores are not posted to the directory or leaderboard, and no Cube profile is created.'
+                        : quizLoading
+                        ? 'Connecting to quiz server...'
+                        : quizStatus?.activeAttempt
                         ? 'You have an active session! You can resume and finish your attempt.'
-                        : quizStatus?.canAttemptToday
-                        ? 'Cubes can take the quiz once per calendar day. Scores and badges are recorded to your profile.'
-                        : 'You completed your attempt for today. Come back tomorrow at 00:00 UTC for your next try!'}
+                        : quizStatus?.completedToday
+                        ? 'You completed your attempt for today. Come back tomorrow at 00:00 UTC for your next try!'
+                        : 'Cubes can take the quiz once per calendar day. Scores and badges are recorded to your profile.'}
                     </p>
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-gray-100">
-                    {quizStatus?.activeAttempt ? (
+                    {quizLoading ? (
+                      <div className="py-2.5 px-3 rounded-xl bg-gray-50 border border-gray-200 text-center text-xs font-mono text-gray-500 flex items-center justify-center gap-2">
+                        <div className="w-3.5 h-3.5 border-2 border-magenta border-t-transparent rounded-full animate-spin" />
+                        <span>Checking status...</span>
+                      </div>
+                    ) : quizStatus?.activeAttempt ? (
                       <button
                         onClick={handleStartOrResumeQuiz}
                         disabled={quizLoading}
@@ -1101,60 +1163,89 @@ export const Fundamentals: React.FC = () => {
                         <span>Resume Ongoing Quiz</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
-                    ) : quizStatus?.canAttemptToday ? (
+                    ) : user?.role === 'CUBE' && quizStatus?.completedToday ? (
+                      <div className="py-2.5 px-3 rounded-xl bg-gray-50 border border-gray-200 text-center text-xs font-mono text-gray-500 flex items-center justify-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Locked until tomorrow</span>
+                      </div>
+                    ) : (
                       <button
                         onClick={handleStartOrResumeQuiz}
                         disabled={quizLoading}
                         className="w-full py-3 px-4 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-magenta to-pink-600 hover:from-pink-600 hover:to-magenta shadow-md shadow-magenta/30 transition-all flex items-center justify-center gap-2"
                       >
                         <Trophy className="w-4 h-4" />
-                        <span>Start Today's Quiz (30 Min)</span>
+                        <span>
+                          {user?.role === 'CUBE'
+                            ? "Start Today's Quiz (30 Min)"
+                            : 'Start Test Quiz (Staff Sandbox)'}
+                        </span>
                       </button>
-                    ) : (
-                      <div className="py-2.5 px-3 rounded-xl bg-gray-50 border border-gray-200 text-center text-xs font-mono text-gray-500 flex items-center justify-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>Locked until tomorrow</span>
-                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* 2. Cube's Best Score & Earned Badge */}
+                {/* 2. Cube's Best Score & Earned Badge OR Staff Certification Guide */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
                       <Award className="w-4 h-4 text-cyan-600" />
-                      <span>Your Achievement</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-gray-900">
-                        {quizStatus?.bestScore ? `${quizStatus.bestScore} / 100` : '—'}
-                      </span>
-                      <span className="text-xs text-gray-500 font-medium">Personal Best</span>
+                      <span>{user?.role === 'CUBE' ? 'Your Achievement' : 'Certification Badges'}</span>
                     </div>
 
-                    <div className="mt-4">
-                      {quizStatus?.currentBadge ? (
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                          <BadgeDisc icon={quizStatus.currentBadge.icon} rarity={quizStatus.currentBadge.rarity} size="sm" />
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold text-gray-900 truncate">
-                              {quizStatus.currentBadge.name}
-                            </div>
-                            <RarityPill rarity={quizStatus.currentBadge.rarity} />
-                          </div>
+                    {user?.role === 'CUBE' ? (
+                      <>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-extrabold text-gray-900">
+                            {quizStatus?.bestScore ? `${quizStatus.bestScore} / 100` : '—'}
+                          </span>
+                          <span className="text-xs text-gray-500 font-medium">Personal Best</span>
                         </div>
-                      ) : (
-                        <p className="text-xs text-gray-500">
-                          Score 50+ to earn a Common badge, 75+ for Rare, and 90+ for Epic!
-                        </p>
-                      )}
-                    </div>
+
+                        <div className="mt-4">
+                          {quizStatus?.currentBadge ? (
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                              <BadgeDisc icon={quizStatus.currentBadge.icon} rarity={quizStatus.currentBadge.rarity} size="sm" />
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-gray-900 truncate">
+                                  {quizStatus.currentBadge.name}
+                                </div>
+                                <RarityPill rarity={quizStatus.currentBadge.rarity} />
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">
+                              Score 50+ to earn a Common badge, 75+ for Rare, and 90+ for Epic!
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2 mt-2 text-xs text-gray-600">
+                        <p className="text-[11px] text-gray-500">Cubes earn automated tiered badges on their profile:</p>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="font-bold text-gray-800">50 - 74 pts</span>
+                          <RarityPill rarity="Common" />
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="font-bold text-gray-800">75 - 89 pts</span>
+                          <RarityPill rarity="Rare" />
+                        </div>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="font-bold text-gray-800">90 - 100 pts</span>
+                          <RarityPill rarity="Epic" />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                    <span>Total Attempts: <b>{quizStatus?.totalAttempts || 0}</b></span>
-                    <span>Badge Upgrade: <b className="text-emerald-600">Active</b></span>
+                    <span>
+                      {user?.role === 'CUBE'
+                        ? `Total Attempts: ${quizStatus?.totalAttempts || 0}`
+                        : `Staff Access: ${user?.role}`}
+                    </span>
+                    <span className="text-emerald-600 font-bold">Active Monitoring</span>
                   </div>
                 </div>
 
@@ -1193,73 +1284,77 @@ export const Fundamentals: React.FC = () => {
 
               {/* Past Attempts Table & Leaderboard Tabs */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Past attempts */}
-                <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-bold text-gray-900">Your Past Attempts</h3>
-                    <span className="text-xs text-gray-400 font-mono">
-                      {quizStatus?.recentAttempts.length || 0} recorded
-                    </span>
-                  </div>
+                {/* Past attempts (Shown only for Cubes) */}
+                {user?.role === 'CUBE' && (
+                  <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-bold text-gray-900">Your Past Attempts</h3>
+                      <span className="text-xs text-gray-400 font-mono">
+                        {quizStatus?.recentAttempts.length || 0} recorded
+                      </span>
+                    </div>
 
-                  {quizStatus?.recentAttempts && quizStatus.recentAttempts.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-gray-400 font-mono">
-                            <th className="pb-2">Date</th>
-                            <th className="pb-2">Score</th>
-                            <th className="pb-2">Correct</th>
-                            <th className="pb-2">Penalty</th>
-                            <th className="pb-2">Badge</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {quizStatus.recentAttempts.map((att) => (
-                            <tr key={att.id} className="hover:bg-slate-50/60 transition-colors">
-                              <td className="py-3 text-gray-600 font-mono">
-                                {new Date(att.completed_at).toLocaleDateString()}
-                              </td>
-                              <td className="py-3 font-bold text-gray-900">
-                                {att.score} / 100
-                              </td>
-                              <td className="py-3 text-gray-600">
-                                {att.correct_count} / 25
-                              </td>
-                              <td className="py-3 text-gray-600 font-mono">
-                                {att.hint_penalty > 0 ? `-${att.hint_penalty} pt` : '0'}
-                              </td>
-                              <td className="py-3">
-                                {att.badge ? (
-                                  <RarityPill rarity={att.badge.rarity} />
-                                ) : (
-                                  <span className="text-gray-400">—</span>
-                                )}
-                              </td>
+                    {quizStatus?.recentAttempts && quizStatus.recentAttempts.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-gray-400 font-mono">
+                              <th className="pb-2">Date</th>
+                              <th className="pb-2">Score</th>
+                              <th className="pb-2">Correct</th>
+                              <th className="pb-2">Penalty</th>
+                              <th className="pb-2">Badge</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="py-12 text-center text-xs text-gray-400">
-                      No attempts recorded yet. Take the quiz to get your first score!
-                    </div>
-                  )}
-                </div>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {quizStatus.recentAttempts.map((att) => (
+                              <tr key={att.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3 text-gray-600 font-mono">
+                                  {new Date(att.completed_at).toLocaleDateString()}
+                                </td>
+                                <td className="py-3 font-bold text-gray-900">
+                                  {att.score} / 100
+                                </td>
+                                <td className="py-3 text-gray-600">
+                                  {att.correct_count} / 25
+                                </td>
+                                <td className="py-3 text-gray-600 font-mono">
+                                  {att.hint_penalty > 0 ? `-${att.hint_penalty} pt` : '0'}
+                                </td>
+                                <td className="py-3">
+                                  {att.badge ? (
+                                    <RarityPill rarity={att.badge.rarity} />
+                                  ) : (
+                                    <span className="text-gray-400">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-xs text-gray-400">
+                        No attempts recorded yet. Take the quiz to get your first score!
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Leaderboard */}
-                <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                {/* Leaderboard (Full width for staff, col-span-5 for cubes) */}
+                <div className={`${user?.role === 'CUBE' ? 'lg:col-span-5' : 'lg:col-span-12'} bg-white rounded-2xl border border-gray-200 p-6 shadow-sm`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Trophy className="w-4 h-4 text-amber-500" />
                       <h3 className="text-base font-bold text-gray-900">Top Cubes Leaderboard</h3>
                     </div>
-                    <span className="text-xs text-gray-400 font-mono">Top performers</span>
+                    <span className="text-xs text-gray-400 font-mono">
+                      {user?.role !== 'CUBE' ? 'Real-time candidate standings' : 'Top performers'}
+                    </span>
                   </div>
 
                   {leaderboard.length > 0 ? (
-                    <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                       {leaderboard.map((item, idx) => (
                         <div
                           key={idx}

@@ -48,6 +48,165 @@ export function getStartOfNextUtcDay(): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
 }
 
+export interface StaffQuizSession {
+  userId: string;
+  attemptId: string;
+  started_at: Date;
+  questions: any;
+  answer_key: any;
+  hints_used: number[];
+  user_answers?: any;
+}
+
+const staffQuizSessions = new Map<string, StaffQuizSession>();
+
+export function generateQuizData() {
+  const selectedQuestions = shuffleArray(QUIZ_QUESTIONS_EN).slice(0, QUIZ_SIZE);
+
+  const clientQuestions: any[] = [];
+  const serverMcKey: any[] = [];
+
+  selectedQuestions.forEach((q, index) => {
+    const optionsWithCorrectness = q.options.map((text, idx) => ({
+      text,
+      isCorrect: idx === q.answer
+    }));
+    const shuffledOptions = shuffleArray(optionsWithCorrectness);
+    const correctIndex = shuffledOptions.findIndex((o) => o.isCorrect);
+
+    clientQuestions.push({
+      id: q.id,
+      index,
+      topic: q.topic,
+      question: q.question,
+      options: shuffledOptions.map((o) => o.text),
+      hasHint: !!q.hint
+    });
+
+    serverMcKey.push({
+      id: q.id,
+      index,
+      correct_option_index: correctIndex,
+      hint: q.hint
+    });
+  });
+
+  const matchingPool = MATCHING_ITEMS.en;
+  const selectedMatching = shuffleArray(matchingPool).slice(0, MATCHING_SIZE);
+
+  const matchingDefinitions = selectedMatching.map((item, index) => ({
+    index,
+    definition: item.definition
+  }));
+  const matchingTerms = shuffleArray(
+    selectedMatching.map((item) => ({
+      id: item.id,
+      term: item.term
+    }))
+  );
+
+  const serverMatchingKey = selectedMatching.map((item, index) => ({
+    index,
+    correct_term_id: item.id
+  }));
+
+  const clientPayload = {
+    multipleChoice: clientQuestions,
+    matching: {
+      definitions: matchingDefinitions,
+      terms: matchingTerms
+    }
+  };
+
+  const serverAnswerKey = {
+    mc: serverMcKey,
+    matching: serverMatchingKey
+  };
+
+  return { clientPayload, serverAnswerKey };
+}
+
+export function evaluateQuizAnswers(
+  answerKey: any,
+  clientQuestions: any,
+  answers: (number | null)[],
+  matchingAnswers: (string | null)[],
+  hintsUsed: number[]
+) {
+  let multipleChoiceCorrect = 0;
+  let hintPenalties = 0;
+  const mcEvaluation: any[] = [];
+
+  for (let i = 0; i < QUIZ_SIZE; i++) {
+    const key = answerKey.mc?.[i];
+    const clientQ = clientQuestions.multipleChoice?.[i];
+    const selected = answers[i] !== undefined && answers[i] !== null ? Number(answers[i]) : null;
+    const isCorrect = selected !== null && selected === key?.correct_option_index;
+    const hintUsed = hintsUsed.includes(i);
+
+    let points = 0;
+    if (isCorrect) {
+      multipleChoiceCorrect++;
+      if (hintUsed) {
+        hintPenalties += 1;
+        points = POINTS_PER_ITEM - 1; // 3 points
+      } else {
+        points = POINTS_PER_ITEM; // 4 points
+      }
+    }
+
+    mcEvaluation.push({
+      index: i,
+      question: clientQ?.question,
+      topic: clientQ?.topic,
+      options: clientQ?.options,
+      selectedOption: selected,
+      correctOption: key?.correct_option_index,
+      isCorrect,
+      hintUsed,
+      pointsAwarded: points
+    });
+  }
+
+  let matchingCorrect = 0;
+  const matchingEvaluation: any[] = [];
+
+  for (let i = 0; i < MATCHING_SIZE; i++) {
+    const key = answerKey.matching?.[i];
+    const clientDef = clientQuestions.matching?.definitions?.[i];
+    const selectedTermId = matchingAnswers[i] || null;
+    const isCorrect = selectedTermId !== null && selectedTermId === key?.correct_term_id;
+
+    if (isCorrect) {
+      matchingCorrect++;
+    }
+
+    matchingEvaluation.push({
+      index: i,
+      definition: clientDef?.definition,
+      selectedTermId,
+      correctTermId: key?.correct_term_id,
+      isCorrect,
+      pointsAwarded: isCorrect ? POINTS_PER_ITEM : 0
+    });
+  }
+
+  const totalCorrect = multipleChoiceCorrect + matchingCorrect;
+  const totalWrong = QUIZ_SIZE + MATCHING_SIZE - totalCorrect;
+  const totalScore = Math.max(0, totalCorrect * POINTS_PER_ITEM - hintPenalties);
+
+  return {
+    multipleChoiceCorrect,
+    matchingCorrect,
+    totalCorrect,
+    totalWrong,
+    hintPenalties,
+    totalScore,
+    mcEvaluation,
+    matchingEvaluation
+  };
+}
+
 export class QuizService {
   /**
    * Get Cube's quiz overview: daily limit status, highest score, past attempts.
@@ -152,7 +311,7 @@ export class QuizService {
   /**
    * Start a new quiz attempt or resume an active one.
    */
-  static async startOrResumeQuiz(cubeProfileId: string) {
+  static async startOrResumeQuiz(cubeProfileId: string, options?: { allowAdminBypass?: boolean }) {
     const now = new Date();
 
     // Check if there is an active in-progress attempt that hasn't expired
@@ -203,76 +362,13 @@ export class QuizService {
       }
     });
 
-    if (completedToday) {
+    if (completedToday && !options?.allowAdminBypass) {
       throw badRequest(
         'You have already completed your quiz attempt for today. You can take the quiz again tomorrow!'
       );
     }
 
-    // Generate 20 random MC questions
-    const selectedQuestions = shuffleArray(QUIZ_QUESTIONS_EN).slice(0, QUIZ_SIZE);
-
-    const clientQuestions: any[] = [];
-    const serverMcKey: any[] = [];
-
-    selectedQuestions.forEach((q, index) => {
-      // Shuffle options
-      const optionsWithCorrectness = q.options.map((text, idx) => ({
-        text,
-        isCorrect: idx === q.answer
-      }));
-      const shuffledOptions = shuffleArray(optionsWithCorrectness);
-      const correctIndex = shuffledOptions.findIndex((o) => o.isCorrect);
-
-      clientQuestions.push({
-        id: q.id,
-        index,
-        topic: q.topic,
-        question: q.question,
-        options: shuffledOptions.map((o) => o.text),
-        hasHint: !!q.hint
-      });
-
-      serverMcKey.push({
-        id: q.id,
-        index,
-        correct_option_index: correctIndex,
-        hint: q.hint
-      });
-    });
-
-    // Generate 5 random Matching items
-    const matchingPool = MATCHING_ITEMS.en;
-    const selectedMatching = shuffleArray(matchingPool).slice(0, MATCHING_SIZE);
-
-    const matchingDefinitions = selectedMatching.map((item, index) => ({
-      index,
-      definition: item.definition
-    }));
-    const matchingTerms = shuffleArray(
-      selectedMatching.map((item) => ({
-        id: item.id,
-        term: item.term
-      }))
-    );
-
-    const serverMatchingKey = selectedMatching.map((item, index) => ({
-      index,
-      correct_term_id: item.id
-    }));
-
-    const clientPayload = {
-      multipleChoice: clientQuestions,
-      matching: {
-        definitions: matchingDefinitions,
-        terms: matchingTerms
-      }
-    };
-
-    const serverAnswerKey = {
-      mc: serverMcKey,
-      matching: serverMatchingKey
-    };
+    const { clientPayload, serverAnswerKey } = generateQuizData();
 
     const attempt = await prisma.quizAttempt.create({
       data: {
@@ -369,73 +465,22 @@ export class QuizService {
     const elapsedSeconds = Math.round((now.getTime() - attempt.started_at.getTime()) / 1000);
     const timedOut = elapsedSeconds > QUIZ_DURATION_SECONDS + 60;
 
-    const answerKey = attempt.answer_key as any;
-    const clientQuestions = attempt.questions as any;
-    const hintsUsed = (attempt.hints_used as number[]) || [];
+    const evalResult = evaluateQuizAnswers(
+      attempt.answer_key,
+      attempt.questions,
+      answers,
+      matchingAnswers,
+      (attempt.hints_used as number[]) || []
+    );
 
-    let multipleChoiceCorrect = 0;
-    let hintPenalties = 0;
-    const mcEvaluation: any[] = [];
-
-    // Evaluate Multiple Choice (20 questions)
-    for (let i = 0; i < QUIZ_SIZE; i++) {
-      const key = answerKey.mc?.[i];
-      const clientQ = clientQuestions.multipleChoice?.[i];
-      const selected = answers[i] !== undefined && answers[i] !== null ? Number(answers[i]) : null;
-      const isCorrect = selected !== null && selected === key?.correct_option_index;
-      const hintUsed = hintsUsed.includes(i);
-
-      let points = 0;
-      if (isCorrect) {
-        multipleChoiceCorrect++;
-        if (hintUsed) {
-          hintPenalties += 1;
-          points = POINTS_PER_ITEM - 1; // 3 points
-        } else {
-          points = POINTS_PER_ITEM; // 4 points
-        }
-      }
-
-      mcEvaluation.push({
-        index: i,
-        question: clientQ?.question,
-        topic: clientQ?.topic,
-        options: clientQ?.options,
-        selectedOption: selected,
-        correctOption: key?.correct_option_index,
-        isCorrect,
-        hintUsed,
-        pointsAwarded: points
-      });
-    }
-
-    // Evaluate Matching (5 items)
-    let matchingCorrect = 0;
-    const matchingEvaluation: any[] = [];
-
-    for (let i = 0; i < MATCHING_SIZE; i++) {
-      const key = answerKey.matching?.[i];
-      const clientDef = clientQuestions.matching?.definitions?.[i];
-      const selectedTermId = matchingAnswers[i] || null;
-      const isCorrect = selectedTermId !== null && selectedTermId === key?.correct_term_id;
-
-      if (isCorrect) {
-        matchingCorrect++;
-      }
-
-      matchingEvaluation.push({
-        index: i,
-        definition: clientDef?.definition,
-        selectedTermId,
-        correctTermId: key?.correct_term_id,
-        isCorrect,
-        pointsAwarded: isCorrect ? POINTS_PER_ITEM : 0
-      });
-    }
-
-    const totalCorrect = multipleChoiceCorrect + matchingCorrect;
-    const totalWrong = QUIZ_SIZE + MATCHING_SIZE - totalCorrect;
-    const totalScore = Math.max(0, totalCorrect * POINTS_PER_ITEM - hintPenalties);
+    const totalCorrect = evalResult.totalCorrect;
+    const totalWrong = evalResult.totalWrong;
+    const multipleChoiceCorrect = evalResult.multipleChoiceCorrect;
+    const matchingCorrect = evalResult.matchingCorrect;
+    const hintPenalties = evalResult.hintPenalties;
+    const totalScore = evalResult.totalScore;
+    const mcEvaluation = evalResult.mcEvaluation;
+    const matchingEvaluation = evalResult.matchingEvaluation;
 
     // Badge allocation & upgrade calculation
     const badgeResult = await this.evaluateBadgeAward(
@@ -664,6 +709,196 @@ export class QuizService {
       badgeName: highestExisting.badge.name,
       action: 'retained',
       message: `Scored ${score}/100. Existing badge "${highestExisting.badge.name}" (${highestExisting.badge.rarity}) was retained.`
+    };
+  }
+
+  /**
+   * Get staff test quiz overview. Always ready, never locked, no CubeProfile required.
+   */
+  static getStaffStatus(userId: string) {
+    const now = Date.now();
+    const activeSession = Array.from(staffQuizSessions.values()).find(
+      (s) => s.userId === userId && now - s.started_at.getTime() < (QUIZ_DURATION_SECONDS + 60) * 1000
+    );
+
+    return {
+      isStaff: true,
+      canAttemptToday: true,
+      completedToday: false,
+      nextAttemptAt: null,
+      activeAttempt: activeSession
+        ? {
+            id: activeSession.attemptId,
+            started_at: activeSession.started_at,
+            remaining_seconds: Math.max(
+              0,
+              QUIZ_DURATION_SECONDS - Math.round((now - activeSession.started_at.getTime()) / 1000)
+            )
+          }
+        : null,
+      totalAttempts: 0,
+      bestScore: 0,
+      bestAttemptId: null,
+      currentBadge: null,
+      recentAttempts: []
+    };
+  }
+
+  /**
+   * Start or resume a staff test quiz. Completely in-memory, no database CubeProfile or QuizAttempt written.
+   */
+  static startStaffTestQuiz(userId: string) {
+    const now = new Date();
+    const existing = Array.from(staffQuizSessions.values()).find(
+      (s) => s.userId === userId && now.getTime() - s.started_at.getTime() < (QUIZ_DURATION_SECONDS + 30) * 1000
+    );
+
+    if (existing) {
+      const elapsed = Math.round((now.getTime() - existing.started_at.getTime()) / 1000);
+      const remaining = Math.max(0, QUIZ_DURATION_SECONDS - elapsed);
+      return {
+        attemptId: existing.attemptId,
+        resumed: true,
+        questions: existing.questions,
+        hintsUsed: existing.hints_used,
+        userAnswers: existing.user_answers || null,
+        startedAt: existing.started_at,
+        durationSeconds: QUIZ_DURATION_SECONDS,
+        remainingSeconds: remaining,
+        isStaffTest: true
+      };
+    }
+
+    const { clientPayload, serverAnswerKey } = generateQuizData();
+    const attemptId = `staff-${userId}-${Date.now()}`;
+
+    const session: StaffQuizSession = {
+      userId,
+      attemptId,
+      started_at: now,
+      questions: clientPayload,
+      answer_key: serverAnswerKey,
+      hints_used: []
+    };
+
+    staffQuizSessions.set(attemptId, session);
+
+    return {
+      attemptId,
+      resumed: false,
+      questions: clientPayload,
+      hintsUsed: [],
+      userAnswers: null,
+      startedAt: now,
+      durationSeconds: QUIZ_DURATION_SECONDS,
+      remainingSeconds: QUIZ_DURATION_SECONDS,
+      isStaffTest: true
+    };
+  }
+
+  /**
+   * Request a hint in a staff test session.
+   */
+  static requestStaffHint(attemptId: string, userId: string, questionIndex: number) {
+    const session = staffQuizSessions.get(attemptId);
+    if (!session || session.userId !== userId) {
+      throw notFound('Staff test quiz session not found or expired.');
+    }
+
+    const mcKey = session.answer_key?.mc?.[questionIndex];
+    if (!mcKey || !mcKey.hint) {
+      throw badRequest('No hint available for this question.');
+    }
+
+    if (!session.hints_used.includes(questionIndex)) {
+      session.hints_used.push(questionIndex);
+    }
+
+    return {
+      questionIndex,
+      hint: mcKey.hint
+    };
+  }
+
+  /**
+   * Save in-flight progress for a staff test session.
+   */
+  static saveStaffProgress(attemptId: string, userId: string, answers: any, matchingAnswers: any) {
+    const session = staffQuizSessions.get(attemptId);
+    if (!session || session.userId !== userId) {
+      return { success: false };
+    }
+    session.user_answers = { answers, matchingAnswers };
+    return { success: true };
+  }
+
+  /**
+   * Submit and evaluate a staff test quiz. Returns full review, provisional badge info, but writes nothing to database.
+   */
+  static submitStaffTestQuiz(
+    attemptId: string,
+    userId: string,
+    answers: (number | null)[],
+    matchingAnswers: (string | null)[]
+  ) {
+    const session = staffQuizSessions.get(attemptId);
+    if (!session || session.userId !== userId) {
+      throw notFound('Staff test quiz session not found.');
+    }
+
+    const now = new Date();
+    const elapsedSeconds = Math.round((now.getTime() - session.started_at.getTime()) / 1000);
+    const timedOut = elapsedSeconds > QUIZ_DURATION_SECONDS + 60;
+
+    const evalResult = evaluateQuizAnswers(
+      session.answer_key,
+      session.questions,
+      answers,
+      matchingAnswers,
+      session.hints_used
+    );
+
+    let provisionalBadge = null;
+    if (evalResult.totalScore >= 90) {
+      provisionalBadge = {
+        name: 'Master Architect',
+        rarity: 'Epic',
+        icon: 'Crown',
+        isUpgrade: false
+      };
+    } else if (evalResult.totalScore >= 75) {
+      provisionalBadge = {
+        name: 'Core Engineer',
+        rarity: 'Rare',
+        icon: 'Award',
+        isUpgrade: false
+      };
+    } else if (evalResult.totalScore >= 50) {
+      provisionalBadge = {
+        name: 'Certified Apprentice',
+        rarity: 'Common',
+        icon: 'CheckCircle2',
+        isUpgrade: false
+      };
+    }
+
+    // Clean up in-memory session
+    staffQuizSessions.delete(attemptId);
+
+    return {
+      attemptId,
+      score: evalResult.totalScore,
+      correctCount: evalResult.totalCorrect,
+      wrongCount: evalResult.totalWrong,
+      hintPenalty: evalResult.hintPenalties,
+      durationSeconds: Math.min(elapsedSeconds, QUIZ_DURATION_SECONDS),
+      timedOut,
+      badgeAwarded: provisionalBadge,
+      detailedReview: {
+        multipleChoice: evalResult.mcEvaluation,
+        matching: evalResult.matchingEvaluation
+      },
+      isStaffTest: true
     };
   }
 }

@@ -10,51 +10,46 @@ const router = Router();
  * Helper to ensure the authenticated user has a CubeProfile.
  * If user is ADMIN or MENTOR without CubeProfile, auto-links or informs them.
  */
-async function getOrCreateCubeProfileId(req: AuthenticatedRequest): Promise<string> {
+/**
+ * Helper to ensure the authenticated user has a CubeProfile.
+ * The quiz and badge awarding system is exclusively for Cubes.
+ */
+async function getCubeProfileId(req: AuthenticatedRequest): Promise<string> {
   if (req.user?.cubeProfileId) {
     return req.user.cubeProfileId;
   }
 
   if (!req.user) throw forbidden('Authentication required.');
 
-  // For Admin or Mentor testing, find if they have a profile or create a test profile
+  if (req.user.role !== 'CUBE') {
+    throw forbidden('The certification quiz is exclusively for Cubes.');
+  }
+
   const profile = await prisma.cubeProfile.findUnique({
     where: { user_id: req.user.id }
   });
 
-  if (profile) {
-    req.user.cubeProfileId = profile.id;
-    return profile.id;
+  if (!profile) {
+    throw forbidden('Cube profile not found.');
   }
 
-  if (req.user.role === 'ADMIN' || req.user.role === 'MENTOR') {
-    // Automatically create a tester cube profile for admin/mentor testing
-    const testProfile = await prisma.cubeProfile.create({
-      data: {
-        user_id: req.user.id,
-        cube_number: `T-${req.user.role.substring(0, 3)}`,
-        cohort: 'Staff Testing',
-        university: 'Iceberg Staff',
-        department: 'Operations',
-        skills: ['Web Architecture'],
-        interests: ['Education'],
-        is_founding_cube: false
-      }
-    });
-    req.user.cubeProfileId = testProfile.id;
-    return testProfile.id;
-  }
-
-  throw forbidden('Only registered Cubes can participate in the Quiz.');
+  req.user.cubeProfileId = profile.id;
+  return profile.id;
 }
 
 /**
  * GET /quiz/status
  * Check current Cube's daily limit, active in-progress attempt, and highest score.
+ * If user is Admin/Mentor, returns staff test status without requiring CubeProfile.
  */
 router.get('/quiz/status', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const cubeProfileId = await getOrCreateCubeProfileId(req);
+    if (req.user?.role !== 'CUBE') {
+      const status = QuizService.getStaffStatus(req.user!.id);
+      return res.json(status);
+    }
+
+    const cubeProfileId = await getCubeProfileId(req);
     const status = await QuizService.getCubeQuizStatus(cubeProfileId);
     return res.json(status);
   } catch (error) {
@@ -65,10 +60,16 @@ router.get('/quiz/status', requireAuth, async (req: AuthenticatedRequest, res) =
 /**
  * POST /quiz/start
  * Start a new quiz attempt or resume active one.
+ * If staff, runs in sandbox test mode without writing to CubeProfile.
  */
 router.post('/quiz/start', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const cubeProfileId = await getOrCreateCubeProfileId(req);
+    if (req.user?.role !== 'CUBE') {
+      const session = QuizService.startStaffTestQuiz(req.user!.id);
+      return res.json(session);
+    }
+
+    const cubeProfileId = await getCubeProfileId(req);
     const session = await QuizService.startOrResumeQuiz(cubeProfileId);
     return res.json(session);
   } catch (error) {
@@ -82,13 +83,18 @@ router.post('/quiz/start', requireAuth, async (req: AuthenticatedRequest, res) =
  */
 router.post('/quiz/hint', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const cubeProfileId = await getOrCreateCubeProfileId(req);
     const { attemptId, questionIndex } = req.body;
 
     if (!attemptId || questionIndex === undefined) {
       throw badRequest('Missing attemptId or questionIndex');
     }
 
+    if (String(attemptId).startsWith('staff-') || req.user?.role !== 'CUBE') {
+      const hintData = QuizService.requestStaffHint(attemptId, req.user!.id, Number(questionIndex));
+      return res.json(hintData);
+    }
+
+    const cubeProfileId = await getCubeProfileId(req);
     const hintData = await QuizService.requestHint(attemptId, cubeProfileId, Number(questionIndex));
     return res.json(hintData);
   } catch (error) {
@@ -102,7 +108,6 @@ router.post('/quiz/hint', requireAuth, async (req: AuthenticatedRequest, res) =>
  */
 router.post('/quiz/submit', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const cubeProfileId = await getOrCreateCubeProfileId(req);
     const { attemptId, answers, matchingAnswers } = req.body;
 
     if (!attemptId) {
@@ -113,6 +118,12 @@ router.post('/quiz/submit', requireAuth, async (req: AuthenticatedRequest, res) 
       throw badRequest('Answers and matchingAnswers must be arrays.');
     }
 
+    if (String(attemptId).startsWith('staff-') || req.user?.role !== 'CUBE') {
+      const result = QuizService.submitStaffTestQuiz(attemptId, req.user!.id, answers, matchingAnswers);
+      return res.json(result);
+    }
+
+    const cubeProfileId = await getCubeProfileId(req);
     const result = await QuizService.submitQuiz(attemptId, cubeProfileId, answers, matchingAnswers);
     return res.json(result);
   } catch (error) {
@@ -126,7 +137,11 @@ router.post('/quiz/submit', requireAuth, async (req: AuthenticatedRequest, res) 
  */
 router.get('/quiz/my-results', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const cubeProfileId = await getOrCreateCubeProfileId(req);
+    if (req.user?.role !== 'CUBE') {
+      return res.json([]);
+    }
+
+    const cubeProfileId = await getCubeProfileId(req);
     const attempts = await prisma.quizAttempt.findMany({
       where: {
         cube_id: cubeProfileId,
@@ -153,7 +168,14 @@ router.get('/quiz/my-results', requireAuth, async (req: AuthenticatedRequest, re
 router.get('/quiz/leaderboard', requireAuth, async (_req, res) => {
   try {
     const topAttempts = await prisma.quizAttempt.findMany({
-      where: { status: 'completed' },
+      where: {
+        status: 'completed',
+        cube: {
+          user: {
+            role: 'CUBE'
+          }
+        }
+      },
       orderBy: [{ score: 'desc' }, { duration_seconds: 'asc' }],
       take: 20,
       include: {

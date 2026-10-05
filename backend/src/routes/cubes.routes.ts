@@ -45,6 +45,8 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
 
     // Phone numbers are staff-only; the directory does not display them.
     const canSeeContactDetails = req.user?.role === 'ADMIN' || req.user?.role === 'MENTOR';
+    // Enforce that directory only returns profiles of actual Cubes, never staff
+    whereClause.user = { role: 'CUBE' };
 
     const cubes = await prisma.cubeProfile.findMany({
       where: whereClause,
