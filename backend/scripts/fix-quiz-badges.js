@@ -1,23 +1,30 @@
 /**
  * One-off: align quiz-awarded badges with the score tiers.
  *
- *   npx ts-node scripts/fix-quiz-badges.ts          # dry-run (writes nothing)
- *   npx ts-node scripts/fix-quiz-badges.ts --apply  # applies the changes
+ *   node scripts/fix-quiz-badges.js          # dry-run (writes nothing)
+ *   node scripts/fix-quiz-badges.js --apply  # applies the changes
  *
  * Per Cube: best completed-attempt score -> expected tier badge.
  * Only the Cube's quiz CubeBadge row (mission_id null, reason mentions
  * "Web Fundamentals Quiz") is touched. Nothing is ever deleted; attempts,
  * mission badges and the badge catalogue are left alone.
  */
-import 'dotenv/config';
-import prisma from '../src/services/prisma';
-import { getQuizTierForScore, QUIZ_BADGE_TIERS } from '../src/services/quiz.service';
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+const QUIZ_BADGE_TIERS = [
+  { name: 'Grand Archmage of the Stack', minScore: 90 },
+  { name: 'Lorekeeper of the Protocol', minScore: 75 },
+  { name: 'Initiate of the Outer Gates', minScore: 0 }
+];
+const getQuizTierForScore = (score) =>
+  QUIZ_BADGE_TIERS.find((t) => score >= t.minScore) || QUIZ_BADGE_TIERS[QUIZ_BADGE_TIERS.length - 1];
 
 const APPLY = process.argv.includes('--apply');
 
 async function main() {
   const badges = await prisma.badge.findMany({
-    where: { OR: QUIZ_BADGE_TIERS.map((t) => ({ name: { equals: t.name, mode: 'insensitive' as const } })) }
+    where: { OR: QUIZ_BADGE_TIERS.map((t) => ({ name: { equals: t.name, mode: 'insensitive' } })) }
   });
   const badgeByTier = new Map(
     QUIZ_BADGE_TIERS.map((t) => [t.name, badges.find((b) => b.name.toLowerCase() === t.name.toLowerCase())])
@@ -50,7 +57,7 @@ async function main() {
   for (const cube of cubes) {
     const best = Math.max(...cube.quiz_attempts.map((a) => a.score));
     const tier = getQuizTierForScore(best);
-    const expected = badgeByTier.get(tier.name)!;
+    const expected = badgeByTier.get(tier.name);
     const name = cube.user?.name || cube.id;
     const [current, ...extra] = cube.cube_badges;
 
