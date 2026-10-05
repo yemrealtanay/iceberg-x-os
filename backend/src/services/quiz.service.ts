@@ -16,6 +16,17 @@ const RARITY_WEIGHT: Record<BadgeRarity, number> = {
   [BadgeRarity.Epic]: 3
 };
 
+/** Quiz badge tiers, ordered highest first. */
+export const QUIZ_BADGE_TIERS = [
+  { name: 'Grand Archmage of the Stack', minScore: 90 },
+  { name: 'Lorekeeper of the Protocol', minScore: 75 },
+  { name: 'Initiate of the Outer Gates', minScore: 0 }
+] as const;
+
+export function getQuizTierForScore(score: number) {
+  return QUIZ_BADGE_TIERS.find((t) => score >= t.minScore) || QUIZ_BADGE_TIERS[QUIZ_BADGE_TIERS.length - 1];
+}
+
 export const SEED_MISSION_BADGE_NAMES = [
   'Builder', 'Innovator', 'Collaborator', 'Pathfinder', 'Pioneer',
   'Researcher', 'Deep Diver', 'Tech Scout', 'Clarity Maker', 'Risk Spotter',
@@ -553,85 +564,30 @@ export class QuizService {
     action: 'awarded' | 'upgraded' | 'retained' | 'none';
     message: string;
   }> {
-    let targetRarity: BadgeRarity | null = null;
-    if (score >= 90) {
-      targetRarity = BadgeRarity.Epic;
-    } else if (score >= 75) {
-      targetRarity = BadgeRarity.Rare;
-    } else if (score >= 50) {
-      targetRarity = BadgeRarity.Common;
-    }
+    // Score → badge tier (fixed by badge name, not by rarity/keyword guessing)
+    const targetTier = getQuizTierForScore(score);
+    const targetBadge = await prisma.badge.findFirst({
+      where: { name: { equals: targetTier.name, mode: 'insensitive' } },
+      orderBy: { created_at: 'desc' }
+    });
 
-    if (!targetRarity) {
+    if (!targetBadge) {
       return {
         earnedRarity: null,
         badgeAwardedId: null,
         badgeName: null,
         action: 'none',
-        message: 'Score below passing threshold (50 points). Review the course topics and try again tomorrow!'
+        message: `Qualified for "${targetTier.name}" (score: ${score}/100), but this badge is not configured yet.`
       };
     }
+    const targetRarity = targetBadge.rarity;
 
-    // Find the badge matching this rarity for Web Fundamentals.
-    // 1. First priority: accent match or name/description containing web/fundamental/quiz
-    const matchingBadges = await prisma.badge.findMany({
-      where: {
-        rarity: targetRarity,
-        OR: [
-          { accent: 'web-fundamentals' },
-          { accent: 'quiz' },
-          { name: { contains: 'Fundamental', mode: 'insensitive' } },
-          { name: { contains: 'Web', mode: 'insensitive' } },
-          { name: { contains: 'Quiz', mode: 'insensitive' } },
-          { description: { contains: 'Fundamental', mode: 'insensitive' } },
-          { description: { contains: 'Web', mode: 'insensitive' } },
-          { description: { contains: 'Quiz', mode: 'insensitive' } }
-        ]
-      },
-      orderBy: { created_at: 'desc' }
-    });
-
-    let targetBadge =
-      matchingBadges.find((b) => b.accent === 'web-fundamentals') ||
-      matchingBadges.find((b) => /fundamental/i.test(b.name)) ||
-      matchingBadges[0];
-
-    // 2. Second priority: If no keyword match, find any custom badge of target rarity
-    // that is NOT in the default 30 mission badges. This allows full FRP/thematic freedom!
-    if (!targetBadge) {
-      const customBadges = await prisma.badge.findMany({
-        where: {
-          rarity: targetRarity,
-          name: { notIn: SEED_MISSION_BADGE_NAMES }
-        },
-        orderBy: { created_at: 'desc' }
-      });
-      targetBadge = customBadges[0];
-    }
-
-    if (!targetBadge) {
-      return {
-        earnedRarity: targetRarity,
-        badgeAwardedId: null,
-        badgeName: null,
-        action: 'none',
-        message: `Qualified for ${targetRarity} tier badge (score: ${score}/100), but no ${targetRarity} badge has been configured by admin yet.`
-      };
-    }
-
-    // Check existing quiz badges held by this Cube
+    // Existing quiz-tier badges held by this Cube
     const existingCubeBadges = await prisma.cubeBadge.findMany({
       where: {
         cube_id: cubeProfileId,
         badge: {
-          OR: [
-            { accent: 'web-fundamentals' },
-            { id: targetBadge.id },
-            { name: { contains: 'Fundamental', mode: 'insensitive' } },
-            { name: { contains: 'Web', mode: 'insensitive' } },
-            { name: { contains: 'Quiz', mode: 'insensitive' } },
-            { name: { notIn: SEED_MISSION_BADGE_NAMES } }
-          ]
+          OR: QUIZ_BADGE_TIERS.map((t) => ({ name: { equals: t.name, mode: 'insensitive' as const } }))
         }
       },
       include: { badge: true }
@@ -670,14 +626,13 @@ export class QuizService {
     }
 
     // Compare with highest existing badge
+    const tierRank = (name: string) =>
+      QUIZ_BADGE_TIERS.findIndex((t) => t.name.toLowerCase() === name.toLowerCase());
     const highestExisting = existingCubeBadges.sort(
-      (a, b) => RARITY_WEIGHT[b.badge.rarity] - RARITY_WEIGHT[a.badge.rarity]
+      (a, b) => tierRank(a.badge.name) - tierRank(b.badge.name)
     )[0];
 
-    const currentWeight = RARITY_WEIGHT[highestExisting.badge.rarity];
-    const newWeight = RARITY_WEIGHT[targetRarity];
-
-    if (newWeight > currentWeight) {
+    if (tierRank(targetBadge.name) < tierRank(highestExisting.badge.name)) {
       // Upgrade!
       await prisma.cubeBadge.update({
         where: { id: highestExisting.id },
@@ -835,7 +790,7 @@ export class QuizService {
   /**
    * Submit and evaluate a staff test quiz. Returns full review, provisional badge info, but writes nothing to database.
    */
-  static submitStaffTestQuiz(
+  static async submitStaffTestQuiz(
     attemptId: string,
     userId: string,
     answers: (number | null)[],
@@ -858,29 +813,16 @@ export class QuizService {
       session.hints_used
     );
 
-    let provisionalBadge = null;
-    if (evalResult.totalScore >= 90) {
-      provisionalBadge = {
-        name: 'Master Architect',
-        rarity: 'Epic',
-        icon: 'Crown',
-        isUpgrade: false
-      };
-    } else if (evalResult.totalScore >= 75) {
-      provisionalBadge = {
-        name: 'Core Engineer',
-        rarity: 'Rare',
-        icon: 'Award',
-        isUpgrade: false
-      };
-    } else if (evalResult.totalScore >= 50) {
-      provisionalBadge = {
-        name: 'Certified Apprentice',
-        rarity: 'Common',
-        icon: 'CheckCircle2',
-        isUpgrade: false
-      };
-    }
+    const provisionalTier = getQuizTierForScore(evalResult.totalScore);
+    const provisionalBadgeRow = await prisma.badge.findFirst({
+      where: { name: { equals: provisionalTier.name, mode: 'insensitive' } }
+    });
+    const provisionalBadge = {
+      name: provisionalTier.name,
+      rarity: provisionalBadgeRow?.rarity ?? 'Common',
+      icon: provisionalBadgeRow?.icon ?? 'Award',
+      isUpgrade: false
+    };
 
     // Clean up in-memory session
     staffQuizSessions.delete(attemptId);

@@ -119,7 +119,7 @@ router.post('/quiz/submit', requireAuth, async (req: AuthenticatedRequest, res) 
     }
 
     if (String(attemptId).startsWith('staff-') || req.user?.role !== 'CUBE') {
-      const result = QuizService.submitStaffTestQuiz(attemptId, req.user!.id, answers, matchingAnswers);
+      const result = await QuizService.submitStaffTestQuiz(attemptId, req.user!.id, answers, matchingAnswers);
       return res.json(result);
     }
 
