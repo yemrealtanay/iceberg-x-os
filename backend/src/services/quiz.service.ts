@@ -15,6 +15,15 @@ const RARITY_WEIGHT: Record<BadgeRarity, number> = {
   [BadgeRarity.Epic]: 3
 };
 
+export const SEED_MISSION_BADGE_NAMES = [
+  'Builder', 'Innovator', 'Collaborator', 'Pathfinder', 'Pioneer',
+  'Researcher', 'Deep Diver', 'Tech Scout', 'Clarity Maker', 'Risk Spotter',
+  'Demo Maker', 'POC Finisher', 'Show, Don’t Tell', "Show, Don't Tell", 'Prototype Polisher', 'From Idea to Screen',
+  'Clear Communicator', 'Daily Signal', 'No Ghosting', 'Early Warner', 'Feedback Receiver',
+  'Self-Aware Cube', 'No Excuses', 'Better Next Time', 'Growth Mindset', 'Own Your Work',
+  'Mission Lead', 'Team Organizer', 'Initiative Taker', 'Mentor Mindset', 'Future Lead'
+];
+
 function shuffleArray<T>(items: T[]): T[] {
   const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -75,13 +84,23 @@ export class QuizService {
       include: { badge: true }
     });
 
-    const quizBadge = cubeBadges
-      .filter(
-        (cb) =>
-          cb.badge.accent === 'web-fundamentals' ||
-          /fundamental|quiz/i.test(cb.badge.name)
-      )
-      .sort((a, b) => RARITY_WEIGHT[b.badge.rarity] - RARITY_WEIGHT[a.badge.rarity])[0];
+    // Find highest quiz badge awarded through attempts or custom badges
+    const awardedFromAttempts = completedAttempts
+      .map((a) => a.badge_awarded)
+      .filter((b): b is NonNullable<typeof b> => !!b)
+      .sort((a, b) => RARITY_WEIGHT[b.rarity] - RARITY_WEIGHT[a.rarity]);
+
+    const quizBadge =
+      (awardedFromAttempts[0] as any) ||
+      cubeBadges
+        .filter(
+          (cb) =>
+            cb.badge.accent === 'web-fundamentals' ||
+            /fundamental|quiz|web/i.test(cb.badge.name) ||
+            !SEED_MISSION_BADGE_NAMES.includes(cb.badge.name)
+        )
+        .map((cb) => cb.badge)
+        .sort((a, b) => RARITY_WEIGHT[b.rarity] - RARITY_WEIGHT[a.rarity])[0];
 
     return {
       canAttemptToday: !completedToday && !activeAttempt,
@@ -502,26 +521,42 @@ export class QuizService {
       };
     }
 
-    // Find the badge matching this rarity for Web Fundamentals
-    // Admin creates it manually; we match by accent 'web-fundamentals' OR name containing 'Fundamental'/'Quiz'
+    // Find the badge matching this rarity for Web Fundamentals.
+    // 1. First priority: accent match or name/description containing web/fundamental/quiz
     const matchingBadges = await prisma.badge.findMany({
       where: {
         rarity: targetRarity,
         OR: [
           { accent: 'web-fundamentals' },
+          { accent: 'quiz' },
           { name: { contains: 'Fundamental', mode: 'insensitive' } },
           { name: { contains: 'Web', mode: 'insensitive' } },
-          { name: { contains: 'Quiz', mode: 'insensitive' } }
+          { name: { contains: 'Quiz', mode: 'insensitive' } },
+          { description: { contains: 'Fundamental', mode: 'insensitive' } },
+          { description: { contains: 'Web', mode: 'insensitive' } },
+          { description: { contains: 'Quiz', mode: 'insensitive' } }
         ]
       },
       orderBy: { created_at: 'desc' }
     });
 
-    // Prioritize exact accent match or best name match
-    const targetBadge =
+    let targetBadge =
       matchingBadges.find((b) => b.accent === 'web-fundamentals') ||
       matchingBadges.find((b) => /fundamental/i.test(b.name)) ||
       matchingBadges[0];
+
+    // 2. Second priority: If no keyword match, find any custom badge of target rarity
+    // that is NOT in the default 30 mission badges. This allows full FRP/thematic freedom!
+    if (!targetBadge) {
+      const customBadges = await prisma.badge.findMany({
+        where: {
+          rarity: targetRarity,
+          name: { notIn: SEED_MISSION_BADGE_NAMES }
+        },
+        orderBy: { created_at: 'desc' }
+      });
+      targetBadge = customBadges[0];
+    }
 
     if (!targetBadge) {
       return {
@@ -540,9 +575,11 @@ export class QuizService {
         badge: {
           OR: [
             { accent: 'web-fundamentals' },
+            { id: targetBadge.id },
             { name: { contains: 'Fundamental', mode: 'insensitive' } },
             { name: { contains: 'Web', mode: 'insensitive' } },
-            { name: { contains: 'Quiz', mode: 'insensitive' } }
+            { name: { contains: 'Quiz', mode: 'insensitive' } },
+            { name: { notIn: SEED_MISSION_BADGE_NAMES } }
           ]
         }
       },

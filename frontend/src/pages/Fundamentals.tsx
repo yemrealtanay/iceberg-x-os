@@ -161,7 +161,7 @@ interface QuizResultData {
 
 export const Fundamentals: React.FC = () => {
   const { user } = useAuth();
-  const [lang, setLang] = useState<'tr' | 'en'>('tr');
+  const [lang, setLang] = useState<'tr' | 'en'>('en');
   const [activeTab, setActiveTab] = useState<'topics' | 'quiz' | 'glossary' | 'faq'>('topics');
   const [selectedTopicId, setSelectedTopicId] = useState<number>(1);
   const [glossaryQuery, setGlossaryQuery] = useState('');
