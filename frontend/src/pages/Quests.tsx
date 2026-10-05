@@ -98,6 +98,10 @@ export const Quests: React.FC = () => {
       case 'profile_picture':
       case 'avatar_upload':
         return 'Upload your Profile Picture';
+      case 'quiz_score':
+        return `Score ${value}+ points in Web Fundamentals Quiz`;
+      case 'quiz_completed':
+        return 'Complete the Web Fundamentals Certification Quiz';
       case 'custom':
         return `Admin Sign-off (Goal: ${value})`;
       default:
@@ -124,6 +128,10 @@ export const Quests: React.FC = () => {
       case 'profile_picture':
       case 'avatar_upload':
         return current >= 1 ? 'Uploaded' : 'Missing';
+      case 'quiz_score':
+        return `${Math.round(current)} / ${target} pts`;
+      case 'quiz_completed':
+        return current >= 1 ? 'Completed' : 'Not Completed';
       case 'write_testimonial':
         return `${current} / ${target} testimonials`;
       case 'mission_updates_count':

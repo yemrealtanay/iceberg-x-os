@@ -340,7 +340,7 @@ export const AdminQuests: React.FC = () => {
                     onChange={e => {
                       const val = e.target.value;
                       setCriteriaType(val);
-                      if (val === 'nda_signed' || val === 'profile_picture' || val === 'avatar_upload') {
+                      if (val === 'nda_signed' || val === 'profile_picture' || val === 'avatar_upload' || val === 'quiz_completed') {
                         setCriteriaValue('1');
                       }
                     }}
@@ -359,6 +359,8 @@ export const AdminQuests: React.FC = () => {
                     <option value="weekly_update_streak">Weekly Update Streak (Consecutive Weeks)</option>
                     <option value="nda_signed">Sign NDA (Non-Disclosure Agreement)</option>
                     <option value="profile_picture">Upload Profile Picture (Avatar Required)</option>
+                    <option value="quiz_score">Web Fundamentals Quiz Score (Target Score: e.g. 50, 75, 90)</option>
+                    <option value="quiz_completed">Web Fundamentals Quiz Completed (Target: 1)</option>
                     <option value="custom">Custom (Manual Update)</option>
                   </select>
                 </div>
@@ -367,9 +369,9 @@ export const AdminQuests: React.FC = () => {
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">Goal Target Value</label>
-                  {(criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload') && (
+                  {(criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload' || criteriaType === 'quiz_completed') && (
                     <span className="text-[9px] font-extrabold text-magenta bg-magenta/10 px-2 py-0.5 rounded-full">
-                      Fixed: 1 (Upload/Sign Required)
+                      Fixed: 1 (Completion Required)
                     </span>
                   )}
                 </div>
@@ -377,7 +379,7 @@ export const AdminQuests: React.FC = () => {
                   type="number"
                   step="any"
                   required
-                  readOnly={criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload'}
+                  readOnly={criteriaType === 'nda_signed' || criteriaType === 'profile_picture' || criteriaType === 'avatar_upload' || criteriaType === 'quiz_completed'}
                   placeholder={
                     criteriaType === 'nda_signed' || criteriaType === 'profile_picture' ? '1 (Required)' :
                     criteriaType === 'daily_update_streak' ? 'e.g. 30 or 90 (consecutive days)' :

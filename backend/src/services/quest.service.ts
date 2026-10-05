@@ -459,11 +459,31 @@ export async function verifyQuestProgress(
     const hasAvatar = StorageService.avatarExists(profile?.avatar_url) || StorageService.avatarExists(profile?.user?.avatar_url);
     newValue = hasAvatar ? 1 : 0;
   }
+  else if (quest.criteria_type === 'quiz_score') {
+    const bestAttempt = await prisma.quizAttempt.findFirst({
+      where: {
+        cube_id: cubeProfileId,
+        status: 'completed'
+      },
+      orderBy: { score: 'desc' },
+      select: { score: true }
+    });
+    newValue = bestAttempt?.score || 0;
+  }
+  else if (quest.criteria_type === 'quiz_completed') {
+    const completedCount = await prisma.quizAttempt.count({
+      where: {
+        cube_id: cubeProfileId,
+        status: 'completed'
+      }
+    });
+    newValue = completedCount;
+  }
 
   // 2. Check if quest criteria are met
   // For binary criteria, Goal Target Value MUST be at least 1.
   // A criteria_value of 0 would allow 0 >= 0, completing the quest for everyone!
-  const isBinaryCriteria = ['profile_picture', 'avatar_upload', 'nda_signed'].includes(quest.criteria_type);
+  const isBinaryCriteria = ['profile_picture', 'avatar_upload', 'nda_signed', 'quiz_completed'].includes(quest.criteria_type);
   const effectiveTarget = isBinaryCriteria ? Math.max(1, quest.criteria_value) : quest.criteria_value;
 
   // Auto-heal corrupt/zero criteria_value in DB if found

@@ -3,6 +3,7 @@ import { BadgeRarity } from '@prisma/client';
 import { badRequest, notFound } from '../utils/http';
 import { QUIZ_QUESTIONS_EN, MATCHING_ITEMS, QuizQuestionRaw, MatchingItem } from '../data/quizData';
 import { createSingleNotification } from './notification.service';
+import { recalculateAllQuestsForCube } from './quest.service';
 
 export const QUIZ_SIZE = 20;
 export const MATCHING_SIZE = 5;
@@ -466,6 +467,11 @@ export class QuizService {
           select: { id: true, name: true, rarity: true, icon: true }
         }
       }
+    });
+
+    // Auto-evaluate any active Quests (e.g. quiz_score or quiz_completed)
+    await recalculateAllQuestsForCube(cubeProfileId).catch((err) => {
+      console.error(`Failed to recalculate quests for cube ${cubeProfileId} after quiz:`, err);
     });
 
     return {

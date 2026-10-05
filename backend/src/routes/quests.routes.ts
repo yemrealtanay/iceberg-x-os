@@ -42,14 +42,16 @@ router.post('/admin/quests', requireAuth, isAdmin, async (req, res) => {
       'weekly_update_streak',
       'nda_signed',
       'profile_picture',
-      'avatar_upload'
+      'avatar_upload',
+      'quiz_score',
+      'quiz_completed'
     ];
     if (!validCriteriaTypes.includes(criteria_type)) {
       throw badRequest(`Criteria type must be one of: ${validCriteriaTypes.join(', ')}.`);
     }
 
     // Validate binary criteria
-    const BINARY_CRITERIA = ['nda_signed', 'profile_picture', 'avatar_upload'];
+    const BINARY_CRITERIA = ['nda_signed', 'profile_picture', 'avatar_upload', 'quiz_completed'];
     if (BINARY_CRITERIA.includes(criteria_type)) {
       const parsed = Number(criteria_value);
       if (!Number.isInteger(parsed) || parsed < 1) {
