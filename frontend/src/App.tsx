@@ -32,6 +32,7 @@ import { AcceptInvite } from './pages/AcceptInvite';
 import { Quests } from './pages/Quests';
 import { AdminQuests } from './pages/AdminQuests';
 import { AdminNda } from './pages/AdminNda';
+import { Fundamentals } from './pages/Fundamentals';
 
 import { PublicProfile } from './pages/PublicProfile';
 
@@ -78,6 +79,10 @@ function App() {
             {/* Missions List & Details */}
             <Route path="missions" element={<Missions />} />
             <Route path="missions/:id" element={<MissionDetail />} />
+
+            {/* Web Fundamentals Crash Course & Certification Quiz */}
+            <Route path="fundamentals" element={<Fundamentals />} />
+            <Route path="quiz" element={<Fundamentals />} />
             
             {/* Mission Create/Edit (Admins & Mentors) */}
             <Route

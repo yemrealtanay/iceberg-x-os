@@ -20,6 +20,7 @@ import notificationsRoutes from './notifications.routes';
 import testimonialsRoutes from './testimonials.routes';
 import questsRoutes from './quests.routes';
 import documentsRoutes from './documents.routes';
+import quizRoutes from './quiz.routes';
 
 const router = Router();
 
@@ -52,5 +53,6 @@ router.use(notificationsRoutes);
 router.use(testimonialsRoutes);
 router.use(questsRoutes);
 router.use(documentsRoutes);
+router.use(quizRoutes);
 
 export default router;

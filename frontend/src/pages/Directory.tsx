@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Search, Filter, ShieldAlert, ShieldCheck, Award, Sparkles, Trash, Rocket, AlertCircle, GraduationCap, Clock, Mail, XCircle } from 'lucide-react';
 import { getLevelMeta, isInProgramme } from '../utils/cubeStatus';
 import { UserAvatar } from '../components/UserAvatar';
+import { QuizScoreBadge } from '../components/QuizScoreBadge';
 
 export const Directory: React.FC = () => {
   const { user } = useAuth();
@@ -435,6 +436,16 @@ export const Directory: React.FC = () => {
                         </span>
                       );
                     })()}
+
+                    {/* Web Fundamentals Quiz Certification Score Pill */}
+                    {cube.quiz_attempts && cube.quiz_attempts.length > 0 && cube.quiz_attempts[0].score !== undefined && (
+                      <QuizScoreBadge
+                        score={cube.quiz_attempts[0].score}
+                        badgeName={cube.quiz_attempts[0].badge_awarded?.name}
+                        rarity={cube.quiz_attempts[0].badge_awarded?.rarity}
+                        variant="pill"
+                      />
+                    )}
                   </div>
 
                   {/* Row 3: Academic & Program details */}

@@ -144,6 +144,7 @@ model CubeProfile {
   testimonials       Testimonial[]
   cube_quests        CubeQuest[]
   documents          CubeDocument[]
+  quiz_attempts      QuizAttempt[]
 
   @@index([assigned_mentor_id])
   @@index([current_level])
@@ -318,8 +319,9 @@ model Badge {
   updated_at  DateTime    @updatedAt
 
   // Relations
-  cube_badges CubeBadge[]
-  quests      Quest[]     @relation("QuestToBadge")
+  cube_badges   CubeBadge[]
+  quests        Quest[]       @relation("QuestToBadge")
+  quiz_attempts QuizAttempt[]
 
   @@index([rarity])
 }
@@ -586,5 +588,30 @@ model CubeDocument {
   @@index([type])
   @@index([status])
   @@index([uploaded_by_id])
+}
+
+model QuizAttempt {
+  id               String       @id @default(uuid())
+  cube_id          String
+  cube             CubeProfile  @relation(fields: [cube_id], references: [id], onDelete: Cascade)
+  score            Int          @default(0) // 0 - 100
+  correct_count    Int          @default(0) // 0 - 25
+  wrong_count      Int          @default(0) // 0 - 25
+  hint_penalty     Int          @default(0)
+  duration_seconds Int?
+  questions        Json         // Snapshot of questions given to the Cube (without answer key)
+  answer_key       Json         // Stored server-side correct answers & matching pairs for this attempt
+  user_answers     Json?        // Selected answers submitted by the Cube
+  hints_used       Json?        // Question indices where hint was unlocked
+  status           String       @default("in_progress") // "in_progress", "completed", "timed_out"
+  badge_awarded_id String?
+  badge_awarded    Badge?       @relation(fields: [badge_awarded_id], references: [id], onDelete: SetNull)
+  started_at       DateTime     @default(now())
+  completed_at     DateTime?
+
+  @@index([cube_id])
+  @@index([status])
+  @@index([completed_at])
+  @@index([score])
 }
 

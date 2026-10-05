@@ -109,6 +109,21 @@ router.get('/cubes', requireAuth, async (req: AuthenticatedRequest, res) => {
               }
             }
           }
+        },
+        quiz_attempts: {
+          where: { status: 'completed' },
+          select: {
+            id: true,
+            score: true,
+            correct_count: true,
+            wrong_count: true,
+            completed_at: true,
+            badge_awarded: {
+              select: { id: true, name: true, rarity: true, icon: true }
+            }
+          },
+          orderBy: { score: 'desc' },
+          take: 1
         }
       },
       orderBy: {
@@ -739,6 +754,22 @@ router.get('/cubes/public/:identifier', async (req, res) => {
           orderBy: {
             completed_at: 'desc'
           }
+        },
+        quiz_attempts: {
+          where: { status: 'completed' },
+          select: {
+            id: true,
+            score: true,
+            correct_count: true,
+            wrong_count: true,
+            duration_seconds: true,
+            completed_at: true,
+            badge_awarded: {
+              select: { id: true, name: true, rarity: true, icon: true }
+            }
+          },
+          orderBy: { score: 'desc' },
+          take: 1
         }
       }
     });
@@ -801,7 +832,8 @@ router.get('/cubes/public/:identifier', async (req, res) => {
         assigned_mentor: profile.assigned_mentor,
         offboarding_record: profile.offboarding_record,
         cube_badges: profile.cube_badges,
-        cube_quests: profile.cube_quests
+        cube_quests: profile.cube_quests,
+        quiz_attempts: profile.quiz_attempts
       },
       stats: {
         questsCompleted: profile.cube_quests.length,
@@ -882,6 +914,22 @@ router.get('/cubes/:id', requireAuth, async (req: AuthenticatedRequest, res) => 
               }
             }
           }
+        },
+        quiz_attempts: {
+          where: { status: 'completed' },
+          select: {
+            id: true,
+            score: true,
+            correct_count: true,
+            wrong_count: true,
+            hint_penalty: true,
+            duration_seconds: true,
+            completed_at: true,
+            badge_awarded: {
+              select: { id: true, name: true, rarity: true, icon: true }
+            }
+          },
+          orderBy: { score: 'desc' }
         }
       }
     });

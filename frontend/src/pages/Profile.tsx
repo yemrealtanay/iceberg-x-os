@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import { RadarChart } from '../components/RadarChart';
 import { getAssetUrl } from '../utils/assets';
 import { CubeDocumentsManager } from '../components/CubeDocumentsManager';
+import { QuizScoreBadge } from '../components/QuizScoreBadge';
 
 const formatExternalUrl = (url: string | null | undefined): string => {
   if (!url) return '';
@@ -1218,6 +1219,19 @@ export const Profile: React.FC = () => {
               cubeId={profile.id}
               isOwner={isOwner}
               onDocumentsChange={fetchProfileData}
+            />
+          </div>
+        )}
+
+        {/* Web Fundamentals Quiz Spotlight */}
+        {profile.quiz_attempts && profile.quiz_attempts.length > 0 && profile.quiz_attempts[0].score !== undefined && (
+          <div className="flex flex-col gap-2">
+            <QuizScoreBadge
+              score={profile.quiz_attempts[0].score}
+              badgeName={profile.quiz_attempts[0].badge_awarded?.name}
+              rarity={profile.quiz_attempts[0].badge_awarded?.rarity}
+              completedAt={profile.quiz_attempts[0].completed_at}
+              variant="spotlight"
             />
           </div>
         )}

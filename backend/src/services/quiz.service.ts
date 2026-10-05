@@ -1,0 +1,626 @@
+import prisma from './prisma';
+import { BadgeRarity } from '@prisma/client';
+import { badRequest, notFound } from '../utils/http';
+import { QUIZ_QUESTIONS_EN, MATCHING_ITEMS, QuizQuestionRaw, MatchingItem } from '../data/quizData';
+import { createSingleNotification } from './notification.service';
+
+export const QUIZ_SIZE = 20;
+export const MATCHING_SIZE = 5;
+export const QUIZ_DURATION_SECONDS = 30 * 60; // 30 minutes
+export const POINTS_PER_ITEM = 4;
+
+const RARITY_WEIGHT: Record<BadgeRarity, number> = {
+  [BadgeRarity.Common]: 1,
+  [BadgeRarity.Rare]: 2,
+  [BadgeRarity.Epic]: 3
+};
+
+function shuffleArray<T>(items: T[]): T[] {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/** Check whether an attempt completed today (UTC calendar day) */
+export function isSameUtcDay(d1: Date, d2: Date = new Date()): boolean {
+  return (
+    d1.getUTCFullYear() === d2.getUTCFullYear() &&
+    d1.getUTCMonth() === d2.getUTCMonth() &&
+    d1.getUTCDate() === d2.getUTCDate()
+  );
+}
+
+export function getStartOfNextUtcDay(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+}
+
+export class QuizService {
+  /**
+   * Get Cube's quiz overview: daily limit status, highest score, past attempts.
+   */
+  static async getCubeQuizStatus(cubeProfileId: string) {
+    const attempts = await prisma.quizAttempt.findMany({
+      where: { cube_id: cubeProfileId },
+      include: {
+        badge_awarded: {
+          select: { id: true, name: true, rarity: true, icon: true }
+        }
+      },
+      orderBy: { started_at: 'desc' }
+    });
+
+    const now = new Date();
+    const completedToday = attempts.find(
+      (a) => a.status === 'completed' && a.completed_at && isSameUtcDay(a.completed_at, now)
+    );
+
+    // Active in-progress attempt that hasn't expired yet
+    const activeAttempt = attempts.find((a) => {
+      if (a.status !== 'in_progress') return false;
+      const elapsed = Math.round((now.getTime() - a.started_at.getTime()) / 1000);
+      return elapsed <= QUIZ_DURATION_SECONDS + 60;
+    });
+
+    const completedAttempts = attempts.filter((a) => a.status === 'completed');
+    const bestScore = completedAttempts.reduce((max, a) => Math.max(max, a.score), 0);
+    const bestAttempt = completedAttempts.find((a) => a.score === bestScore && bestScore > 0);
+
+    // Find any quiz badge currently held by this Cube
+    const cubeBadges = await prisma.cubeBadge.findMany({
+      where: { cube_id: cubeProfileId },
+      include: { badge: true }
+    });
+
+    const quizBadge = cubeBadges
+      .filter(
+        (cb) =>
+          cb.badge.accent === 'web-fundamentals' ||
+          /fundamental|quiz/i.test(cb.badge.name)
+      )
+      .sort((a, b) => RARITY_WEIGHT[b.badge.rarity] - RARITY_WEIGHT[a.badge.rarity])[0];
+
+    return {
+      canAttemptToday: !completedToday && !activeAttempt,
+      completedToday: !!completedToday,
+      nextAttemptAt: completedToday ? getStartOfNextUtcDay() : null,
+      activeAttempt: activeAttempt
+        ? {
+            id: activeAttempt.id,
+            started_at: activeAttempt.started_at,
+            remaining_seconds: Math.max(
+              0,
+              QUIZ_DURATION_SECONDS - Math.round((now.getTime() - activeAttempt.started_at.getTime()) / 1000)
+            )
+          }
+        : null,
+      totalAttempts: completedAttempts.length,
+      bestScore,
+      bestAttemptId: bestAttempt?.id || null,
+      currentBadge: quizBadge
+        ? {
+            id: quizBadge.badge.id,
+            name: quizBadge.badge.name,
+            rarity: quizBadge.badge.rarity,
+            icon: quizBadge.badge.icon,
+            awarded_at: quizBadge.awarded_at
+          }
+        : null,
+      recentAttempts: completedAttempts.slice(0, 10).map((a) => ({
+        id: a.id,
+        score: a.score,
+        correct_count: a.correct_count,
+        wrong_count: a.wrong_count,
+        hint_penalty: a.hint_penalty,
+        duration_seconds: a.duration_seconds,
+        completed_at: a.completed_at,
+        badge: a.badge_awarded
+          ? {
+              id: a.badge_awarded.id,
+              name: a.badge_awarded.name,
+              rarity: a.badge_awarded.rarity,
+              icon: a.badge_awarded.icon
+            }
+          : null
+      }))
+    };
+  }
+
+  /**
+   * Start a new quiz attempt or resume an active one.
+   */
+  static async startOrResumeQuiz(cubeProfileId: string) {
+    const now = new Date();
+
+    // Check if there is an active in-progress attempt that hasn't expired
+    const activeAttempt = await prisma.quizAttempt.findFirst({
+      where: {
+        cube_id: cubeProfileId,
+        status: 'in_progress'
+      },
+      orderBy: { started_at: 'desc' }
+    });
+
+    if (activeAttempt) {
+      const elapsed = Math.round((now.getTime() - activeAttempt.started_at.getTime()) / 1000);
+      if (elapsed <= QUIZ_DURATION_SECONDS + 30) {
+        // Resume active attempt
+        const remaining = Math.max(0, QUIZ_DURATION_SECONDS - elapsed);
+        return {
+          attemptId: activeAttempt.id,
+          resumed: true,
+          questions: activeAttempt.questions,
+          hintsUsed: (activeAttempt.hints_used as number[]) || [],
+          userAnswers: activeAttempt.user_answers || null,
+          startedAt: activeAttempt.started_at,
+          durationSeconds: QUIZ_DURATION_SECONDS,
+          remainingSeconds: remaining
+        };
+      } else {
+        // Expired in-progress attempt -> mark timed_out
+        await prisma.quizAttempt.update({
+          where: { id: activeAttempt.id },
+          data: {
+            status: 'timed_out',
+            completed_at: new Date(activeAttempt.started_at.getTime() + QUIZ_DURATION_SECONDS * 1000),
+            duration_seconds: QUIZ_DURATION_SECONDS
+          }
+        });
+      }
+    }
+
+    // Check daily limit (1 completed attempt per day)
+    const completedToday = await prisma.quizAttempt.findFirst({
+      where: {
+        cube_id: cubeProfileId,
+        status: 'completed',
+        completed_at: {
+          gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0))
+        }
+      }
+    });
+
+    if (completedToday) {
+      throw badRequest(
+        'You have already completed your quiz attempt for today. You can take the quiz again tomorrow!'
+      );
+    }
+
+    // Generate 20 random MC questions
+    const selectedQuestions = shuffleArray(QUIZ_QUESTIONS_EN).slice(0, QUIZ_SIZE);
+
+    const clientQuestions: any[] = [];
+    const serverMcKey: any[] = [];
+
+    selectedQuestions.forEach((q, index) => {
+      // Shuffle options
+      const optionsWithCorrectness = q.options.map((text, idx) => ({
+        text,
+        isCorrect: idx === q.answer
+      }));
+      const shuffledOptions = shuffleArray(optionsWithCorrectness);
+      const correctIndex = shuffledOptions.findIndex((o) => o.isCorrect);
+
+      clientQuestions.push({
+        id: q.id,
+        index,
+        topic: q.topic,
+        question: q.question,
+        options: shuffledOptions.map((o) => o.text),
+        hasHint: !!q.hint
+      });
+
+      serverMcKey.push({
+        id: q.id,
+        index,
+        correct_option_index: correctIndex,
+        hint: q.hint
+      });
+    });
+
+    // Generate 5 random Matching items
+    const matchingPool = MATCHING_ITEMS.en;
+    const selectedMatching = shuffleArray(matchingPool).slice(0, MATCHING_SIZE);
+
+    const matchingDefinitions = selectedMatching.map((item, index) => ({
+      index,
+      definition: item.definition
+    }));
+    const matchingTerms = shuffleArray(
+      selectedMatching.map((item) => ({
+        id: item.id,
+        term: item.term
+      }))
+    );
+
+    const serverMatchingKey = selectedMatching.map((item, index) => ({
+      index,
+      correct_term_id: item.id
+    }));
+
+    const clientPayload = {
+      multipleChoice: clientQuestions,
+      matching: {
+        definitions: matchingDefinitions,
+        terms: matchingTerms
+      }
+    };
+
+    const serverAnswerKey = {
+      mc: serverMcKey,
+      matching: serverMatchingKey
+    };
+
+    const attempt = await prisma.quizAttempt.create({
+      data: {
+        cube_id: cubeProfileId,
+        status: 'in_progress',
+        questions: clientPayload as any,
+        answer_key: serverAnswerKey as any,
+        hints_used: [],
+        started_at: now
+      }
+    });
+
+    return {
+      attemptId: attempt.id,
+      resumed: false,
+      questions: clientPayload,
+      hintsUsed: [],
+      userAnswers: null,
+      startedAt: attempt.started_at,
+      durationSeconds: QUIZ_DURATION_SECONDS,
+      remainingSeconds: QUIZ_DURATION_SECONDS
+    };
+  }
+
+  /**
+   * Request a hint for a multiple choice question.
+   */
+  static async requestHint(attemptId: string, cubeProfileId: string, questionIndex: number) {
+    const attempt = await prisma.quizAttempt.findUnique({
+      where: { id: attemptId }
+    });
+
+    if (!attempt || attempt.cube_id !== cubeProfileId) {
+      throw notFound('Quiz attempt not found.');
+    }
+
+    if (attempt.status !== 'in_progress') {
+      throw badRequest('This quiz attempt is already completed.');
+    }
+
+    const elapsed = Math.round((Date.now() - attempt.started_at.getTime()) / 1000);
+    if (elapsed > QUIZ_DURATION_SECONDS + 60) {
+      throw badRequest('Quiz time has expired.');
+    }
+
+    const answerKey = attempt.answer_key as any;
+    const mcItem = answerKey?.mc?.[questionIndex];
+    if (!mcItem) {
+      throw badRequest('Question index out of range.');
+    }
+
+    const currentHintsUsed = ((attempt.hints_used as number[]) || []).slice();
+    if (!currentHintsUsed.includes(questionIndex)) {
+      currentHintsUsed.push(questionIndex);
+      await prisma.quizAttempt.update({
+        where: { id: attemptId },
+        data: { hints_used: currentHintsUsed }
+      });
+    }
+
+    return {
+      questionIndex,
+      hint: mcItem.hint
+    };
+  }
+
+  /**
+   * Submit quiz answers, evaluate score, apply hint penalties, and award/upgrade badges.
+   */
+  static async submitQuiz(
+    attemptId: string,
+    cubeProfileId: string,
+    answers: (number | null)[],
+    matchingAnswers: (string | null)[]
+  ) {
+    const attempt = await prisma.quizAttempt.findUnique({
+      where: { id: attemptId },
+      include: {
+        cube: {
+          include: { user: { select: { id: true, name: true } } }
+        }
+      }
+    });
+
+    if (!attempt || attempt.cube_id !== cubeProfileId) {
+      throw notFound('Quiz attempt not found.');
+    }
+
+    if (attempt.status !== 'in_progress') {
+      throw badRequest('This quiz attempt has already been submitted.');
+    }
+
+    const now = new Date();
+    const elapsedSeconds = Math.round((now.getTime() - attempt.started_at.getTime()) / 1000);
+    const timedOut = elapsedSeconds > QUIZ_DURATION_SECONDS + 60;
+
+    const answerKey = attempt.answer_key as any;
+    const clientQuestions = attempt.questions as any;
+    const hintsUsed = (attempt.hints_used as number[]) || [];
+
+    let multipleChoiceCorrect = 0;
+    let hintPenalties = 0;
+    const mcEvaluation: any[] = [];
+
+    // Evaluate Multiple Choice (20 questions)
+    for (let i = 0; i < QUIZ_SIZE; i++) {
+      const key = answerKey.mc?.[i];
+      const clientQ = clientQuestions.multipleChoice?.[i];
+      const selected = answers[i] !== undefined && answers[i] !== null ? Number(answers[i]) : null;
+      const isCorrect = selected !== null && selected === key?.correct_option_index;
+      const hintUsed = hintsUsed.includes(i);
+
+      let points = 0;
+      if (isCorrect) {
+        multipleChoiceCorrect++;
+        if (hintUsed) {
+          hintPenalties += 1;
+          points = POINTS_PER_ITEM - 1; // 3 points
+        } else {
+          points = POINTS_PER_ITEM; // 4 points
+        }
+      }
+
+      mcEvaluation.push({
+        index: i,
+        question: clientQ?.question,
+        topic: clientQ?.topic,
+        options: clientQ?.options,
+        selectedOption: selected,
+        correctOption: key?.correct_option_index,
+        isCorrect,
+        hintUsed,
+        pointsAwarded: points
+      });
+    }
+
+    // Evaluate Matching (5 items)
+    let matchingCorrect = 0;
+    const matchingEvaluation: any[] = [];
+
+    for (let i = 0; i < MATCHING_SIZE; i++) {
+      const key = answerKey.matching?.[i];
+      const clientDef = clientQuestions.matching?.definitions?.[i];
+      const selectedTermId = matchingAnswers[i] || null;
+      const isCorrect = selectedTermId !== null && selectedTermId === key?.correct_term_id;
+
+      if (isCorrect) {
+        matchingCorrect++;
+      }
+
+      matchingEvaluation.push({
+        index: i,
+        definition: clientDef?.definition,
+        selectedTermId,
+        correctTermId: key?.correct_term_id,
+        isCorrect,
+        pointsAwarded: isCorrect ? POINTS_PER_ITEM : 0
+      });
+    }
+
+    const totalCorrect = multipleChoiceCorrect + matchingCorrect;
+    const totalWrong = QUIZ_SIZE + MATCHING_SIZE - totalCorrect;
+    const totalScore = Math.max(0, totalCorrect * POINTS_PER_ITEM - hintPenalties);
+
+    // Badge allocation & upgrade calculation
+    const badgeResult = await this.evaluateBadgeAward(
+      cubeProfileId,
+      attempt.cube.user.id,
+      attempt.cube.user.name,
+      totalScore
+    );
+
+    // Save attempt record
+    const updatedAttempt = await prisma.quizAttempt.update({
+      where: { id: attemptId },
+      data: {
+        score: totalScore,
+        correct_count: totalCorrect,
+        wrong_count: totalWrong,
+        hint_penalty: hintPenalties,
+        duration_seconds: Math.min(elapsedSeconds, QUIZ_DURATION_SECONDS),
+        status: timedOut ? 'timed_out' : 'completed',
+        completed_at: now,
+        badge_awarded_id: badgeResult.badgeAwardedId || null,
+        user_answers: {
+          multipleChoice: answers,
+          matching: matchingAnswers
+        } as any
+      },
+      include: {
+        badge_awarded: {
+          select: { id: true, name: true, rarity: true, icon: true }
+        }
+      }
+    });
+
+    return {
+      attemptId: updatedAttempt.id,
+      score: totalScore,
+      correctCount: totalCorrect,
+      wrongCount: totalWrong,
+      multipleChoiceCorrect,
+      matchingCorrect,
+      hintPenalties,
+      durationSeconds: updatedAttempt.duration_seconds,
+      timedOut,
+      completedAt: updatedAttempt.completed_at,
+      badge: badgeResult,
+      detailedReview: {
+        multipleChoice: mcEvaluation,
+        matching: matchingEvaluation
+      }
+    };
+  }
+
+  /**
+   * Determine earned badge rarity, find configured badge, and handle award/upgrade.
+   */
+  private static async evaluateBadgeAward(
+    cubeProfileId: string,
+    userId: string,
+    userName: string,
+    score: number
+  ): Promise<{
+    earnedRarity: BadgeRarity | null;
+    badgeAwardedId: string | null;
+    badgeName: string | null;
+    action: 'awarded' | 'upgraded' | 'retained' | 'none';
+    message: string;
+  }> {
+    let targetRarity: BadgeRarity | null = null;
+    if (score >= 90) {
+      targetRarity = BadgeRarity.Epic;
+    } else if (score >= 75) {
+      targetRarity = BadgeRarity.Rare;
+    } else if (score >= 50) {
+      targetRarity = BadgeRarity.Common;
+    }
+
+    if (!targetRarity) {
+      return {
+        earnedRarity: null,
+        badgeAwardedId: null,
+        badgeName: null,
+        action: 'none',
+        message: 'Score below passing threshold (50 points). Review the course topics and try again tomorrow!'
+      };
+    }
+
+    // Find the badge matching this rarity for Web Fundamentals
+    // Admin creates it manually; we match by accent 'web-fundamentals' OR name containing 'Fundamental'/'Quiz'
+    const matchingBadges = await prisma.badge.findMany({
+      where: {
+        rarity: targetRarity,
+        OR: [
+          { accent: 'web-fundamentals' },
+          { name: { contains: 'Fundamental', mode: 'insensitive' } },
+          { name: { contains: 'Web', mode: 'insensitive' } },
+          { name: { contains: 'Quiz', mode: 'insensitive' } }
+        ]
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    // Prioritize exact accent match or best name match
+    const targetBadge =
+      matchingBadges.find((b) => b.accent === 'web-fundamentals') ||
+      matchingBadges.find((b) => /fundamental/i.test(b.name)) ||
+      matchingBadges[0];
+
+    if (!targetBadge) {
+      return {
+        earnedRarity: targetRarity,
+        badgeAwardedId: null,
+        badgeName: null,
+        action: 'none',
+        message: `Qualified for ${targetRarity} tier badge (score: ${score}/100), but no ${targetRarity} badge has been configured by admin yet.`
+      };
+    }
+
+    // Check existing quiz badges held by this Cube
+    const existingCubeBadges = await prisma.cubeBadge.findMany({
+      where: {
+        cube_id: cubeProfileId,
+        badge: {
+          OR: [
+            { accent: 'web-fundamentals' },
+            { name: { contains: 'Fundamental', mode: 'insensitive' } },
+            { name: { contains: 'Web', mode: 'insensitive' } },
+            { name: { contains: 'Quiz', mode: 'insensitive' } }
+          ]
+        }
+      },
+      include: { badge: true }
+    });
+
+    // Get an admin user ID for awarded_by_id
+    const systemAdmin = await prisma.user.findFirst({
+      where: { role: 'ADMIN' },
+      select: { id: true }
+    });
+    const awardedById = systemAdmin?.id || userId;
+
+    if (existingCubeBadges.length === 0) {
+      // First-time award
+      await prisma.cubeBadge.create({
+        data: {
+          cube_id: cubeProfileId,
+          badge_id: targetBadge.id,
+          awarded_by_id: awardedById,
+          reason: `Earned ${targetBadge.rarity} badge in Web Fundamentals Quiz with score ${score}/100`
+        }
+      });
+
+      await createSingleNotification(
+        userId,
+        `🎉 Congratulations! You scored ${score}/100 on the Web Fundamentals Quiz and earned the "${targetBadge.name}" (${targetBadge.rarity}) badge!`
+      );
+
+      return {
+        earnedRarity: targetRarity,
+        badgeAwardedId: targetBadge.id,
+        badgeName: targetBadge.name,
+        action: 'awarded',
+        message: `Awarded "${targetBadge.name}" (${targetBadge.rarity}) badge with score ${score}/100!`
+      };
+    }
+
+    // Compare with highest existing badge
+    const highestExisting = existingCubeBadges.sort(
+      (a, b) => RARITY_WEIGHT[b.badge.rarity] - RARITY_WEIGHT[a.badge.rarity]
+    )[0];
+
+    const currentWeight = RARITY_WEIGHT[highestExisting.badge.rarity];
+    const newWeight = RARITY_WEIGHT[targetRarity];
+
+    if (newWeight > currentWeight) {
+      // Upgrade!
+      await prisma.cubeBadge.update({
+        where: { id: highestExisting.id },
+        data: {
+          badge_id: targetBadge.id,
+          reason: `Upgraded to ${targetBadge.rarity} in Web Fundamentals Quiz with score ${score}/100 (previously ${highestExisting.badge.name})`,
+          awarded_at: new Date()
+        }
+      });
+
+      await createSingleNotification(
+        userId,
+        `🚀 Badge Upgraded! You achieved a new high score of ${score}/100 on the Web Fundamentals Quiz and your badge was upgraded to "${targetBadge.name}" (${targetBadge.rarity})!`
+      );
+
+      return {
+        earnedRarity: targetRarity,
+        badgeAwardedId: targetBadge.id,
+        badgeName: targetBadge.name,
+        action: 'upgraded',
+        message: `Upgraded from "${highestExisting.badge.name}" to "${targetBadge.name}" (${targetBadge.rarity})!`
+      };
+    }
+
+    // Retained
+    return {
+      earnedRarity: targetRarity,
+      badgeAwardedId: highestExisting.badge.id,
+      badgeName: highestExisting.badge.name,
+      action: 'retained',
+      message: `Scored ${score}/100. Existing badge "${highestExisting.badge.name}" (${highestExisting.badge.rarity}) was retained.`
+    };
+  }
+}

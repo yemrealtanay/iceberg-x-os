@@ -6,6 +6,7 @@ import { ScaledCertificatePreview } from '../components/CertificateSheet';
 import { BadgeDisc, RarityPill, BadgeSparks } from '../components/BadgeMedal';
 import { compareByRarity, getRarityMeta } from '../utils/badgeRarity';
 import { getAssetUrl } from '../utils/assets';
+import { QuizScoreBadge } from '../components/QuizScoreBadge';
 
 export const PublicProfile: React.FC = () => {
   const { cubeNumber, certNo } = useParams<{ cubeNumber?: string; certNo?: string }>();
@@ -285,6 +286,19 @@ export const PublicProfile: React.FC = () => {
             ))}
           </div>
         </section>
+
+        {/* Web Fundamentals Certification Score */}
+        {profile.quiz_attempts && profile.quiz_attempts.length > 0 && profile.quiz_attempts[0].score !== undefined && (
+          <section className="mt-7">
+            <QuizScoreBadge
+              score={profile.quiz_attempts[0].score}
+              badgeName={profile.quiz_attempts[0].badge_awarded?.name}
+              rarity={profile.quiz_attempts[0].badge_awarded?.rarity}
+              completedAt={profile.quiz_attempts[0].completed_at}
+              variant="spotlight"
+            />
+          </section>
+        )}
 
         {/* Badges Earned Section */}
         <section className="mt-7">

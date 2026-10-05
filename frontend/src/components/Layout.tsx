@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown, Trophy, ShieldCheck } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Rocket, Award, FolderOpen, Calendar, Shield, KeyRound, GraduationCap, Send, ChevronDown, Trophy, ShieldCheck, BookOpen } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import { UserAvatar } from './UserAvatar';
 import { AvatarUploadModal } from './AvatarUploadModal';
@@ -45,6 +45,7 @@ export const Layout: React.FC = () => {
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/directory', label: 'Directory', icon: Users },
       { path: '/missions', label: 'Missions', icon: Rocket },
+      { path: '/fundamentals', label: 'Fundamentals', icon: BookOpen },
       { path: '/meetings', label: 'Meetings', icon: Calendar },
       { path: '/badges', label: 'Badges', icon: Award },
       { path: '/quests', label: 'Quests', icon: Trophy },
