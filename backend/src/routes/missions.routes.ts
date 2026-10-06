@@ -19,13 +19,23 @@ import { MissionStatus, DifficultyLevel, MissionDecision } from '@prisma/client'
 
 const router = Router();
 
+// Finished missions that live in the Cube Vault
+const VAULT_STATUSES: MissionStatus[] = [
+  MissionStatus.completed,
+  MissionStatus.reviewed,
+  MissionStatus.promoted_to_product_backlog,
+  MissionStatus.archived
+];
+
 // List missions
 router.get('/missions', requireAuth, async (req, res) => {
   try {
-    const { status, difficulty_level, mentor_id } = req.query;
+    const { status, difficulty_level, mentor_id, vault } = req.query;
+    const isVault = vault === 'true';
 
     const filters: any = {};
     if (status) filters.status = status as MissionStatus;
+    else if (isVault) filters.status = { in: VAULT_STATUSES };
     if (difficulty_level) filters.difficulty_level = difficulty_level as DifficultyLevel;
     if (mentor_id) filters.mentor_id = mentor_id as string;
 
@@ -48,18 +58,36 @@ router.get('/missions', requireAuth, async (req, res) => {
             members: {
               include: {
                 cube: {
-                  // The mission cards show initials only, so no avatar is sent
+                  // The mission cards show initials only; the Vault also needs avatars
                   select: {
                     id: true,
-                    user: { select: { name: true } }
+                    user: { select: isVault ? { name: true, avatar_url: true } : { name: true } }
                   }
                 }
               }
             }
           }
-        }
+        },
+        ...(isVault && {
+          demo_submissions: {
+            orderBy: { submitted_at: 'desc' as const },
+            take: 1,
+            select: {
+              id: true,
+              what_we_built: true,
+              what_we_learned: true,
+              recommendation: true,
+              repository_url: true,
+              pull_request_url: true,
+              demo_url: true,
+              document_url: true,
+              video_url: true,
+              submitted_at: true
+            }
+          }
+        })
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: isVault ? { updated_at: 'desc' } : { created_at: 'desc' }
     });
 
     return res.json(missions);
