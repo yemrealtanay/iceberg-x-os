@@ -77,21 +77,43 @@ const getLinks = (m: any): VaultLink[] => {
   return candidates.filter((l) => !!l.href);
 };
 
-const getMembers = (m: any): { id: string; name: string; avatar?: string | null }[] => {
+interface Person {
+  id: string;
+  name: string;
+  avatar?: string | null;
+  role?: string;
+  team?: string | null;
+}
+
+// Prefer the durable contributor history; fall back to live team rosters
+const getMembers = (m: any): Person[] => {
+  if (Array.isArray(m.contributors) && m.contributors.length > 0) {
+    return m.contributors.map((c: any) => ({
+      id: c.cube_id,
+      name: c.name || 'Unknown',
+      avatar: c.avatar_url,
+      role: c.role,
+      team: c.team_name,
+    }));
+  }
   const seen = new Set<string>();
-  const out: { id: string; name: string; avatar?: string | null }[] = [];
+  const out: Person[] = [];
   (m.teams || []).forEach((t: any) =>
     (t?.members || []).forEach((mem: any) => {
       const id = mem?.cube?.id || mem?.id;
       if (!id || seen.has(id)) return;
       seen.add(id);
-      out.push({ id, name: mem?.cube?.user?.name || 'Unknown', avatar: mem?.cube?.user?.avatar_url });
+      out.push({ id, name: mem?.cube?.user?.name || 'Unknown', avatar: mem?.cube?.user?.avatar_url, role: mem?.role, team: t?.name });
     })
   );
   return out;
 };
 
-const AvatarStack: React.FC<{ members: ReturnType<typeof getMembers>; max?: number }> = ({ members, max = 4 }) => {
+const roleLabel = (r?: string) => (r || '').replace(/_/g, ' ');
+
+const getLead = (m: any) => getMembers(m).find((p) => p.role === 'Mission_Lead');
+
+const AvatarStack: React.FC<{ members: Person[]; max?: number }> = ({ members, max = 4 }) => {
   if (members.length === 0) return <span className="text-xs text-gray-400">No team</span>;
   const shown = members.slice(0, max);
   const extra = members.length - shown.length;
@@ -401,9 +423,11 @@ export const CubeVault: React.FC = () => {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <AvatarStack members={members} />
                     <div className="min-w-0 leading-tight">
-                      <div className="text-xs font-bold text-gray-800 truncate">{team?.name || 'No team'}</div>
+                      <div className="text-xs font-bold text-gray-800 truncate">
+                        {getLead(m)?.name ? `Lead: ${getLead(m)!.name}` : team?.name || members[0]?.team || 'No team'}
+                      </div>
                       <div className="text-[11px] text-gray-400 font-medium truncate">
-                        {m.mentor ? `Mentor: ${m.mentor.name}` : 'No mentor'}
+                        {members.length} cube{members.length === 1 ? '' : 's'} · {m.mentor ? `Mentor: ${m.mentor.name}` : 'No mentor'}
                       </div>
                     </div>
                   </div>
@@ -449,6 +473,14 @@ const VaultDetail: React.FC<{ mission: any; onClose: () => void }> = ({ mission:
   const team = m.teams?.[0] || null;
   const demo = m.demo_submissions?.[0];
   const links = getLinks(m);
+  const roleGroups = Object.entries(
+    members.reduce((acc: Record<string, string[]>, p) => {
+      const key = p.role || 'Contributor';
+      (acc[key] = acc[key] || []).push(p.name);
+      return acc;
+    }, {})
+  );
+  const teamNames = Array.from(new Set(members.map((p) => p.team).filter(Boolean))) as string[];
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true">
@@ -476,7 +508,7 @@ const VaultDetail: React.FC<{ mission: any; onClose: () => void }> = ({ mission:
           <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400">
-                Team{team ? ` · ${team.name}` : ''}
+                Who worked on it{teamNames.length ? ` · ${teamNames.join(', ')}` : team ? ` · ${team.name}` : ''}
               </span>
               {m.mentor && (
                 <span className="text-xs font-semibold text-gray-500">
@@ -485,13 +517,30 @@ const VaultDetail: React.FC<{ mission: any; onClose: () => void }> = ({ mission:
               )}
             </div>
             {members.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {members.map((p) => (
-                  <div key={p.id} className="flex items-center gap-2 bg-white border border-gray-100 rounded-full pl-1 pr-3 py-1">
-                    <UserAvatar name={p.name} avatarUrl={p.avatar} size="xs" />
-                    <span className="text-xs font-bold text-gray-700">{p.name}</span>
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {members.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2.5 bg-white border border-gray-100 rounded-xl px-3 py-2">
+                      <UserAvatar name={p.name} avatarUrl={p.avatar} size="sm" />
+                      <div className="min-w-0 leading-tight">
+                        <div className="text-xs font-bold text-gray-800 truncate">{p.name}</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-magenta truncate">
+                          {roleLabel(p.role) || 'Contributor'}
+                        </div>
+                        {p.team && <div className="text-[10px] text-gray-400 font-medium truncate">Team {p.team}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {roleGroups.length > 1 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1 border-t border-gray-100">
+                    {roleGroups.map(([role, names]) => (
+                      <span key={role} className="text-[10px] font-semibold text-gray-500 bg-white border border-gray-100 rounded-full px-2 py-0.5">
+                        <span className="font-extrabold uppercase text-gray-700">{roleLabel(role)}</span> · {names.join(', ')}
+                      </span>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               <p className="text-xs text-gray-400">No cubes were assigned to this mission.</p>
