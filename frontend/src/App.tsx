@@ -21,12 +21,14 @@ import { CubeVault } from './pages/CubeVault';
 import { DemoDays } from './pages/DemoDays';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminApplications } from './pages/AdminApplications';
+import { Recruitment } from './pages/Recruitment';
 import { ChangePassword } from './pages/ChangePassword';
 import { Meetings } from './pages/Meetings';
 import { Offboarding } from './pages/Offboarding';
 import { Certificate } from './pages/Certificate';
 import { VerifyCertificate } from './pages/VerifyCertificate';
 import { Notifications } from './pages/Notifications';
+import { NotificationHistory } from './pages/NotificationHistory';
 import { AdminTestimonials } from './pages/AdminTestimonials';
 import { AcceptInvite } from './pages/AcceptInvite';
 import { Quests } from './pages/Quests';
@@ -74,6 +76,7 @@ function App() {
             {/* Dashboard Router */}
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="change-password" element={<ChangePassword />} />
+            <Route path="notification-history" element={<NotificationHistory />} />
 
             {/* Cube Directory & Profile */}
             <Route path="directory" element={<Directory />} />
@@ -203,6 +206,16 @@ function App() {
               element={
                 <RouteGuard allowedRoles={['ADMIN']}>
                   <AdminUsers />
+                </RouteGuard>
+              }
+            />
+
+            {/* Admin-only Recruitment pipeline */}
+            <Route
+              path="admin/recruitment"
+              element={
+                <RouteGuard allowedRoles={['ADMIN']}>
+                  <Recruitment />
                 </RouteGuard>
               }
             />

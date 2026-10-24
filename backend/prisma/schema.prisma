@@ -446,7 +446,27 @@ model CubeApplication {
   status        String   @default("pending") // pending, approved, rejected
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
+
+  // Recruitment pipeline (all additive; existing rows start at "Applied")
+  stage               RecruitmentStage @default(Applied)
+  score_case          Int?
+  score_communication Int?
+  score_ownership     Int?
+  score_teamfit       Int?
+  evaluation_note     String?  @db.Text
+  interview_at        DateTime?
+  interview_note      String?  @db.Text
+
+  @@index([stage])
 }
+
+enum RecruitmentStage {
+  Applied
+  Evaluation
+  Interview
+  Offer
+}
+
 model Meeting {
   id           String              @id @default(uuid())
   title        String
@@ -514,8 +534,10 @@ model Notification {
   user       User     @relation("UserNotifications", fields: [user_id], references: [id], onDelete: Cascade)
   message    String   @db.Text
   created_at DateTime @default(now())
+  read_at    DateTime?
 
   @@index([user_id, created_at])
+  @@index([user_id, read_at])
 }
 
 /// One-time invitation used to onboard a new user without a shared password.

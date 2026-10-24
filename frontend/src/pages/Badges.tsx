@@ -169,13 +169,13 @@ export const Badges: React.FC = () => {
     <div className="flex flex-col gap-6">
       
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="workspace-header">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Badges & Recognition</h1>
           <p className="text-gray-500 mt-1">Recognize milestones, original concepts, and excellent collaboration.</p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="workspace-header-actions">
           {isMentorOrAdmin && (
             <button
               onClick={() => { setShowAwardForm(!showAwardForm); setDesignerDraft(null); }}
@@ -189,7 +189,7 @@ export const Badges: React.FC = () => {
           {isAdmin && (
             <button
               onClick={() => { setDesignerDraft(designerDraft ? null : {}); setShowAwardForm(false); }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-black transition-colors"
+              className="workspace-secondary-action"
             >
               <Plus className="w-4 h-4" />
               <span>Design Badge</span>
@@ -312,7 +312,7 @@ export const Badges: React.FC = () => {
                 <p className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-300/80 sm:justify-start">
                   <Crown className="h-3.5 w-3.5" /> Legendary
                 </p>
-                <h2 className="badge-title-legendary mt-2 text-3xl font-black tracking-tight sm:text-5xl">{badge.name}</h2>
+                <h2 className="badge-title-legendary mt-2 text-3xl font-black leading-[1.1] tracking-tight sm:text-5xl sm:leading-[1.1]">{badge.name}</h2>
                 <p className={`mt-3 max-w-2xl text-sm font-medium leading-relaxed ${meta.body}`}>{badge.description}</p>
 
                 {holders.length === 0 ? (
