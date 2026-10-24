@@ -26,6 +26,7 @@ import {
   TrendingUp,
   UserRound,
   Camera,
+  UserPlus,
   type LucideIcon
 } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
@@ -119,6 +120,7 @@ const buildManage = (isAdmin: boolean): NavGroup => ({
         { path: '/notifications', label: 'Broadcast', hint: 'Message every Cube', icon: Send },
         ...(isAdmin
           ? [
+              { path: '/admin/recruitment', label: 'Recruitment', hint: 'Pipeline, scoring and decisions', icon: UserPlus },
               { path: '/admin/users', label: 'Users Admin', hint: 'Accounts and roles', icon: Users },
               { path: '/admin/quests', label: 'Quests Admin', hint: 'Create and assign quests', icon: Trophy }
             ]
