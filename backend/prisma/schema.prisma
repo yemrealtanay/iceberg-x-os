@@ -85,10 +85,12 @@ model User {
   role          Role     @default(CUBE)
   avatar_url    String?
   last_login_at DateTime?
+  last_seen_at  DateTime?
   login_streak  Int      @default(0)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
+  activity_days UserActivityDay[]
   forum_topics ForumTopic[]
   forum_replies ForumReply[]
   forum_states ForumTopicState[]
@@ -1171,4 +1173,20 @@ model ForumReplyLike {
   created_at DateTime @default(now())
   @@id([user_id, reply_id])
   @@index([reply_id])
+}
+
+// One row per person per calendar day (Europe/Istanbul): how much they actually
+// used the portal. A rollup, not an event log, so it stays small and holds no
+// page content. `last_path` is a normalized route such as /missions/:id.
+model UserActivityDay {
+  user_id String
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  day DateTime @db.Date
+  page_views Int @default(0)
+  active_minutes Int @default(0)
+  last_path String?
+  first_seen_at DateTime @default(now())
+  last_seen_at DateTime @default(now())
+  @@id([user_id, day])
+  @@index([day])
 }

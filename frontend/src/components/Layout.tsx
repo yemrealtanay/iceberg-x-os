@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { FORUM_ENABLED } from '../config/features';
 import { useAuth } from '../context/AuthContext';
+import { useActivityTracking } from '../utils/useActivityTracking';
 import {
   Menu,
   X,
@@ -139,6 +140,7 @@ export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  useActivityTracking(Boolean(user));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   /** Which header dropdown is open: a group key, 'user', or null. */
