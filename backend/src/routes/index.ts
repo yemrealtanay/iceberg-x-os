@@ -28,6 +28,7 @@ import radarRoutes from './radar.routes';
 import mvcubesRoutes from './mvcubes.routes';
 import hallOfFameRoutes from './hallOfFame.routes';
 import webinarsRoutes from './webinars.routes';
+import activityRoutes from './activity.routes';
 
 const router = Router();
 
@@ -68,5 +69,6 @@ router.use(radarRoutes);
 router.use(mvcubesRoutes);
 router.use(hallOfFameRoutes);
 router.use(webinarsRoutes);
+router.use(activityRoutes);
 
 export default router;
