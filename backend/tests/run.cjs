@@ -11,3 +11,4 @@ require('./notificationRead.test.ts');
 require('./caseEvaluation.test.ts');
 require('./webinar.test.ts');
 require('./activity.test.ts');
+require('./activityStatus.test.ts');

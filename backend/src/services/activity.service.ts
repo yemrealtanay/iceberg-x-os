@@ -106,3 +106,45 @@ export async function recordActivity(
 
   return true;
 }
+
+export const ACTIVITY_WINDOW_DAYS = 30;
+
+export interface ActivitySummary {
+  active_days: number;
+  page_views: number;
+  active_minutes: number;
+}
+
+/**
+ * Per-person usage over the last ACTIVITY_WINDOW_DAYS days (today included).
+ * A day row only exists when the person was seen that day, so the row count is
+ * the number of active days. People with no rows are simply absent from the map.
+ */
+export async function listActivitySummaries(now: Date = new Date()): Promise<Map<string, ActivitySummary>> {
+  const today = istanbulDay(now);
+  const since = new Date(today.getTime() - (ACTIVITY_WINDOW_DAYS - 1) * 86_400_000);
+
+  const rows = await prisma.userActivityDay.groupBy({
+    by: ['user_id'],
+    where: { day: { gte: since } },
+    _count: { _all: true },
+    _sum: { page_views: true, active_minutes: true }
+  });
+
+  return new Map(
+    rows.map((row) => [
+      row.user_id,
+      {
+        active_days: row._count._all,
+        page_views: row._sum.page_views ?? 0,
+        active_minutes: row._sum.active_minutes ?? 0
+      }
+    ])
+  );
+}
+
+/** When tracking first recorded anything, or null if it has not recorded yet. */
+export async function getTrackingStartedAt(): Promise<Date | null> {
+  const result = await prisma.userActivityDay.aggregate({ _min: { first_seen_at: true } });
+  return result._min.first_seen_at ?? null;
+}
