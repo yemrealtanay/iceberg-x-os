@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:forum": "node --test tests/forum-preview.test.mjs",
+    "test:nudge": "node --test tests/nudge-draft.test.mjs",
     "check:forum": "tsc -p tsconfig.forum.json"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Mail, Users } from 'lucide-react';
+import { ArrowRight, ChevronDown, Mail, PenLine, Users } from 'lucide-react';
 import { api } from '../../utils/api';
 import { getStatusMeta } from '../../utils/missionMeta';
 import {
@@ -12,6 +12,7 @@ import {
   type SignalStatus,
 } from '../../utils/cubeSignals';
 import { UserAvatar } from '../UserAvatar';
+import { NudgeDraftModal } from './NudgeDraftModal';
 import { SCORING_V2_ENABLED } from '../../config/features';
 
 interface MentorCubesResponse {
@@ -174,6 +175,7 @@ const CubeRow: React.FC<{ cube: CubeSignals; open: boolean; onToggle: () => void
   const reasons = cube.items.map(item => describeForMentor(item));
   const mission = cube.missions[0];
   const blocker = cube.items.find(item => item.kind === 'open_blocker');
+  const [drafting, setDrafting] = useState(false);
 
   return (
     <li className="p-4 sm:px-5">
@@ -245,9 +247,16 @@ const CubeRow: React.FC<{ cube: CubeSignals; open: boolean; onToggle: () => void
             {cube.next_meeting && ` · next meeting ${relativeDay(cube.next_meeting.date)}`}
           </p>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setDrafting(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-magenta px-3 py-2 text-xs font-extrabold text-white hover:bg-magenta-hover"
+            >
+              <PenLine className="h-3.5 w-3.5" /> Draft a message
+            </button>
             <a
               href={`mailto:${cube.email}`}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-magenta px-3 py-2 text-xs font-extrabold text-white hover:bg-magenta-hover"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-extrabold text-gray-700 hover:border-gray-300"
             >
               <Mail className="h-3.5 w-3.5" /> Email {cube.name.split(' ')[0]}
             </a>
@@ -276,6 +285,7 @@ const CubeRow: React.FC<{ cube: CubeSignals; open: boolean; onToggle: () => void
           </div>
         </div>
       )}
+      {drafting && <NudgeDraftModal cube={cube} onClose={() => setDrafting(false)} />}
     </li>
   );
 };
