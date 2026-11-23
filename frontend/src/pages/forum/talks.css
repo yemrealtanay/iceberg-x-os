@@ -700,6 +700,14 @@ html.dark .cube-forum .talk-room-error { color: #fda4af; }
 .cube-forum .talk-room-head-info strong { font-size: 16px; font-weight: 800; color: var(--talk-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cube-forum .talk-room-head-info small { font-size: 12px; color: var(--talk-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cube-forum .talk-room-head-info .is-typing { color: var(--talk-accent); font-weight: 700; }
+.cube-forum .talk-mission-team { display: flex; align-items: center; gap: 10px; min-width: 0; margin-top: 3px; }
+.cube-forum .talk-mission-team-group { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.cube-forum .talk-mission-team-group b { color: var(--talk-ink); font-weight: 700; }
+.cube-forum .talk-mission-team-sep { width: 1px; height: 14px; flex: none; background: var(--talk-line); }
+.cube-forum .talk-mission-team-stack { display: inline-flex; flex: none; }
+.cube-forum .talk-mission-team-stack > * + * { margin-left: -7px; }
+.cube-forum .talk-mission-team-avatar { flex: none; box-shadow: 0 0 0 2px var(--talk-card); }
+.cube-forum .talk-mission-team-names { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cube-forum .talk-room-notice { align-self: center; display: inline-flex; align-items: center; gap: 6px; max-width: 460px; padding: 6px 12px; border-radius: 10px; background: #fef9c3; color: #713f12; font-size: 11px; text-align: center; }
 html.dark .cube-forum .talk-room-notice { background: #3a3411; color: #fde68a; }
 /* Mission rooms: link back to the mission. Colours come from the --talk-* tokens, which switch in dark mode. */

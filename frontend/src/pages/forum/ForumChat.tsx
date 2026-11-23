@@ -8,11 +8,12 @@ import { RoomBoard, RoomGithub, RoomLinks, type RoomLink, type RoomTask } from '
 import { PollCard, PollEditor, emptyPoll, pollPayload, pollProblem, type Poll, type PollDraft } from './ForumPoll';
 import { MissionUpdatePanel } from './ForumMissionUpdate';
 import { TopicLinkPreview, forumLinkIn } from './ForumPostMenu';
+import { MissionTeamStrip, type MissionTeam } from './ForumMissionTeam';
 import { GroupInfo, PeoplePicker, RoomAvatar, personLabel, type GroupDetail, type Person } from './ForumGroupInfo';
 
 interface Room { id: string; name: string; updated_at: string; my_role: 'ADMIN' | 'MEMBER'; _count: { members: number };
   last_message: { created_at: string; body: string; deleted: boolean; author: { id: string; name: string } | null } | null }
-interface Detail extends GroupDetail { mission_id?: string | null; typing: { id: string; name: string }[]; github_repo?: string | null; github_repos?: string[];
+interface Detail extends GroupDetail { mission_id?: string | null; mission_team?: MissionTeam | null; typing: { id: string; name: string }[]; github_repo?: string | null; github_repos?: string[];
   pinned?: { id: string; body: string; created_at: string; author: { id: string; name: string } | null }[]; tasks?: RoomTask[]; links?: RoomLink[] }
 interface Attachment { id: string; original_name: string; byte_size: number }
 interface Message { id: string; body: string; created_at: string; pinned_at?: string | null; edited_at: string | null; deleted_at: string | null; author: Person | null;
@@ -210,7 +211,7 @@ export function ForumChat({ userId, canPost, isCube = false }: { userId: string;
           <button type="button" className="talk-room-head-info" aria-label="Open group info" aria-expanded={infoOpen} onClick={() => setInfoOpen(!infoOpen)}>
             <RoomAvatar name={detail?.name || '?'}/>
             <span className="talk-room-title"><strong>{detail?.name || 'Loading group…'}</strong>
-              <small>{detail?.typing.length ? <span className="is-typing">{detail.typing.map(person => person.name.split(' ')[0]).join(', ')} {detail.typing.length === 1 ? 'is' : 'are'} typing…</span> : detail ? detail.members.map(person => person.id === userId ? 'You' : person.name.split(' ')[0]).join(', ') : ''}</small></span>
+              <small>{detail?.typing.length ? <span className="is-typing">{detail.typing.map(person => person.name.split(' ')[0]).join(', ')} {detail.typing.length === 1 ? 'is' : 'are'} typing…</span> : detail?.mission_team ? <MissionTeamStrip team={detail.mission_team} userId={userId}/> : detail ? detail.members.map(person => person.id === userId ? 'You' : person.name.split(' ')[0]).join(', ') : ''}</small></span>
           </button>
           <button type="button" className={`talk-room-icon-btn ${searchOpen || query ? 'is-on' : ''}`} aria-label="Search messages" aria-expanded={searchOpen || !!query} onClick={() => setSearchOpen(!searchOpen)}><Search size={17}/></button>
         </header>
