@@ -121,6 +121,24 @@ export async function createChatRoom(actor: ForumActor, input: Record<string, un
   });
 }
 
+/**
+ * Who a mission room is about: the mission's mentor and the active Cubes on its team. The room
+ * itself also holds every Admin and Mentor, so the header shows this instead of the full roster.
+ */
+async function missionTeam(tx: Tx, missionId: string) {
+  const [mission, assigned] = await Promise.all([
+    tx.mission.findUnique({ where: { id: missionId }, select: { mentor: { select: person } } }),
+    tx.missionTeamMember.findMany({
+      where: { team: { mission_id: missionId }, cube: { current_level: { notIn: ['Alumni', 'Former_Cube'] }, user: { role: 'CUBE' } } },
+      select: { role: true, cube: { select: { user: { select: person } } } },
+      orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+    }),
+  ]);
+  const cubes = new Map<string, (typeof assigned)[number]['cube']['user'] & { team_role: string }>();
+  for (const row of assigned) if (!cubes.has(row.cube.user.id)) cubes.set(row.cube.user.id, { ...row.cube.user, team_role: row.role });
+  return { mentor: mission?.mentor ?? null, cubes: [...cubes.values()] };
+}
+
 export async function chatRoomDetails(actor: ForumActor, id: string) {
   return prisma.$transaction(async tx => {
     const { room, member } = await membership(tx, actor, id);
@@ -133,8 +151,9 @@ export async function chatRoomDetails(actor: ForumActor, id: string) {
         select: { id: true, body: true, created_at: true, author: { select: { id: true, name: true } }, poll: { select: { question: true } }, _count: { select: { attachments: true } } } }),
     ]);
     const admin = member.role === 'ADMIN';
+    const mission_team = room.mission_id ? await missionTeam(tx, room.mission_id) : null;
     return {
-      id: room.id, mission_id: room.mission_id, name: openText(id, room.name), description: openText(id, room.description) || '', created_at: room.created_at,
+      id: room.id, mission_id: room.mission_id, mission_team, name: openText(id, room.name), description: openText(id, room.description) || '', created_at: room.created_at,
       github_repo: roomRepos(id, room.github_repo)[0] || null, github_repos: roomRepos(id, room.github_repo), only_admins_edit: room.only_admins_edit, only_admins_send: room.only_admins_send,
       my_role: member.role, can_edit_info: !room.mission_id && (admin || !room.only_admins_edit), can_send: admin || !room.only_admins_send,
       members: members.map(row => ({ ...row.user, group_role: row.role, joined_at: row.joined_at })), typing: typing.map(row => row.user),

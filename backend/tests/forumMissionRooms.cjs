@@ -57,6 +57,13 @@ module.exports = async ({db, chat, cube, other, staff}) => {
   assert.equal(second.created, 0);
   assert.ok(second.already_had_room >= 1);
   assert.equal(await db.forumChatRoom.count({where:{mission_id:active.id}}), 1);
+  // Room header: the mission's mentor and its active Cubes, not every staff member in the room.
+  await db.mission.update({where:{id:active.id},data:{mentor_id:staff.id}});
+  const teamView = (await chat.chatRoomDetails(cube, opened.id)).mission_team;
+  assert.equal(teamView.mentor.id, staff.id);
+  assert.deepEqual(teamView.cubes.map(c=>c.id), [cube.id]);
+  assert.ok(teamView.cubes[0].team_role);
+  assert.equal((await chat.chatRoomDetails(cube, privateRoom.id)).mission_team, null);
   console.log('PASS: ops opens rooms only for active missions with Cubes, and a re-run changes nothing.');
   console.log('PASS: mission room creation, roster joins/revocation, private isolation, rename and stable two-admin order.');
 };

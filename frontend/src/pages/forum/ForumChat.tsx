@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ChangeEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { ArrowLeft, BarChart3, TrendingUp, Pin, Check, CheckCheck, Lock, Paperclip, Plus, Search, Send, Smile, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../utils/api';
 import { ChatUnreadBadge, useChatUnread } from './ForumChatUnread';
 import { EMOJIS } from '../../components/MarkdownEditor';
@@ -8,11 +8,12 @@ import { RoomBoard, RoomGithub, RoomLinks, type RoomLink, type RoomTask } from '
 import { PollCard, PollEditor, emptyPoll, pollPayload, pollProblem, type Poll, type PollDraft } from './ForumPoll';
 import { MissionUpdatePanel } from './ForumMissionUpdate';
 import { TopicLinkPreview, forumLinkIn } from './ForumPostMenu';
+import { MissionTeamStrip, type MissionTeam } from './ForumMissionTeam';
 import { GroupInfo, PeoplePicker, RoomAvatar, personLabel, type GroupDetail, type Person } from './ForumGroupInfo';
 
 interface Room { id: string; name: string; updated_at: string; my_role: 'ADMIN' | 'MEMBER'; _count: { members: number };
   last_message: { created_at: string; body: string; deleted: boolean; author: { id: string; name: string } | null } | null }
-interface Detail extends GroupDetail { mission_id?: string | null; typing: { id: string; name: string }[]; github_repo?: string | null; github_repos?: string[];
+interface Detail extends GroupDetail { mission_id?: string | null; mission_team?: MissionTeam | null; typing: { id: string; name: string }[]; github_repo?: string | null; github_repos?: string[];
   pinned?: { id: string; body: string; created_at: string; author: { id: string; name: string } | null }[]; tasks?: RoomTask[]; links?: RoomLink[] }
 interface Attachment { id: string; original_name: string; byte_size: number }
 interface Message { id: string; body: string; created_at: string; pinned_at?: string | null; edited_at: string | null; deleted_at: string | null; author: Person | null;
@@ -60,6 +61,7 @@ const listTime = (value: string) => { const date = new Date(value); return date.
 export function ForumChat({ userId, canPost, isCube = false }: { userId: string; canPost: boolean; isCube?: boolean }) {
   const [creating, setCreating] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]), [total, setTotal] = useState(0), [page, setPage] = useState(1);
+  const [params, setParams] = useSearchParams(), urlRoom = params.get('room') || '';
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get('room') || ''), [detail, setDetail] = useState<Detail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]), [messagePage, setMessagePage] = useState(1), [messageTotal, setMessageTotal] = useState(0);
   const [name, setName] = useState(''), [description, setDescription] = useState(''), [members, setMembers] = useState<Person[]>([]), [body, setBody] = useState('');
@@ -94,7 +96,18 @@ export function ForumChat({ userId, canPost, isCube = false }: { userId: string;
     for (const file of pendingFiles.current) void api.delete(`${base}/rooms/${selected}/files/${file.id}`).catch(() => {});
     setAttachments([]); setDetail(null); setMessages([]); clearDraft(); setSelected(id); setMessagePage(1); setCreating(false); setError('');
     setQuery(''); setSearchDraft(''); setSearchOpen(false); setInfoOpen(false); setDeleting(''); setReacting(''); readMessage.current = null; acknowledgedRead.current = null;
+    // Keep the open room in the URL, so the browser back button returns to the group list.
+    if ((new URLSearchParams(window.location.search).get('room') || '') !== id) {
+      const next = new URLSearchParams(window.location.search);
+      if (id) next.set('room', id); else next.delete('room');
+      setParams(next);
+    }
   };
+  // Browser back/forward: follow the room in the URL.
+  useEffect(() => {
+    if (urlRoom !== selected) choose(urlRoom);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlRoom]);
   useEffect(() => {
     if (inRoom) return;
     let current = true, running = false;
@@ -198,7 +211,10 @@ export function ForumChat({ userId, canPost, isCube = false }: { userId: string;
   const errorBox = error && <p className="talk-chat-error" role="alert">{error}<button type="button" className="talk-pill" onClick={() => { setError(''); refresh(); }}>Dismiss</button></p>;
 
   if (inRoom) return <section className="talk-private-chat is-room">
-    {detail?.mission_id && <p className="talk-room-mission"><Link to={`/missions/${encodeURIComponent(detail.mission_id)}`}>Open mission →</Link><span>Membership follows mission assignments.</span></p>}
+    <div className="talk-room-mission">
+      <button type="button" className="talk-room-back" disabled={locked} onClick={() => choose('')}><ArrowLeft size={14}/>All groups</button>
+      {detail?.mission_id && <><Link to={`/missions/${encodeURIComponent(detail.mission_id)}`}>Open mission →</Link><span>Membership follows mission assignments.</span></>}
+    </div>
     <div className="talk-room-workspace" ref={workspace} style={{ height: workspaceHeight ? `${workspaceHeight}px` : undefined, '--room-left': `${leftWidth}px`, '--room-right': `${rightWidth}px` } as CSSProperties}>
       <aside className="talk-room-side is-left" aria-label="Board and pinned links">
         {detail ? <><RoomBoard roomPath={roomPath} tasks={detail.tasks || []} canPost={canPost} onChanged={refresh}/><RoomLinks roomPath={roomPath} links={detail.links || []} canPost={canPost} onChanged={refresh}/></> : <div className="talk-room-panel"><p className="talk-room-empty" role="status">Loading…</p></div>}
@@ -210,7 +226,7 @@ export function ForumChat({ userId, canPost, isCube = false }: { userId: string;
           <button type="button" className="talk-room-head-info" aria-label="Open group info" aria-expanded={infoOpen} onClick={() => setInfoOpen(!infoOpen)}>
             <RoomAvatar name={detail?.name || '?'}/>
             <span className="talk-room-title"><strong>{detail?.name || 'Loading group…'}</strong>
-              <small>{detail?.typing.length ? <span className="is-typing">{detail.typing.map(person => person.name.split(' ')[0]).join(', ')} {detail.typing.length === 1 ? 'is' : 'are'} typing…</span> : detail ? detail.members.map(person => person.id === userId ? 'You' : person.name.split(' ')[0]).join(', ') : ''}</small></span>
+              <small>{detail?.typing.length ? <span className="is-typing">{detail.typing.map(person => person.name.split(' ')[0]).join(', ')} {detail.typing.length === 1 ? 'is' : 'are'} typing…</span> : detail?.mission_team ? <MissionTeamStrip team={detail.mission_team} userId={userId}/> : detail ? detail.members.map(person => person.id === userId ? 'You' : person.name.split(' ')[0]).join(', ') : ''}</small></span>
           </button>
           <button type="button" className={`talk-room-icon-btn ${searchOpen || query ? 'is-on' : ''}`} aria-label="Search messages" aria-expanded={searchOpen || !!query} onClick={() => setSearchOpen(!searchOpen)}><Search size={17}/></button>
         </header>
