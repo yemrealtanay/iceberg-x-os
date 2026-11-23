@@ -119,7 +119,7 @@ function assessmentWeight(a: Assessment, asOf: Date) {
   return recency(a.at, asOf) * (DIFFICULTY_WEIGHT[a.difficulty || ''] ?? 1) * (a.kind === 'checkin' ? CHECKIN_WEIGHT : 1);
 }
 
-function deliveryParts(input: ScoreInput, asOf: Date) {
+function deliveryParts(input: ScoreInput, asOf: Date, now: Date) {
   const t = asOf.getTime();
   const joined = input.memberships.filter(m => m.joined_at.getTime() <= t);
 
@@ -138,7 +138,7 @@ function deliveryParts(input: ScoreInput, asOf: Date) {
   // Delivery: missions where delivery was due that got a demo. Historically a
   // mission counts as due once its demo exists; the live score also counts
   // missions whose current status says the demo is due.
-  const isLive = Date.now() - t < WEEK_MS;
+  const isLive = now.getTime() - t < WEEK_MS;
   const joinedIds = new Set(joined.map(m => m.mission_id));
   const demoed = new Set(input.demos.filter(d => d.at.getTime() <= t && joinedIds.has(d.mission_id)).map(d => d.mission_id));
   const due = new Set(demoed);
@@ -166,7 +166,11 @@ function combine(mentor: number | null, delivery: number | null, peer: ScoreInpu
   return { overall: applied.overall, peerDelta: applied.delta };
 }
 
-export function computeScoreV2(input: ScoreInput, asOf: Date, { includePeer = false } = {}): ScoreV2 {
+/**
+ * `now` is the wall clock, used only to tell the live score (asOf within the
+ * last week) from a historical snapshot; tests pin it.
+ */
+export function computeScoreV2(input: ScoreInput, asOf: Date, { includePeer = false, now = new Date() } = {}): ScoreV2 {
   const t = asOf.getTime();
   const assessments = input.assessments.filter(a => a.at.getTime() <= t && observed(a).length > 0);
   const privates = input.private_scores.filter(p => p.at.getTime() <= t);
@@ -183,7 +187,7 @@ export function computeScoreV2(input: ScoreInput, asOf: Date, { includePeer = fa
     [priv, MENTOR_MIX.private],
   ]);
 
-  const parts = deliveryParts(input, asOf);
+  const parts = deliveryParts(input, asOf, now);
   const delivery = mix([
     [parts.rhythm, DELIVERY_PARTS.rhythm],
     [parts.delivery, DELIVERY_PARTS.delivery],
