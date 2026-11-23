@@ -106,14 +106,15 @@ graph TD
 
 ## 4. Badge System & Rarity Hierarchy
 
-The system defines three badge rarity tiers (`BadgeRarity`) with specific visual layouts:
+The current Prisma `BadgeRarity` enum and `frontend/src/utils/badgeRarity.ts` define four badge rarity tiers:
 
 1. **Common**: Flat design, white background card, and neutral border. Hint: expected of every Cube.
 2. **Rare**: Coloured glow, lit gradient border (`from-sky-400 via-cyan-400 to-blue-600`). Hint: real depth of skill.
 3. **Epic**: Dark card, animated rotating spectrum border (`badge-frame-epic` CSS class), sheen sweep, and sparkles. Hint: moves the programme forward.
+4. **Legendary**: Molten-gold frame (`badge-frame-legendary`), gold sheen, breathing aura and drifting embers. Hint: the summit, held by almost no one.
 
 ### Naming & Asset Resolutions
-- **Rarity Sort**: Sorted rarest first using `compareByRarity` (order: Epic = 1, Rare = 2, Common = 3).
+- **Rarity Sort**: Sorted rarest first using `compareByRarity` (order: Legendary = 1, Epic = 2, Rare = 3, Common = 4). Preserve a Cube's explicitly chosen forum showcase order instead of applying rarity sorting to that selection.
 - **Lucide Icon Collisions**: Aliased imports that shadow JavaScript globals (e.g. `Map as MapIcon`, `Infinity as InfinityIcon`) must be strictly observed in `badgeIcons.ts` to prevent import-time application crashes.
 - **Backward Compatibility**: Pre-catalogue PascalCase icons (e.g. `ClarityMaker`, `DeepDiver`) map to new keys using `LEGACY_ICON_ALIASES` in `badgeIcons.ts`.
 - **Award Guards**: Prevents duplicate awards for the same mission/cube combination. Deleting a badge requires `?force=true` query confirmation if active awards exist.

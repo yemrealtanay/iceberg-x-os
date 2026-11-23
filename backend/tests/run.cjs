@@ -1,3 +1,5 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET ||= 'portal-unit-tests-only-not-a-real-secret';
 const path = require('node:path');
 
 // The frontend package is ESM; load its pure helpers through the CJS test runner.
