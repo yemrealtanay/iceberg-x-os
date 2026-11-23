@@ -77,7 +77,9 @@ Uploaded images appear as removable editor thumbnails; feed cards show the first
 
 Uploaded files are publicly served at their random URLs, like portal avatars. Soft-deleting a post does not delete its image files; the feature flag hides the UI/API rather than revoking already-uploaded static URLs. Forum uploads are for discussion images, not confidential portal documents. Persistence/retention of the storage volume is part of any later deployment plan.
 
-Topic authors can accept one answer in Tech Support. Moving the topic out of Tech Support clears the accepted marker and keeps the replies. Topics and replies support likes with grouped author notifications; removing a like updates the unread summary. Reading a notification preserves its history, and a later like starts a new unread notification. Upstream forum quests now calculate progress from live posts, replies and accepted answers through the existing quest system. Other emoji reactions, email digests and separate forum reputation are not implemented.
+Topic authors can accept one answer in Tech Support. Moving the topic out of Tech Support clears the accepted marker and keeps the replies. Topics and replies support likes with grouped author notifications; removing a like updates the unread summary. Reading a notification preserves its history, and a later like starts a new unread notification. Forum quests calculate progress from live posts, replies and accepted answers through the existing quest system. Other emoji reactions, email digests and separate forum reputation are not implemented.
+
+The additive `20261111120000_forum_likes` migration creates the like tables without changing existing records. Apply it through the normal reviewed migration process before enabling these endpoints. The guarded localhost-only installer also includes it for local setup; it does not deploy to remote databases.
 
 ## API and data model
 
@@ -117,11 +119,6 @@ npm run build --prefix frontend
 ```
 
 Both database suites require localhost and create/delete only random disposable schemas. The service suite verifies forum SQL/features; the migration suite additionally runs the real installer against an empty schema and an older forum, verifies no schema drift, preserves existing records, checks idempotency and refuses unsafe targets. It does not claim to replay the broken historical portal chain.
-
-## Upstream refresh (11 November 2026)
-
-This fork incorporates upstream main through `1c78ca1`, including recruitment, webinars, forum quest criteria, dashboard activity and signature frames. Fork-only likes, emoji composition, notification fixes, contributor links and workflow documents are retained. The empty-local-schema installer includes the reviewed recruitment/webinar schema; an existing local portal with pending non-forum migrations still requires a separate reviewed upgrade. This refresh does not run migrations or deploy either repository.
-
 
 ## Review fixes for private posts and room integrations
 

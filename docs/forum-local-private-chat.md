@@ -1,6 +1,6 @@
 # Local prototype: private rooms and liker lists
 
-This prototype is submitted for review in the umrtkyrk/iceberg-x-os fork. Validation uses local synthetic accounts and disposable schemas. It has not been deployed to production.
+Built by the forum team (Cube #018, #013). Validation uses local synthetic accounts and disposable schemas. It has not been deployed to production.
 
 ## Liker lists
 
