@@ -34,5 +34,29 @@ module.exports = async ({db, chat, cube, other, staff}) => {
   await db.forumChatMember.updateMany({where:{room_id:privateRoom.id},data:{joined_at:new Date('2026-11-19T12:00:00Z')}});
   const expected=(await chat.chatRoomDetails(cube,privateRoom.id)).members.map(m=>m.id);
   for(let i=0;i<10;i++) assert.deepEqual((await chat.chatRoomDetails(cube,privateRoom.id)).members.map(m=>m.id),expected);
+  // /admin/ops: open rooms for active missions with an active Cube, once.
+  const {createRoomsForActiveMissions} = require('../dist/services/forumMissionRoom.service');
+  const make = async (title, status, withCube) => {
+    const m = await db.mission.create({data:{title,description:'QA',context:'QA',problem_statement:'QA',expected_output:'QA',difficulty_level:'Level_4_Integration_Candidate',created_by_id:staff.id,status}});
+    if (withCube) await db.missionTeam.create({data:{name:`${title} team`,mission_id:m.id,members:{create:{cube_id:profile.id}}}});
+    return m;
+  };
+  const active = await make('Ops active mission', 'researching', true);
+  await make('Ops completed mission', 'completed', true);
+  await make('Ops mission without Cubes', 'building_demo', false);
+  const first = await createRoomsForActiveMissions(staff.id);
+  const titles = first.rooms.map(r => r.mission);
+  assert.ok(titles.includes('Ops active mission'));
+  assert.ok(!titles.includes('Ops completed mission') && !titles.includes('Ops mission without Cubes'));
+  assert.equal(first.failed, 0);
+  const opened = await db.forumChatRoom.findUnique({where:{mission_id:active.id},include:{members:true}});
+  assert.equal(opened.members.find(m=>m.user_id===cube.id)?.role, 'MEMBER');
+  assert.equal(opened.members.find(m=>m.user_id===staff.id)?.role, 'ADMIN');
+  assert.equal(first.rooms.find(r=>r.mission==='Ops active mission').cubes, 1);
+  const second = await createRoomsForActiveMissions(staff.id);
+  assert.equal(second.created, 0);
+  assert.ok(second.already_had_room >= 1);
+  assert.equal(await db.forumChatRoom.count({where:{mission_id:active.id}}), 1);
+  console.log('PASS: ops opens rooms only for active missions with Cubes, and a re-run changes nothing.');
   console.log('PASS: mission room creation, roster joins/revocation, private isolation, rename and stable two-admin order.');
 };

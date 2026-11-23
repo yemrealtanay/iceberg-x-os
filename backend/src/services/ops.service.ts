@@ -11,6 +11,7 @@ import { backfillSnapshots } from './scoreV2.data';
 import { activateV2Quests } from './scoringQuests.service';
 import { autoAssignQuestToEligibleCubes } from './quest.service';
 import { FORMULA_VERSION } from './scoreV2';
+import { createRoomsForActiveMissions } from './forumMissionRoom.service';
 
 interface Operation {
   key: string;
@@ -18,7 +19,8 @@ interface Operation {
   description: string;
   /** Shown as a confirmation before running. */
   confirm?: string;
-  run: () => Promise<unknown>;
+  /** `userId` is the admin who started the run. */
+  run: (ctx: { userId: string }) => Promise<unknown>;
 }
 
 const OPERATIONS: Operation[] = [
@@ -35,6 +37,13 @@ const OPERATIONS: Operation[] = [
       'Retires the old average-score quests (High Achiever, Iceberg Elite Fellow); earned badges stay. Creates the v2 quests and badges and assigns them to Cubes in the programme. Needs SCORING_V2_LIVE=true. Idempotent.',
     confirm: 'This changes which quests Cubes see. Run it only when the v2 score goes live. Continue?',
     run: () => activateV2Quests(autoAssignQuestToEligibleCubes),
+  },
+  {
+    key: 'forum-mission-rooms',
+    title: 'Open forum rooms for active missions',
+    description:
+      'Creates the private forum room of every active mission (selected to pending approval) that has an active Cube on its team, as the mission page button does. Assigned active Cubes join as members, Admins and Mentors as room admins. Missions that already have a room are skipped; nothing is deleted. Needs FORUM_ENABLED and FORUM_CHAT_KEY. Safe to re-run for new missions.',
+    run: ({ userId }) => createRoomsForActiveMissions(userId),
   },
 ];
 
@@ -57,7 +66,7 @@ export async function runOperation(key: string, userId: string) {
 
   const run = await prisma.opsRun.create({ data: { operation: key, started_by: userId, status: 'running' } });
   try {
-    const result = await op.run();
+    const result = await op.run({ userId });
     return prisma.opsRun.update({
       where: { id: run.id },
       data: { status: 'succeeded', result: (result ?? null) as any, finished_at: new Date() },
