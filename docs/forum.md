@@ -61,6 +61,7 @@ In **Forum profile**, select up to three of your earned badges, arrange their or
 
 - Create a topic with a title of up to 160 characters and Markdown body up to 10,000; replies allow 5,000. Quest/mission links use accessible portal records and do not advance progress or award points.
 - Replies are chronological, 20 per page. Authors can edit or soft-delete their own content; edits show a marker. Search matches title/body/reply text; category, quest, mission and feed filters work together. New/unread state persists per account.
+- Use **Add emoji** in the topic/reply editor to insert an emoji at the cursor or replace selected text. The picker also works when editing a post, supports keyboard navigation and Escape, and preserves mentions/attachments. Emoji use the existing message length limit; an oversized edit is rejected without shortening the draft.
 - Authors automatically follow their topics. Replies notify the owner/followers; `@` search inserts stable Cube/staff mention handles. Recipients are deduplicated, excluding self and exited Cubes. Code and quoted text do not send mentions. Up to ten distinct handles are processed; edits do not resend notifications.
 - The portal bell/history links to the exact topic/reply; the server resolves its current page. Manual pagination releases that notification target. Saved/following lists belong to the signed-in user.
 - Report another author's topic/reply with a reason. Mentor/Admin opens **Moderation**, follows the target, removes content if appropriate and marks the report reviewed. Deleting content resolves its open reports. Reports are not public.
@@ -76,7 +77,7 @@ Uploaded images appear as removable editor thumbnails; feed cards show the first
 
 Uploaded files are publicly served at their random URLs, like portal avatars. Soft-deleting a post does not delete its image files; the feature flag hides the UI/API rather than revoking already-uploaded static URLs. Forum uploads are for discussion images, not confidential portal documents. Persistence/retention of the storage volume is part of any later deployment plan.
 
-Topic authors can accept one answer in Tech Support. Moving the topic out of Tech Support clears the accepted marker and keeps the replies. Topics and replies support likes with grouped author notifications. A new like stays unread if the author concurrently marks the previous notification read; unlikes update only unread summaries and preserve read history. Forum quest criteria calculate progress through the existing quest system; other emoji reactions, email digests and separate forum reputation are not implemented.
+Topic authors can accept one answer in Tech Support. Moving the topic out of Tech Support clears the accepted marker and keeps the replies. Topics and replies support likes with grouped author notifications; removing a like updates the unread summary. Reading a notification preserves its history, and a later like starts a new unread notification. Upstream forum quests now calculate progress from live posts, replies and accepted answers through the existing quest system. Other emoji reactions, email digests and separate forum reputation are not implemented.
 
 ## API and data model
 
@@ -117,5 +118,15 @@ npm run build --prefix frontend
 
 Both database suites require localhost and create/delete only random disposable schemas. The service suite verifies forum SQL/features; the migration suite additionally runs the real installer against an empty schema and an older forum, verifies no schema drift, preserves existing records, checks idempotency and refuses unsafe targets. It does not claim to replay the broken historical portal chain.
 
+## Upstream refresh (11 November 2026)
 
-The additive `20261111120000_forum_likes` migration creates the like tables without changing existing records. Apply it through the normal reviewed migration process before enabling these endpoints. The guarded localhost-only installer also includes it for local setup; it does not deploy to remote databases.
+This fork incorporates upstream main through `1c78ca1`, including recruitment, webinars, forum quest criteria, dashboard activity and signature frames. Fork-only likes, emoji composition, notification fixes, contributor links and workflow documents are retained. The empty-local-schema installer includes the reviewed recruitment/webinar schema; an existing local portal with pending non-forum migrations still requires a separate reviewed upgrade. This refresh does not run migrations or deploy either repository.
+
+
+## Review fixes for private posts and room integrations
+
+Moderation lists, dashboard report counts and report resolution respect the moderator’s post audience access. Report membership does not bypass a private post’s audience.
+
+Room GitHub activity supports publicly accessible repositories only. It uses anonymous requests and never forwards a server-wide GITHUB_TOKEN for a user-selected repository. Private repository activity requires a future per-user authorization flow; room membership alone cannot grant GitHub permissions.
+
+The chat encryption backfill uses conditional field writes: a value is converted only if it still matches its snapshot. Concurrent message edits/deletions and metadata changes are preserved. Rerun the idempotent script to pick up changed legacy values. Back up FORUM_CHAT_KEY and the database/files before any production operation. These tests use local synthetic data only.
