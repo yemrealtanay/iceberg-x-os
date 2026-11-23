@@ -23,18 +23,18 @@ export function MissionTeamStrip({ team, userId }: { team: MissionTeam; userId: 
 
   return (
     <span className="talk-mission-team" title={label}>
-      <span className="talk-mission-team-group">
+      <span className="talk-mission-team-group is-mentor">
         {team.mentor ? (
           <>
             <UserAvatar name={team.mentor.name} avatarUrl={team.mentor.avatar_url} size="xs" className="talk-mission-team-avatar" />
-            <span><b>Mentor</b> {firstName(team.mentor, userId)}</span>
+            <span><b>Mentor</b> <span className="talk-mission-team-name">{firstName(team.mentor, userId)}</span></span>
           </>
         ) : (
           <span>No mentor</span>
         )}
       </span>
       <span className="talk-mission-team-sep" aria-hidden="true" />
-      <span className="talk-mission-team-group">
+      <span className="talk-mission-team-group is-cubes">
         {shown.length > 0 ? (
           <>
             <span className="talk-mission-team-stack">
@@ -42,10 +42,8 @@ export function MissionTeamStrip({ team, userId }: { team: MissionTeam; userId: 
                 <UserAvatar key={cube.id} name={cube.name} avatarUrl={cube.avatar_url} size="xs" className="talk-mission-team-avatar" />
               ))}
             </span>
-            <span className="talk-mission-team-names">
-              {names}
-              {hidden > 0 && ` +${hidden}`}
-            </span>
+            <span className="talk-mission-team-names">{names}</span>
+            {hidden > 0 && <span className="talk-mission-team-more">+{hidden}</span>}
           </>
         ) : (
           <span>No Cubes yet</span>
