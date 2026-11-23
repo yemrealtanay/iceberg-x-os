@@ -133,7 +133,8 @@ export default function Forum() {
   const [replyBox, setReplyBox] = useState<{ root: string; target: Post } | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
   const pageHeading = useRef<HTMLHeadingElement>(null);
-  const locationKey = params.toString();
+  // The open group (?room=) belongs to the group view; switching rooms must not reload the feed.
+  const locationKey = (() => { const key = new URLSearchParams(params); key.delete('room'); return key.toString(); })();
 
   useEffect(() => { setSearch(query); }, [query]);
   useEffect(() => {

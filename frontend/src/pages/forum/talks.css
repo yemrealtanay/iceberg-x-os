@@ -718,6 +718,8 @@ html.dark .cube-forum .talk-room-chat .talk-chat-reply.is-draft { background: va
 /* Mission rooms: link back to the mission. Colours come from the --talk-* tokens, which switch in dark mode. */
 .cube-forum .talk-room-mission { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--talk-line); border-radius: 10px; background: var(--talk-card); color: var(--talk-muted); font-size: 12px; }
 .cube-forum .talk-room-mission a { color: var(--talk-text); font-weight: 800; }
+.cube-forum .talk-room-back { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px; margin-right: 4px; border-radius: 8px; color: var(--talk-ink); font-weight: 800; }
+.cube-forum .talk-room-back:hover:not(:disabled) { background: var(--talk-hover); color: var(--talk-accent); }
 .cube-forum .talk-room-readonly { padding: 14px; border-top: 1px solid var(--talk-line); text-align: center; font-size: 13px; color: var(--talk-muted); background: var(--talk-card); }
 
 /* Own messages stay white until everyone in the group has seen them, then turn pink. */

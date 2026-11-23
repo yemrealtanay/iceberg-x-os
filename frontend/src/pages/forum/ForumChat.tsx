@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ChangeEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { ArrowLeft, BarChart3, TrendingUp, Pin, Check, CheckCheck, Lock, Paperclip, Plus, Search, Send, Smile, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../utils/api';
 import { ChatUnreadBadge, useChatUnread } from './ForumChatUnread';
 import { EMOJIS } from '../../components/MarkdownEditor';
@@ -61,6 +61,7 @@ const listTime = (value: string) => { const date = new Date(value); return date.
 export function ForumChat({ userId, canPost, isCube = false }: { userId: string; canPost: boolean; isCube?: boolean }) {
   const [creating, setCreating] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]), [total, setTotal] = useState(0), [page, setPage] = useState(1);
+  const [params, setParams] = useSearchParams(), urlRoom = params.get('room') || '';
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get('room') || ''), [detail, setDetail] = useState<Detail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]), [messagePage, setMessagePage] = useState(1), [messageTotal, setMessageTotal] = useState(0);
   const [name, setName] = useState(''), [description, setDescription] = useState(''), [members, setMembers] = useState<Person[]>([]), [body, setBody] = useState('');
@@ -95,7 +96,18 @@ export function ForumChat({ userId, canPost, isCube = false }: { userId: string;
     for (const file of pendingFiles.current) void api.delete(`${base}/rooms/${selected}/files/${file.id}`).catch(() => {});
     setAttachments([]); setDetail(null); setMessages([]); clearDraft(); setSelected(id); setMessagePage(1); setCreating(false); setError('');
     setQuery(''); setSearchDraft(''); setSearchOpen(false); setInfoOpen(false); setDeleting(''); setReacting(''); readMessage.current = null; acknowledgedRead.current = null;
+    // Keep the open room in the URL, so the browser back button returns to the group list.
+    if ((new URLSearchParams(window.location.search).get('room') || '') !== id) {
+      const next = new URLSearchParams(window.location.search);
+      if (id) next.set('room', id); else next.delete('room');
+      setParams(next);
+    }
   };
+  // Browser back/forward: follow the room in the URL.
+  useEffect(() => {
+    if (urlRoom !== selected) choose(urlRoom);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlRoom]);
   useEffect(() => {
     if (inRoom) return;
     let current = true, running = false;
@@ -199,7 +211,10 @@ export function ForumChat({ userId, canPost, isCube = false }: { userId: string;
   const errorBox = error && <p className="talk-chat-error" role="alert">{error}<button type="button" className="talk-pill" onClick={() => { setError(''); refresh(); }}>Dismiss</button></p>;
 
   if (inRoom) return <section className="talk-private-chat is-room">
-    {detail?.mission_id && <p className="talk-room-mission"><Link to={`/missions/${encodeURIComponent(detail.mission_id)}`}>Open mission →</Link><span>Membership follows mission assignments.</span></p>}
+    <div className="talk-room-mission">
+      <button type="button" className="talk-room-back" disabled={locked} onClick={() => choose('')}><ArrowLeft size={14}/>All groups</button>
+      {detail?.mission_id && <><Link to={`/missions/${encodeURIComponent(detail.mission_id)}`}>Open mission →</Link><span>Membership follows mission assignments.</span></>}
+    </div>
     <div className="talk-room-workspace" ref={workspace} style={{ height: workspaceHeight ? `${workspaceHeight}px` : undefined, '--room-left': `${leftWidth}px`, '--room-right': `${rightWidth}px` } as CSSProperties}>
       <aside className="talk-room-side is-left" aria-label="Board and pinned links">
         {detail ? <><RoomBoard roomPath={roomPath} tasks={detail.tasks || []} canPost={canPost} onChanged={refresh}/><RoomLinks roomPath={roomPath} links={detail.links || []} canPost={canPost} onChanged={refresh}/></> : <div className="talk-room-panel"><p className="talk-room-empty" role="status">Loading…</p></div>}
