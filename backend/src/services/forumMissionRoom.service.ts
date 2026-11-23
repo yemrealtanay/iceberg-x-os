@@ -1,8 +1,9 @@
 import { Prisma } from '@prisma/client';
 import prisma from './prisma';
 import { ForumActor } from './forumPolicy';
-import { forbidden, notFound } from '../utils/http';
-import { openText, sealText } from './forumChatCrypto.service';
+import { badRequest, forbidden, notFound } from '../utils/http';
+import { forumChatKeyProblem, openText, sealText } from './forumChatCrypto.service';
+import { FORUM_ENABLED } from '../config/env';
 
 type Tx = Prisma.TransactionClient;
 type Role = 'ADMIN' | 'MEMBER';
@@ -97,4 +98,52 @@ export async function missionRoom(actor: ForumActor, missionId: string, create =
     if (!await tx.forumChatMember.findUnique({ where: { room_id_user_id: { room_id: room.id, user_id: actor.id } } })) return { room: null };
     return { room: { id: room.id } };
   });
+}
+
+/** Missions whose team is at work: a room is useful from selection until the demo is approved. */
+export const ACTIVE_MISSION_STATUSES = ['selected', 'researching', 'building_demo', 'preparing_handover', 'demo_ready', 'pending_approval'] as const;
+
+/**
+ * Opens the room of every active mission that has at least one active Cube on its team,
+ * exactly as the mission page button does (same lock, same roster sync). Missions that
+ * already have a room are left alone, so re-running it only picks up new missions.
+ * Run from /admin/ops; `actorId` is the admin who ran it and becomes the room's creator.
+ */
+export async function createRoomsForActiveMissions(actorId: string) {
+  if (!FORUM_ENABLED) throw badRequest('The forum is off. Set FORUM_ENABLED=true first.');
+  const keyProblem = forumChatKeyProblem();
+  if (keyProblem) throw badRequest(`${keyProblem} Rooms are stored encrypted.`);
+
+  const missions = await prisma.mission.findMany({
+    where: {
+      status: { in: [...ACTIVE_MISSION_STATUSES] },
+      teams: { some: { members: { some: { cube: { current_level: { notIn: [...OFFBOARDED] }, user: { role: 'CUBE' } } } } } },
+    },
+    select: { id: true, title: true, status: true, forum_room: { select: { id: true } } },
+    orderBy: { title: 'asc' },
+  });
+
+  const actor: ForumActor = { id: actorId, role: 'ADMIN' };
+  const created: { mission: string; status: string; cubes: number; staff: number }[] = [];
+  const existing: string[] = [];
+  const failed: { mission: string; error: string }[] = [];
+  for (const mission of missions) {
+    if (mission.forum_room) {
+      existing.push(mission.title);
+      continue;
+    }
+    try {
+      const { room } = await missionRoom(actor, mission.id, true);
+      const members = room ? await prisma.forumChatMember.findMany({ where: { room_id: room.id }, select: { role: true } }) : [];
+      created.push({
+        mission: mission.title,
+        status: mission.status,
+        cubes: members.filter(m => m.role === 'MEMBER').length,
+        staff: members.filter(m => m.role === 'ADMIN').length,
+      });
+    } catch (error: any) {
+      failed.push({ mission: mission.title, error: String(error?.message || error).slice(0, 200) });
+    }
+  }
+  return { active_missions: missions.length, created: created.length, already_had_room: existing.length, failed: failed.length, rooms: created, errors: failed };
 }
