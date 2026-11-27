@@ -213,7 +213,7 @@ export const Certificate: React.FC = () => {
           >
             {/* Watermark */}
             <img
-              src={isAchievement ? '/images/iceberg-x-mark-light.png' : '/images/iceberg-x-mark.png'}
+              src={isAchievement ? '/images/brand/iceberg-x-mark-light.svg' : '/images/brand/iceberg-x-mark.svg'}
               alt=""
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
               style={{
@@ -226,7 +226,7 @@ export const Certificate: React.FC = () => {
             {/* Top Row: Lockup & Programme Type */}
             <div className="relative flex items-center justify-between gap-6">
               <img
-                src={isAchievement ? '/images/iceberg-x-lockup-light.png' : '/images/iceberg-x-lockup.png'}
+                src={isAchievement ? '/images/brand/iceberg-x-lockup-light.svg' : '/images/brand/iceberg-x-lockup.svg'}
                 alt="Iceberg X"
                 className="h-[30px] w-auto block"
               />
@@ -470,7 +470,7 @@ export const Certificate: React.FC = () => {
             >
               <div className="flex items-end gap-3.5">
                 <img
-                  src={isAchievement ? '/images/iceberg-x-mark-light.png' : '/images/iceberg-x-mark.png'}
+                  src={isAchievement ? '/images/brand/iceberg-x-mark-light.svg' : '/images/brand/iceberg-x-mark.svg'}
                   alt="Iceberg X"
                   className="h-9 w-9 block opacity-90"
                 />

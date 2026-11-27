@@ -693,9 +693,7 @@ export const Welcome: React.FC = () => {
       {/* LOADER */}
       {loading && (
         <div className="fixed inset-0 z-[999] grid place-items-center bg-[#07060b] transition-all duration-700">
-          <div className="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-[16px] bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] p-0.5 shadow-[0_0_50px_rgba(230,0,126,0.6)]">
-            <img src="/images/xicon.jpg" alt="Icon" className="h-full w-full rounded-[14px] object-cover" />
-          </div>
+          <img src="/images/brand/iceberg-x-mark-light.svg" alt="Iceberg X" className="h-[60px] w-[60px] animate-pulse drop-shadow-[0_0_24px_rgba(246,0,135,0.55)]" />
         </div>
       )}
 
@@ -717,9 +715,9 @@ export const Welcome: React.FC = () => {
         <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-6 px-6">
           <a href="#top" className="flex items-center gap-3">
             <img
-              src="/images/xicon.jpg"
+              src="/images/brand/iceberg-x-mark-light.svg"
               alt="Iceberg X"
-              className="h-11 w-11 shrink-0 rounded-2xl border border-white/10 object-cover shadow-[0_0_24px_rgba(230,0,126,0.35)]"
+              className="h-10 w-10 shrink-0 drop-shadow-[0_0_18px_rgba(246,0,135,0.35)]"
             />
             <span className="os-mono hidden text-[11px] font-medium uppercase tracking-[0.3em] text-slate-400 sm:block">
               iceberg&nbsp;x<span className="text-[#e6007e]">//</span>os
@@ -853,7 +851,9 @@ export const Welcome: React.FC = () => {
           <div data-fly="right" className="relative flex h-[440px] w-full items-center justify-center sm:h-[540px]">
             <div className="absolute h-[360px] w-[360px] animate-pulse rounded-full bg-gradient-to-tr from-[#e6007e]/25 via-[#00f0ff]/15 to-transparent blur-3xl" />
             {reducedMotion ? (
-              <div className="h-[260px] w-[260px] rounded-[2rem] border border-white/20 bg-gradient-to-tr from-[#e6007e] via-[#ff4da6] to-[#ff99cc] shadow-[0_0_80px_rgba(230,0,126,0.45)]" />
+              <div className="grid h-[260px] w-[260px] place-items-center rounded-[2rem] border border-white/15 bg-[#0b0b0d] shadow-[0_0_80px_rgba(246,0,135,0.35)]">
+                <img src="/images/brand/iceberg-x-mark-light.svg" alt="" className="w-[62%]" />
+              </div>
             ) : (
               <Suspense fallback={null}>
                 <HeroScene reduced={reducedMotion} quality={quality} />
@@ -1528,8 +1528,8 @@ export const Welcome: React.FC = () => {
         <div className="mx-auto max-w-[1180px] px-6">
           <div className="grid grid-cols-1 items-center gap-8 border-b border-white/10 pb-10 lg:grid-cols-[minmax(0,520px)_minmax(260px,1fr)] lg:gap-12">
             <div className="flex flex-col gap-4">
-              <a href="#top" className="w-fit overflow-hidden rounded-[22px] border border-white/10 bg-[#0d0b12]" aria-label="Iceberg X home">
-                <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg X Logo" className="block h-[130px] w-[min(480px,100%)] object-cover" />
+              <a href="#top" className="w-fit" aria-label="Iceberg X home">
+                <img src="/images/brand/iceberg-x-lockup-light.svg" alt="Iceberg X" className="block h-16 w-auto max-w-full sm:h-20" />
               </a>
               <p className="os-mono text-[11px] font-medium text-slate-500">© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
             </div>

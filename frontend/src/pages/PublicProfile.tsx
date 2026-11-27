@@ -58,7 +58,7 @@ export const PublicProfile: React.FC = () => {
         <div className="max-w-md w-full mx-auto flex flex-col gap-6">
           <div className="text-center">
             <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
-              <img src="/images/iceberg-x-lockup.png" alt="Iceberg X" className="h-7 mx-auto block" />
+              <img src="/images/brand/iceberg-x-lockup.svg" alt="Iceberg X" className="h-7 mx-auto block" />
             </Link>
           </div>
 
@@ -139,7 +139,7 @@ export const PublicProfile: React.FC = () => {
       {/* Top Navigation */}
       <header className="flex items-center justify-between gap-5 px-6 py-3.5 bg-white border-b border-[#E7E9EE] sticky top-0 z-20">
         <Link to="/" className="flex items-center">
-          <img src="/images/iceberg-x-lockup.png" alt="Iceberg X" className="h-6 w-auto block" />
+          <img src="/images/brand/iceberg-x-lockup.svg" alt="Iceberg X" className="h-6 w-auto block" />
         </Link>
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-[#E6F6F7] text-[#0E7C86] text-xs font-bold">
@@ -161,7 +161,7 @@ export const PublicProfile: React.FC = () => {
         {/* Hero Section */}
         <section className="relative mt-6 rounded-[20px] overflow-hidden bg-[radial-gradient(110%_120%_at_8%_0%,_#1E2129_0%,_#0E1116_60%)] text-[#F2F4F7]">
           <img
-            src="/images/iceberg-x-mark-light.png"
+            src="/images/brand/iceberg-x-mark-light.svg"
             alt=""
             className="absolute -right-14 -top-16 w-[340px] h-[340px] opacity-[0.06] pointer-events-none"
           />

@@ -213,7 +213,7 @@ export const Layout: React.FC = () => {
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 min-h-20" ref={navRef}>
             <div className="flex items-center min-w-0">
               <Link to="/" className="flex items-center hover:opacity-90 transition-opacity" title="Iceberg X OS">
-                <img src="/images/xicon.jpg" alt="Iceberg X" className="w-16 h-16 rounded-[1.35rem] object-cover shadow-xl shadow-black/10 border border-gray-100 shrink-0" />
+                <img src="/images/brand/iceberg-x-icon.svg" alt="Iceberg X" className="w-16 h-16 rounded-[22%] shadow-xl shadow-black/10 shrink-0" />
               </Link>
             </div>
 
@@ -465,9 +465,7 @@ export const Layout: React.FC = () => {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,420px)_1fr] gap-8 lg:gap-12 items-center">
             <div className="flex flex-col gap-4">
-              <div className="w-full max-w-[420px] h-[125px] sm:h-[155px] overflow-hidden rounded-2xl bg-[#171719]">
-                <img src="/images/iceberg-x-logo-blackbg.png" alt="Iceberg X Logo" className="w-full h-full object-cover object-center block" />
-              </div>
+              <img src="/images/brand/iceberg-x-lockup-light.svg" alt="Iceberg X" className="h-14 sm:h-16 w-auto max-w-full block self-start" />
               <p className="text-[11px] text-white/45 font-semibold">© {new Date().getFullYear()} Iceberg Digital. All rights reserved.</p>
             </div>
             <div className="flex flex-col gap-4 lg:items-end lg:text-right">
